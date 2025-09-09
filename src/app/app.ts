@@ -17,6 +17,9 @@ interface Habit {
   difficulty: 'easy' | 'medium' | 'hard';
   streak: number;
   bestStreak: number;
+  points: number;
+  goal: number;
+  reward: string;
 }
 
 interface DayColumn {
@@ -40,6 +43,16 @@ interface Achievement {
   description: string;
   icon: string;
   requirement: (gameState: GameState, habits: Habit[]) => boolean;
+}
+
+interface SMTPConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  password: string;
+  fromEmail: string;
+  toEmail: string;
 }
 
 @Component({
@@ -82,12 +95,29 @@ export class App implements OnInit {
   newHabitName: string = '';
   newHabitType: 'good' | 'bad' = 'good';
   newHabitDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+  newHabitPoints: number = 10;
+  newHabitGoal: number = 7;
+  newHabitReward: string = '';
+
+  // SMTP Configuration
+  smtpConfig: SMTPConfig = {
+    host: '',
+    port: 587,
+    secure: false,
+    username: '',
+    password: '',
+    fromEmail: '',
+    toEmail: ''
+  };
+  
+  showSettings: boolean = false;
 
   ngOnInit() {
     this.initializeMonth();
     this.loadHabits();
     this.loadHabitEntries();
     this.loadGameState();
+    this.loadSMTPConfig();
     this.checkAchievements();
   }
 
@@ -122,13 +152,16 @@ export class App implements OnInit {
         type: habit.type || 'good',
         difficulty: habit.difficulty || 'medium',
         streak: habit.streak || 0,
-        bestStreak: habit.bestStreak || 0
+        bestStreak: habit.bestStreak || 0,
+        points: habit.points || 10,
+        goal: habit.goal || 7,
+        reward: habit.reward || ''
       }));
     } else {
       this.habits = [
-        { id: '1', name: 'Exercise', type: 'good', color: 'bg-blue-500', difficulty: 'medium', streak: 0, bestStreak: 0 },
-        { id: '2', name: 'Read', type: 'good', color: 'bg-green-500', difficulty: 'easy', streak: 0, bestStreak: 0 },
-        { id: '3', name: 'Stop Smoking', type: 'bad', color: 'bg-red-500', difficulty: 'hard', streak: 0, bestStreak: 0 }
+        { id: '1', name: 'Exercise', type: 'good', color: 'bg-blue-500', difficulty: 'medium', streak: 0, bestStreak: 0, points: 15, goal: 30, reward: 'New workout gear' },
+        { id: '2', name: 'Read', type: 'good', color: 'bg-green-500', difficulty: 'easy', streak: 0, bestStreak: 0, points: 10, goal: 21, reward: 'Buy a new book' },
+        { id: '3', name: 'Stop Smoking', type: 'bad', color: 'bg-red-500', difficulty: 'hard', streak: 0, bestStreak: 0, points: 25, goal: 7, reward: 'Treat yourself to something nice' }
       ];
       this.saveHabits();
     }
@@ -173,12 +206,18 @@ export class App implements OnInit {
         color: this.getRandomColor(),
         difficulty: this.newHabitDifficulty,
         streak: 0,
-        bestStreak: 0
+        bestStreak: 0,
+        points: this.newHabitPoints,
+        goal: this.newHabitGoal,
+        reward: this.newHabitReward
       };
       this.habits.push(newHabit);
       this.newHabitName = '';
       this.newHabitType = 'good';
       this.newHabitDifficulty = 'medium';
+      this.newHabitPoints = 10;
+      this.newHabitGoal = 7;
+      this.newHabitReward = '';
       this.saveHabits();
       this.checkAchievements();
     }
@@ -269,8 +308,7 @@ export class App implements OnInit {
     const habit = this.habits.find(h => h.id === habitId);
     if (!habit) return;
 
-    const difficultyMultiplier = { easy: 1, medium: 2, hard: 3 };
-    const basePoints = difficultyMultiplier[habit.difficulty];
+    const basePoints = habit.points;
 
     // Remove old points
     if (oldStatus === 'completed') {
@@ -406,5 +444,105 @@ export class App implements OnInit {
 
   getBadHabitsCount(): number {
     return this.habits.filter(h => h.type === 'bad').length;
+  }
+
+  getGoalProgress(habit: Habit): number {
+    return Math.min((habit.streak / habit.goal) * 100, 100);
+  }
+
+  // SMTP Configuration Methods
+  loadSMTPConfig() {
+    const storedConfig = localStorage.getItem('smtpConfig');
+    if (storedConfig) {
+      this.smtpConfig = JSON.parse(storedConfig);
+    }
+  }
+
+  saveSMTPConfig() {
+    localStorage.setItem('smtpConfig', JSON.stringify(this.smtpConfig));
+    alert('SMTP settings saved successfully!');
+  }
+
+  toggleSettings() {
+    this.showSettings = !this.showSettings;
+  }
+
+  // Email Report Methods
+  generateReport(): string {
+    const date = new Date().toLocaleDateString();
+    const totalHabits = this.habits.length;
+    const goodHabits = this.getGoodHabitsCount();
+    const badHabits = this.getBadHabitsCount();
+    const overallProgress = this.getOverallProgress();
+    
+    let report = `
+=== HABITI PROGRESS REPORT ===
+Generated: ${date}
+
+🎮 GAME STATS
+Level: ${this.gameState.level}
+Total Points: ${this.gameState.totalPoints}
+Daily Streak: ${this.gameState.dailyStreak} days
+Best Streak: ${this.gameState.longestStreak} days
+Overall Progress: ${overallProgress}%
+
+📊 HABIT SUMMARY
+Total Habits: ${totalHabits}
+Building (Good): ${goodHabits}
+Breaking (Bad): ${badHabits}
+
+📈 HABIT DETAILS
+`;
+
+    this.habits.forEach(habit => {
+      const completion = this.getCompletionRate(habit.id);
+      const goalStatus = habit.streak >= habit.goal ? '✅' : '⏳';
+      report += `
+${habit.name} (${habit.type.toUpperCase()})
+  Current Streak: ${habit.streak} days
+  Goal: ${habit.goal} days ${goalStatus}
+  Best Streak: ${habit.bestStreak} days
+  Monthly Completion: ${completion}%
+  Points: ${habit.points}
+  ${habit.reward ? `Reward: ${habit.reward}` : ''}
+`;
+    });
+
+    report += `
+🏆 ACHIEVEMENTS (${this.gameState.achievements.length}/${this.achievements.length})
+`;
+    
+    this.getUnlockedAchievements().forEach(achievement => {
+      report += `${achievement.icon} ${achievement.name} - ${achievement.description}\n`;
+    });
+
+    return report;
+  }
+
+  async sendEmailReport() {
+    if (!this.smtpConfig.host || !this.smtpConfig.fromEmail || !this.smtpConfig.toEmail) {
+      alert('Please configure SMTP settings first');
+      return;
+    }
+
+    const report = this.generateReport();
+    
+    // Note: This would typically require a backend service for actual email sending
+    // For now, we'll show the report and copy to clipboard
+    const subject = `Habiti Progress Report - ${new Date().toLocaleDateString()}`;
+    
+    try {
+      // Copy to clipboard
+      await navigator.clipboard.writeText(report);
+      alert('Report copied to clipboard! You can paste it into your email client.\n\nNote: Direct email sending requires backend integration.');
+      
+      // Open email client with pre-filled content
+      const mailto = `mailto:${this.smtpConfig.toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(report)}`;
+      window.open(mailto);
+      
+    } catch (error) {
+      console.error('Failed to copy report:', error);
+      alert('Failed to copy report to clipboard');
+    }
   }
 }
