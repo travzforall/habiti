@@ -172,7 +172,7 @@
           </div>
           <div class="stat-title">Active Habits</div>
           <div class="stat-value text-primary">{{ habits.length }}</div>
-          <div class="stat-desc">{{ habits.filter(h => h.type === 'good').length }} building, {{ habits.filter(h => h.type === 'bad').length }} breaking</div>
+          <div class="stat-desc">{{ getGoodHabitsCount() }} building, {{ getBadHabitsCount() }} breaking</div>
         </div>
         
         <div class="stat">

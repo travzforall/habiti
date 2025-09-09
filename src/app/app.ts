@@ -399,4 +399,12 @@ export class App implements OnInit {
   getUnlockedAchievements(): Achievement[] {
     return this.achievements.filter(a => this.gameState.achievements.includes(a.id));
   }
+
+  getGoodHabitsCount(): number {
+    return this.habits.filter(h => h.type === 'good').length;
+  }
+
+  getBadHabitsCount(): number {
+    return this.habits.filter(h => h.type === 'bad').length;
+  }
 }
