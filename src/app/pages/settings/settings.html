@@ -1,0 +1,79 @@
+<div class="space-y-8">
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-base-content mb-4">⚙️ Settings</h1>
+    <p class="text-base-content/70">Customize your Habiti experience</p>
+  </div>
+  
+  <!-- Settings sections -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Appearance Settings -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <span>🎨</span> Appearance
+      </h2>
+      <div class="space-y-4">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Theme</span>
+          </label>
+          <select class="select select-bordered">
+            <option>Auto (System)</option>
+            <option>Light</option>
+            <option>Dark</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text">Compact Mode</span> 
+            <input type="checkbox" class="toggle" />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <span>🔔</span> Notifications
+      </h2>
+      <div class="space-y-4">
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text">Daily Reminders</span> 
+            <input type="checkbox" class="toggle toggle-primary" checked />
+          </label>
+        </div>
+        <div class="form-control">
+          <label class="label cursor-pointer">
+            <span class="label-text">Streak Celebrations</span> 
+            <input type="checkbox" class="toggle toggle-primary" checked />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy & Data -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <span>🔒</span> Privacy & Data
+      </h2>
+      <div class="space-y-4">
+        <button class="btn btn-outline w-full">Export Data</button>
+        <button class="btn btn-outline w-full">Import Data</button>
+        <button class="btn btn-error btn-outline w-full">Clear All Data</button>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <span>ℹ️</span> About
+      </h2>
+      <div class="space-y-2">
+        <p class="text-sm text-base-content/70">Version: 1.0.0</p>
+        <p class="text-sm text-base-content/70">Built with Angular & TailwindCSS</p>
+        <p class="text-sm text-base-content/70">© 2024 Habiti</p>
+      </div>
+    </div>
+  </div>
+</div>

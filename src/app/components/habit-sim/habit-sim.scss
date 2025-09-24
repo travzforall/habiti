@@ -1,0 +1,52 @@
+// Habit Sim Component Styles
+
+// Smooth gentle breathing animation for character
+.shake-animation {
+  animation: gentleFloat 8s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateX(0) translateY(0) rotate(0deg);
+  }
+  
+  12.5% {
+    transform: translateX(-3px) translateY(-2px) rotate(-0.8deg);
+  }
+  
+  25% {
+    transform: translateX(2px) translateY(-4px) rotate(0.6deg);
+  }
+  
+  37.5% {
+    transform: translateX(-2px) translateY(-1px) rotate(-0.4deg);
+  }
+  
+  50% {
+    transform: translateX(3px) translateY(-3px) rotate(0.7deg);
+  }
+  
+  62.5% {
+    transform: translateX(-1px) translateY(-2px) rotate(-0.3deg);
+  }
+  
+  75% {
+    transform: translateX(2px) translateY(-4px) rotate(0.5deg);
+  }
+  
+  87.5% {
+    transform: translateX(-2px) translateY(-1px) rotate(-0.6deg);
+  }
+}
+
+// Smooth animation for character transitions
+.character-container {
+  transition: all 0.3s ease-in-out;
+}
+
+// Hover effects for interactivity
+.character-display:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}

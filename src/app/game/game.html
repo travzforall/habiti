@@ -1,0 +1,102 @@
+<div class="container mx-auto p-4">
+  <!-- Game Header -->
+  <div class="hero bg-gradient-to-r from-secondary to-accent text-white rounded-xl mb-6">
+    <div class="hero-content text-center py-6">
+      <div class="max-w-4xl">
+        <h1 class="text-4xl font-bold mb-4">🎮 Social Tournament</h1>
+        
+        <!-- Game Stats Summary -->
+        <div class="stats stats-horizontal shadow bg-base-100 text-base-content">
+          <div class="stat place-items-center">
+            <div class="stat-title">Social Level</div>
+            <div class="stat-value text-2xl text-primary">{{ gameStats?.socialSkillLevel || 1 }}</div>
+            <div class="stat-desc">Skill Points</div>
+          </div>
+          <div class="stat place-items-center">
+            <div class="stat-title">Charisma</div>
+            <div class="stat-value text-2xl text-secondary">{{ gameStats?.charismaPoints || 0 }}</div>
+            <div class="stat-desc">Points</div>
+          </div>
+          <div class="stat place-items-center">
+            <div class="stat-title">Confidence</div>
+            <div class="stat-value text-2xl text-accent">{{ gameStats?.confidenceLevel || 10 }}%</div>
+            <div class="stat-desc">Level</div>
+          </div>
+          <div class="stat place-items-center">
+            <div class="stat-title">Interactions</div>
+            <div class="stat-value text-2xl text-info">{{ gameStats?.totalInteractions || 0 }}</div>
+            <div class="stat-desc">Total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Mode Tabs -->
+  <div class="tabs tabs-boxed mb-6">
+    <a class="tab" [class.tab-active]="viewMode === 'tournament'" (click)="viewMode = 'tournament'">
+      🏆 Tournament
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'male-profile'" (click)="viewMode = 'male-profile'">
+      🤵 Male Profile
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'bracket'" (click)="viewMode = 'bracket'">
+      🎯 Bracket
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'date-planner'" (click)="viewMode = 'date-planner'">
+      📅 Date Planner
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'pickup-lines'" (click)="viewMode = 'pickup-lines'">
+      💬 Pickup Lines
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'profiles'" (click)="viewMode = 'profiles'">
+      👤 Profiles
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'challenges'" (click)="viewMode = 'challenges'">
+      🎯 Challenges
+    </a>
+    <a class="tab" [class.tab-active]="viewMode === 'stats'" (click)="viewMode = 'stats'">
+      📊 Stats
+    </a>
+  </div>
+
+  <!-- Tournament View -->
+  <div *ngIf="viewMode === 'tournament'">
+    <app-tournament></app-tournament>
+  </div>
+
+  <!-- Male Profile View -->
+  <div *ngIf="viewMode === 'male-profile'">
+    <app-male-profile></app-male-profile>
+  </div>
+
+  <!-- Bracket View -->
+  <div *ngIf="viewMode === 'bracket'">
+    <app-bracket></app-bracket>
+  </div>
+
+  <!-- Date Planner View -->
+  <div *ngIf="viewMode === 'date-planner'">
+    <app-date-planner></app-date-planner>
+  </div>
+
+  <!-- Pickup Lines View -->
+  <div *ngIf="viewMode === 'pickup-lines'">
+    <app-pickup-lines></app-pickup-lines>
+  </div>
+
+  <!-- Profiles View -->
+  <div *ngIf="viewMode === 'profiles'">
+    <app-profiles></app-profiles>
+  </div>
+
+  <!-- Challenges View -->
+  <div *ngIf="viewMode === 'challenges'">
+    <app-challenges></app-challenges>
+  </div>
+
+  <!-- Stats View -->
+  <div *ngIf="viewMode === 'stats'">
+    <app-stats></app-stats>
+  </div>
+</div>

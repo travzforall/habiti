@@ -1,0 +1,345 @@
+// Modern Silver/Blue Theme Styles
+@use 'tailwindcss/base';
+@use 'tailwindcss/components';
+@use 'tailwindcss/utilities';
+
+// Theme Colors
+:root {
+  --color-silver: #f8f9fa;
+  --color-silver-dark: #e9ecef;
+  --color-blue-primary: #3b82f6;
+  --color-blue-dark: #2563eb;
+  --color-blue-light: #60a5fa;
+  --color-slate: #475569;
+}
+
+// Blob Animation
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+// Glass Morphism Effects
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-morphism-dark {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Custom Animations
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Loading Shimmer Effect
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+// Gradient Text
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-slate) 0%, var(--color-blue-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// Card Hover Effects
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Button Styles
+.btn-silver {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: var(--color-slate);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  
+  &:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.btn-blue {
+  background: linear-gradient(135deg, var(--color-blue-primary) 0%, var(--color-blue-dark) 100%);
+  color: white;
+  transition: all 0.3s;
+  
+  &:hover {
+    background: linear-gradient(135deg, var(--color-blue-light) 0%, var(--color-blue-primary) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+  }
+}
+
+// Progress Bar Styles
+.progress-silver {
+  background: linear-gradient(90deg, #e9ecef 0%, #f8f9fa 100%);
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+}
+
+// Smooth Scrollbar
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-silver);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--color-blue-light) 0%, var(--color-blue-primary) 100%);
+  border-radius: 10px;
+  border: 2px solid var(--color-silver);
+  
+  &:hover {
+    background: linear-gradient(180deg, var(--color-blue-primary) 0%, var(--color-blue-dark) 100%);
+  }
+}
+
+// Page Transitions
+.page-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+.page-leave {
+  animation: fadeOut 0.2s ease-in;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// Focus States
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-blue-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+// Card Styles
+.card-silver {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  
+  &:hover {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+// Badge Styles
+.badge-silver {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: var(--color-slate);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.badge-blue {
+  background: linear-gradient(135deg, var(--color-blue-primary) 0%, var(--color-blue-dark) 100%);
+  color: white;
+}
+
+// Notification Animations
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-enter {
+  animation: slideDown 0.3s ease-out;
+}
+
+// Mobile Optimizations
+@media (max-width: 768px) {
+  .glass-morphism {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .hover-lift:hover {
+    transform: none;
+  }
+}
+
+// Dark Mode Support
+[data-theme="dark"] {
+  --color-silver: #1e293b;
+  --color-silver-dark: #0f172a;
+  --color-slate: #cbd5e1;
+  
+  .glass-morphism {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .card-silver {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid #0f172a;
+  }
+}
+
+// Utility Classes
+.text-shadow-sm {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-md {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-lg {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+// Responsive Typography
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+// Print Styles
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .glass-morphism {
+    background: white;
+    backdrop-filter: none;
+  }
+}
+
+// Accessibility
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

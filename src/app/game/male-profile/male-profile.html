@@ -1,0 +1,112 @@
+<div class="space-y-6">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex items-start gap-6">
+        <!-- Profile Avatar -->
+        <div class="text-center">
+          <div class="text-8xl mb-4">{{ maleProfile?.avatar }}</div>
+          <h2 class="text-2xl font-bold">{{ maleProfile?.name }}</h2>
+          <div class="stats stats-vertical shadow mt-4">
+            <div class="stat">
+              <div class="stat-title">Total Score</div>
+              <div class="stat-value text-2xl" [ngClass]="maleProfile && maleProfile.totalScore >= 0 ? 'text-success' : 'text-error'">
+                {{ maleProfile?.totalScore }}
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Attractiveness</div>
+              <div class="stat-value text-lg">{{ maleProfile?.attractivenessLevel }}%</div>
+              <progress class="progress progress-primary w-16" [value]="maleProfile?.attractivenessLevel" max="100"></progress>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Traits & Non-Negotiables -->
+        <div class="flex-1 space-y-6">
+          <!-- Non-Negotiables -->
+          <div>
+            <h3 class="font-bold text-xl mb-4">Non-Negotiables ({{ getNonNegotiablesMet() }}/{{ getNonNegotiablesTotal() }})</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div *ngFor="let nn of maleProfile?.nonNegotiables" 
+                   class="card bg-base-200 cursor-pointer hover:shadow-md transition-all"
+                   (click)="toggleNonNegotiable(nn.id)"
+                   [ngClass]="nn.met ? 'border-2 border-success' : ''">
+                <div class="card-body p-4">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <span>{{ getPriorityIcon(nn.priority) }}</span>
+                        <span>{{ getCategoryIcon(nn.category) }}</span>
+                        <h4 class="font-bold">{{ nn.title }}</h4>
+                        <span *ngIf="nn.met" class="text-2xl">✅</span>
+                      </div>
+                      <p class="text-sm opacity-70 mt-1">{{ nn.description }}</p>
+                      <div class="badge badge-outline badge-sm mt-2">{{ nn.category }}</div>
+                      <div class="badge badge-sm mt-2" 
+                           [ngClass]="nn.priority === 'critical' ? 'badge-error' : nn.priority === 'high' ? 'badge-warning' : 'badge-info'">
+                        {{ nn.priority }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Traits -->
+          <div>
+            <h3 class="font-bold text-xl mb-4">Traits</h3>
+            
+            <!-- Good Traits -->
+            <h4 class="font-semibold text-success mb-2">✨ Positive Traits</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+              <div *ngFor="let trait of maleProfile?.traits | slice:0:8" 
+                   class="card bg-base-200 cursor-pointer hover:shadow-md transition-all"
+                   (click)="toggleMaleTrait(trait.id)"
+                   [ngClass]="trait.active ? 'border-2 border-success' : 'opacity-60'">
+                <div class="card-body p-3">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span>{{ getCategoryIcon(trait.category) }}</span>
+                        <span class="font-bold">{{ trait.name }}</span>
+                        <span class="text-success">+{{ trait.points }}</span>
+                      </div>
+                      <p class="text-xs opacity-70">{{ trait.description }}</p>
+                      <div class="badge badge-outline badge-xs mt-1">{{ trait.category }}</div>
+                    </div>
+                    <span *ngIf="trait.active" class="text-2xl">✅</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bad Traits -->
+            <h4 class="font-semibold text-error mb-2">🚫 Areas for Improvement</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div *ngFor="let trait of maleProfile?.traits | slice:8" 
+                   class="card bg-base-200 cursor-pointer hover:shadow-md transition-all"
+                   (click)="toggleMaleTrait(trait.id)"
+                   [ngClass]="trait.active ? 'border-2 border-error' : 'opacity-60'">
+                <div class="card-body p-3">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span>{{ getCategoryIcon(trait.category) }}</span>
+                        <span class="font-bold">{{ trait.name }}</span>
+                        <span class="text-error">{{ trait.points }}</span>
+                      </div>
+                      <p class="text-xs opacity-70">{{ trait.description }}</p>
+                      <div class="badge badge-outline badge-xs mt-1">{{ trait.category }}</div>
+                    </div>
+                    <span *ngIf="trait.active" class="text-2xl">⚠️</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+<div class="space-y-6">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="card-title">🎯 Tournament Bracket</h2>
+        <button (click)="createBracket()" class="btn btn-primary">
+          Create New Bracket
+        </button>
+      </div>
+
+      <div *ngIf="brackets.length === 0" class="text-center py-8">
+        <p class="text-lg opacity-60">No tournament brackets yet</p>
+        <p class="text-sm opacity-40">Create a bracket to see tournament visualization</p>
+      </div>
+
+      <div *ngFor="let bracket of brackets" class="mb-8">
+        <h3 class="font-bold text-lg mb-4">{{ bracket.name }}</h3>
+        <div class="overflow-x-auto">
+          <div class="flex gap-8 p-4" style="width: max-content;">
+            <div *ngFor="let round of bracket.rounds; let roundIndex = index" class="flex flex-col gap-4">
+              <h4 class="text-center font-bold">Round {{ roundIndex + 1 }}</h4>
+              <div *ngFor="let match of round" class="card bg-base-200 w-64">
+                <div class="card-body p-4">
+                  <div class="space-y-2">
+                    <div class="flex justify-between items-center p-2 rounded" 
+                         [ngClass]="match.winnerId === match.participant1Id ? 'bg-success/20' : 'bg-base-300'">
+                      <span>{{ tournamentService.getGirlById(match.participant1Id)?.name }}</span>
+                      <span class="font-bold">{{ match.score1 }}</span>
+                    </div>
+                    <div class="text-center text-xs opacity-60">vs</div>
+                    <div class="flex justify-between items-center p-2 rounded"
+                         [ngClass]="match.winnerId === match.participant2Id ? 'bg-success/20' : 'bg-base-300'">
+                      <span>{{ tournamentService.getGirlById(match.participant2Id)?.name }}</span>
+                      <span class="font-bold">{{ match.score2 }}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="!match.completed" class="mt-3 text-center">
+                    <button class="btn btn-xs btn-outline">Set Result</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

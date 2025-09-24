@@ -1,0 +1,325 @@
+<!-- Habits Management Page -->
+<div class="habits-section space-y-6">
+  <!-- Page Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center gap-3 bg-primary/10 px-6 py-3 rounded-full">
+      <span class="text-3xl">✨</span>
+      <h1 class="text-2xl font-bold text-primary">Habit Management</h1>
+    </div>
+    <p class="text-primary/70 mt-2">Build, track, and maintain your daily habits</p>
+  </div>
+
+  <!-- Add New Habit Form -->
+  <div class="card bg-base-100 shadow-xl mb-6">
+    <div class="card-body">
+      <h2 class="card-title mb-4">
+        <span class="text-2xl">🆕</span>
+        Add New Habit
+      </h2>
+      
+      <form class="space-y-4" #habitForm="ngForm" (ngSubmit)="addHabit()">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Habit Name -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Habit Name</span>
+            </label>
+            <input 
+              type="text" 
+              placeholder="e.g., Morning Exercise" 
+              class="input input-bordered w-full"
+              [(ngModel)]="newHabit.name"
+              name="habitName"
+              required
+            />
+          </div>
+
+          <!-- Habit Type -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Habit Type</span>
+            </label>
+            <select 
+              class="select select-bordered w-full"
+              [(ngModel)]="newHabit.type"
+              name="habitType"
+              required
+            >
+              <option value="">Select type</option>
+              <option value="good">✅ Good Habit (Build)</option>
+              <option value="bad">🚫 Bad Habit (Break)</option>
+            </select>
+          </div>
+
+          <!-- Category -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Category</span>
+            </label>
+            <select 
+              class="select select-bordered w-full"
+              [(ngModel)]="newHabit.categoryId"
+              name="habitCategory"
+              required
+            >
+              <option value="">Select category</option>
+              <option *ngFor="let category of categories" [value]="category.id">
+                {{ category.icon }} {{ category.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Custom Icon -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Icon (optional)</span>
+            </label>
+            <input 
+              type="text" 
+              placeholder="🏃 (emoji or leave blank)" 
+              class="input input-bordered w-full"
+              [(ngModel)]="newHabit.icon"
+              name="habitIcon"
+            />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Description (optional)</span>
+          </label>
+          <textarea 
+            class="textarea textarea-bordered" 
+            placeholder="Describe your habit and why it's important to you..."
+            [(ngModel)]="newHabit.description"
+            name="habitDescription"
+          ></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-control">
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="!habitForm.valid"
+          >
+            <span class="text-lg">✨</span>
+            Add Habit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Active Habits List -->
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="card-title">
+          <span class="text-2xl">📋</span>
+          Your Habits ({{ habits().length }})
+        </h2>
+        <div class="flex gap-2">
+          <button 
+            class="btn btn-sm"
+            [class.btn-primary]="filterType === 'all'"
+            [class.btn-outline]="filterType !== 'all'"
+            (click)="filterType = 'all'"
+          >
+            All
+          </button>
+          <button 
+            class="btn btn-sm"
+            [class.btn-success]="filterType === 'good'"
+            [class.btn-outline]="filterType !== 'good'"
+            (click)="filterType = 'good'"
+          >
+            ✅ Good
+          </button>
+          <button 
+            class="btn btn-sm"
+            [class.btn-error]="filterType === 'bad'"
+            [class.btn-outline]="filterType !== 'bad'"
+            (click)="filterType = 'bad'"
+          >
+            🚫 Breaking
+          </button>
+        </div>
+      </div>
+
+      <!-- Habits Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div 
+          *ngFor="let habit of getFilteredHabits()" 
+          class="habit-card p-4 rounded-lg border transition-all duration-200 hover:shadow-lg"
+          [ngClass]="{
+            'border-success bg-success/5': habit.type === 'good',
+            'border-error bg-error/5': habit.type === 'bad'
+          }"
+        >
+          <!-- Habit Header -->
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+              <div>
+                <h3 class="font-bold text-lg">{{ habit.name }}</h3>
+                <p class="text-sm text-base-content/60">{{ habit.category || 'No category' }}</p>
+              </div>
+            </div>
+            <div class="dropdown dropdown-end">
+              <label tabindex="0" class="btn btn-ghost btn-xs">⋮</label>
+              <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32">
+                <li><a (click)="editHabit(habit)">✏️ Edit</a></li>
+                <li><a (click)="deleteHabit(habit.id)" class="text-error">🗑️ Delete</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Habit Stats -->
+          <div class="space-y-3">
+            <!-- Streak -->
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Streak:</span>
+              <div class="flex items-center gap-1">
+                <span class="font-bold">{{ habit.streak }}</span>
+                <span class="text-xs">days {{ getStreakIcon(habit.streak) }}</span>
+              </div>
+            </div>
+
+            <!-- Completion Rate -->
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Success Rate:</span>
+              <span class="font-bold">{{ getCompletionRate(habit.id) }}%</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-base-300 rounded-full h-2">
+              <div 
+                class="h-2 rounded-full transition-all duration-300"
+                [ngClass]="{
+                  'bg-success': habit.type === 'good',
+                  'bg-error': habit.type === 'bad'
+                }"
+                [style.width.%]="getCompletionRate(habit.id)"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex gap-2 mt-4">
+            <button 
+              class="btn btn-sm flex-1"
+              [ngClass]="{
+                'btn-success': habit.type === 'good',
+                'btn-error': habit.type === 'bad'
+              }"
+              (click)="markHabitComplete(habit.id)"
+              [disabled]="isHabitCompletedToday(habit.id)"
+            >
+              {{ isHabitCompletedToday(habit.id) ? '✓ Done Today' : getActionText(habit.type) }}
+            </button>
+            <button 
+              class="btn btn-sm btn-ghost"
+              (click)="viewHabitDetails(habit)"
+            >
+              📊
+            </button>
+          </div>
+
+          <!-- Description -->
+          <p *ngIf="habit.description" class="text-sm text-base-content/70 mt-3">
+            {{ habit.description }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="getFilteredHabits().length === 0" class="text-center py-12">
+        <div class="text-6xl mb-4">✨</div>
+        <h3 class="text-xl font-bold mb-2">No habits yet!</h3>
+        <p class="text-base-content/60 mb-4">
+          {{ filterType === 'all' ? 'Create your first habit to get started.' : 'No ' + filterType + ' habits found.' }}
+        </p>
+        <button 
+          *ngIf="filterType !== 'all'"
+          class="btn btn-primary btn-sm"
+          (click)="filterType = 'all'"
+        >
+          Show All Habits
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Habit Modal -->
+<dialog #editModal class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg mb-4">✏️ Edit Habit</h3>
+    
+    <form *ngIf="editingHabit" class="space-y-4" #editForm="ngForm" (ngSubmit)="updateHabit()">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text font-medium">Habit Name</span>
+        </label>
+        <input 
+          type="text" 
+          class="input input-bordered w-full"
+          [(ngModel)]="editingHabit.name"
+          name="editHabitName"
+          required
+        />
+      </div>
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text font-medium">Category</span>
+        </label>
+        <select 
+          class="select select-bordered w-full"
+          [(ngModel)]="editingHabit.category"
+          name="editHabitCategory"
+          required
+        >
+          <option *ngFor="let category of categories" [value]="category.id">
+            {{ category.icon }} {{ category.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text font-medium">Icon</span>
+        </label>
+        <input 
+          type="text" 
+          class="input input-bordered w-full"
+          [(ngModel)]="editingHabit.icon"
+          name="editHabitIcon"
+        />
+      </div>
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text font-medium">Description</span>
+        </label>
+        <textarea 
+          class="textarea textarea-bordered"
+          [(ngModel)]="editingHabit.description"
+          name="editHabitDescription"
+        ></textarea>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" class="btn" (click)="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="!editForm.valid">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" (click)="closeEditModal()">close</button>
+  </form>
+</dialog>

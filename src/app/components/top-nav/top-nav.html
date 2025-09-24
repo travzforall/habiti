@@ -1,0 +1,157 @@
+<!-- Modern Glass Navigation with Silver/Blue Theme -->
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 lg:px-6">
+    <div class="flex items-center justify-between h-16">
+      
+      <!-- Logo & Brand -->
+      <div class="flex items-center">
+        <a routerLink="/dashboard" class="flex items-center space-x-3 group">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
+            <span class="text-white text-xl">✓</span>
+          </div>
+          <div class="hidden sm:block">
+            <div class="text-xl font-bold bg-gradient-to-r from-slate-700 to-blue-600 bg-clip-text text-transparent">
+              Habiti
+            </div>
+            <div class="text-xs text-slate-500">Track • Build • Achieve</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Desktop Navigation (Hidden on mobile) -->
+      <nav class="hidden lg:flex items-center space-x-1">
+        <a routerLink="/dashboard" 
+           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
+           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
+          Dashboard
+        </a>
+        <a routerLink="/habits" 
+           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
+           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent relative">
+          Habits
+          @if (habits().length > 0) {
+            <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
+              {{ habits().length }}
+            </span>
+          }
+        </a>
+        <a routerLink="/calendar" 
+           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
+           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
+          Calendar
+        </a>
+        <a routerLink="/analytics" 
+           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
+           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
+          Analytics
+        </a>
+        <a routerLink="/game" 
+           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
+           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
+          Gamification
+        </a>
+      </nav>
+
+      <!-- Right Section with Stats & Actions -->
+      <div class="flex items-center space-x-4">
+        <!-- Nightly Planner Button -->
+        <button (click)="openNightlyPlanner()" 
+                class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium">
+          <span class="text-lg">🌙</span>
+          <span class="hidden md:inline">Nightly Planning</span>
+        </button>
+
+        <!-- Stats Pills (Desktop Only) -->
+        <div class="hidden lg:flex items-center space-x-3">
+          <!-- Level Badge -->
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full flex items-center space-x-2 shadow-md">
+            <span class="text-xs font-bold">LVL {{ gameState().level }}</span>
+          </div>
+          
+          <!-- Streak Badge -->
+          @if (gameState().dailyStreak > 0) {
+            <div class="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1.5 rounded-full flex items-center space-x-1 shadow-md">
+              <span>🔥</span>
+              <span class="text-xs font-bold">{{ gameState().dailyStreak }}</span>
+            </div>
+          }
+          
+          <!-- Points Badge -->
+          <div class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full flex items-center space-x-1 border border-slate-200">
+            <span>⚡</span>
+            <span class="text-xs font-bold">{{ gameState().totalPoints }}</span>
+          </div>
+        </div>
+
+        <!-- Theme Switcher -->
+        <div class="relative">
+          <button (click)="toggleThemeDropdown()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+              </path>
+            </svg>
+          </button>
+          @if (showThemeDropdown) {
+            <div class="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-40 z-50">
+              <button (click)="setTheme('light'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">☀️ Light</button>
+              <button (click)="setTheme('dark'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">🌙 Dark</button>
+              <button (click)="setTheme('auto'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">🔄 Auto</button>
+            </div>
+          }
+        </div>
+
+        <!-- Profile/Menu Button -->
+        <div class="relative">
+          <button (click)="toggleProfileDropdown()" class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md hover:scale-105 transition-transform">
+            {{ getUserInitial() }}
+          </button>
+          @if (showProfileDropdown) {
+            <div class="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-50">
+              <div class="px-4 py-2 border-b border-slate-100">
+                <span class="text-xs text-slate-500 uppercase tracking-wider">Quick Actions</span>
+              </div>
+              <a routerLink="/habits" (click)="closeDropdowns()" class="flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors">
+                <span class="mr-2">➕</span> Add Habit
+              </a>
+              <a routerLink="/templates" (click)="closeDropdowns()" class="flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors">
+                <span class="mr-2">📋</span> Browse Templates
+              </a>
+              <button (click)="exportData(); closeDropdowns()" class="w-full flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors text-left">
+                <span class="mr-2">💾</span> Export Data
+              </button>
+              <div class="border-t border-slate-100 my-1"></div>
+              <a routerLink="/settings" (click)="closeDropdowns()" class="flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors">
+                <span class="mr-2">⚙️</span> Settings
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Stats Bar -->
+    <div class="lg:hidden border-t border-slate-100 py-2">
+      <div class="flex items-center justify-around text-xs">
+        <div class="flex items-center space-x-1">
+          <span class="font-bold text-blue-600">LVL {{ gameState().level }}</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <span>🔥</span>
+          <span class="font-bold text-orange-500">{{ gameState().dailyStreak }}</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <span>⚡</span>
+          <span class="font-bold text-slate-600">{{ gameState().totalPoints }}</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <span>📊</span>
+          <span class="font-bold text-slate-600">{{ getOverallProgress() }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nightly Planner Component -->
+  <app-nightly-planner></app-nightly-planner>
+</nav>

@@ -1,0 +1,154 @@
+// Nightly Planner Component Styles
+
+// Custom slider styling
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, #ef4444 0%, #f59e0b 25%, #10b981 75%, #059669 100%);
+  outline: none;
+  border-radius: 8px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #6366f1;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #6366f1;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+// Modal animations
+.modal-enter {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// Floating button animation
+.floating-button {
+  animation: gentleBob 3s ease-in-out infinite;
+}
+
+@keyframes gentleBob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+// Step progress animations
+.step-indicator {
+  transition: all 0.3s ease;
+}
+
+.step-indicator.active {
+  transform: scale(1.1);
+}
+
+// Form input focus styles
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+// Card hover effects
+.summary-card {
+  transition: all 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+// Mood button hover effects
+.mood-button {
+  transition: all 0.2s ease;
+}
+
+.mood-button:hover {
+  transform: scale(1.05);
+}
+
+// List item animations
+.list-item {
+  animation: listItemSlideIn 0.3s ease-out;
+}
+
+@keyframes listItemSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 640px) {
+  .modal-content {
+    margin: 1rem;
+    max-height: 95vh;
+  }
+  
+  .grid-cols-5 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Dark mode support (if needed later)
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(148, 163, 184, 0.1);
+  }
+}
+
+// Custom scrollbar for modal content
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}

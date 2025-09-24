@@ -1,335 +1,101 @@
-<div class="container mx-auto p-4">
-  <!-- Game Stats Header -->
-  <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content rounded-xl mb-6">
-    <div class="hero-content text-center py-8">
-      <div class="max-w-md">
-        <div class="flex justify-between items-center w-full max-w-md">
-          <div class="text-center">
-            <h1 class="text-4xl font-bold">🎮 {{ title() }}</h1>
-            <p class="text-xl mt-2">Level {{ gameState.level }} Habit Master</p>
-          </div>
-          <div class="flex gap-2">
-            <button (click)="sendEmailReport()" class="btn btn-circle btn-outline" title="Send Email Report">
-              📧
-            </button>
-            <button (click)="toggleSettings()" class="btn btn-circle btn-outline" title="Settings">
-              ⚙️
-            </button>
-          </div>
-        </div>
-        
-        <div class="stats stats-horizontal shadow mt-4 bg-base-100 text-base-content">
-          <div class="stat place-items-center">
-            <div class="stat-title">Points</div>
-            <div class="stat-value text-2xl text-primary">{{ gameState.totalPoints }}</div>
-            <div class="stat-desc">{{ getPointsForNextLevel() }} to next level</div>
-          </div>
-          <div class="stat place-items-center">
-            <div class="stat-title">Daily Streak</div>
-            <div class="stat-value text-2xl text-accent">{{ gameState.dailyStreak }}</div>
-            <div class="stat-desc">🔥 {{ getStreakIcon(gameState.dailyStreak) }}</div>
-          </div>
-          <div class="stat place-items-center">
-            <div class="stat-title">Achievements</div>
-            <div class="stat-value text-2xl text-success">{{ gameState.achievements.length }}</div>
-            <div class="stat-desc">{{ achievements.length - gameState.achievements.length }} remaining</div>
-          </div>
-        </div>
+<!-- Modern App Layout with Silver/Blue Theme -->
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
+  <!-- Glass Morphism Top Navigation -->
+  <app-top-nav></app-top-nav>
 
-        <!-- Level Progress Bar -->
-        <div class="w-full bg-base-200 rounded-full h-2.5 mt-4">
-          <div class="bg-warning h-2.5 rounded-full transition-all duration-300" [style.width.%]="getLevelProgress()"></div>
+  <!-- Main Content Wrapper -->
+  <div class="flex min-h-screen">
+    <!-- Desktop Sidebar Navigation -->
+    <aside class="hidden lg:block w-48 pt-20 pb-20 px-2">
+      <div
+        class="sticky top-24 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-2"
+      >
+        <nav class="space-y-2">
+          <a
+            routerLink="/dashboard"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">📊</span>
+            <span class="font-medium">Dashboard</span>
+          </a>
+          <a
+            routerLink="/habits"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">✅</span>
+            <span class="font-medium">Habits</span>
+          </a>
+          <a
+            routerLink="/calendar"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">📅</span>
+            <span class="font-medium">Calendar</span>
+          </a>
+          <a
+            routerLink="/analytics"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">📈</span>
+            <span class="font-medium">Analytics</span>
+          </a>
+          <a
+            routerLink="/game"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">🎮</span>
+            <span class="font-medium">Gamification</span>
+          </a>
+          <a
+            routerLink="/templates"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">📋</span>
+            <span class="font-medium">Templates</span>
+          </a>
+          <div class="border-t border-slate-200 my-4"></div>
+          <a
+            routerLink="/settings"
+            routerLinkActive="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-all duration-200 group"
+          >
+            <span class="text-xl group-hover:scale-110 transition-transform">⚙️</span>
+            <span class="font-medium">Settings</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 pt-20 pb-20 lg:pb-8 px-1 lg:px-2">
+      <div class="w-full mx-auto">
+        <!-- Glass Card Container for Content -->
+        <div
+          class="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-4 lg:p-6"
+        >
+          <router-outlet></router-outlet>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 
-  <!-- Settings Modal -->
-  <div *ngIf="showSettings" class="modal modal-open">
-    <div class="modal-box w-11/12 max-w-2xl">
-      <h3 class="font-bold text-lg mb-4">⚙️ Settings</h3>
-      
-      <div class="tabs tabs-boxed mb-4">
-        <a class="tab tab-active">📧 Email Configuration</a>
-      </div>
+  <!-- Modern Bottom Navigation for Mobile -->
+  <app-bottom-nav></app-bottom-nav>
 
-      <form class="space-y-4">
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">SMTP Host</span>
-          </label>
-          <input type="text" [(ngModel)]="smtpConfig.host" placeholder="smtp.gmail.com" class="input input-bordered" name="host">
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Port</span>
-            </label>
-            <input type="number" [(ngModel)]="smtpConfig.port" placeholder="587" class="input input-bordered" name="port">
-          </div>
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Secure Connection</span>
-            </label>
-            <input type="checkbox" [(ngModel)]="smtpConfig.secure" class="checkbox" name="secure">
-          </div>
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Username</span>
-          </label>
-          <input type="text" [(ngModel)]="smtpConfig.username" placeholder="your-email@gmail.com" class="input input-bordered" name="username">
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Password / App Password</span>
-          </label>
-          <input type="password" [(ngModel)]="smtpConfig.password" placeholder="••••••••" class="input input-bordered" name="password">
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">From Email</span>
-          </label>
-          <input type="email" [(ngModel)]="smtpConfig.fromEmail" placeholder="your-email@gmail.com" class="input input-bordered" name="fromEmail">
-        </div>
-
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Send Reports To</span>
-          </label>
-          <input type="email" [(ngModel)]="smtpConfig.toEmail" placeholder="recipient@email.com" class="input input-bordered" name="toEmail">
-        </div>
-
-        <div class="alert alert-info">
-          <div class="flex-1">
-            <div class="text-sm">
-              <p><strong>Gmail Users:</strong> Use an App Password instead of your regular password.</p>
-              <p><strong>Note:</strong> Direct SMTP sending requires backend integration. Currently opens email client with pre-filled report.</p>
-            </div>
-          </div>
-        </div>
-      </form>
-
-      <div class="modal-action">
-        <button (click)="saveSMTPConfig()" class="btn btn-primary">Save Settings</button>
-        <button (click)="toggleSettings()" class="btn">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-      
-      <!-- Achievements Banner (if any unlocked) -->
-      <div *ngIf="getUnlockedAchievements().length > 0" class="alert alert-success mb-6">
-        <div class="flex-1">
-          <h3 class="font-bold">🏆 Achievements Unlocked!</h3>
-          <div class="flex gap-2 mt-2">
-            <div *ngFor="let achievement of getUnlockedAchievements()" 
-                 class="badge badge-lg" 
-                 [title]="achievement.description">
-              {{ achievement.icon }} {{ achievement.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Add New Habit -->
-      <div class="form-control mb-6">
-        <label class="label">
-          <span class="label-text font-semibold">Create New Habit</span>
-        </label>
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 gap-2">
-          <input 
-            type="text" 
-            [(ngModel)]="newHabitName"
-            placeholder="Habit name..."
-            class="input input-bordered"
-            (keyup.enter)="addHabit()">
-          
-          <select [(ngModel)]="newHabitType" class="select select-bordered">
-            <option value="good">✨ Build (Good)</option>
-            <option value="bad">🚫 Break (Bad)</option>
-          </select>
-          
-          <select [(ngModel)]="newHabitDifficulty" class="select select-bordered">
-            <option value="easy">🟢 Easy</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="hard">🔴 Hard</option>
-          </select>
-          
-          <input 
-            type="number" 
-            [(ngModel)]="newHabitPoints"
-            placeholder="Points"
-            min="1"
-            max="100"
-            class="input input-bordered">
-          
-          <input 
-            type="number" 
-            [(ngModel)]="newHabitGoal"
-            placeholder="Goal (days)"
-            min="1"
-            max="365"
-            class="input input-bordered">
-          
-          <input 
-            type="text" 
-            [(ngModel)]="newHabitReward"
-            placeholder="Reward..."
-            class="input input-bordered">
-          
-          <button 
-            (click)="addHabit()"
-            class="btn btn-primary">
-            + Add Habit
-          </button>
-        </div>
-      </div>
-
-      <!-- Month Navigation -->
-      <div class="flex justify-between items-center mb-6">
-        <button 
-          (click)="previousMonth()" 
-          class="btn btn-circle btn-outline">
-          ←
-        </button>
-        <h2 class="text-xl font-semibold">{{ getMonthYear() }}</h2>
-        <button 
-          (click)="nextMonth()"
-          class="btn btn-circle btn-outline">
-          →
-        </button>
-      </div>
-
-      <!-- Habit Tracker Grid -->
-      <div class="overflow-x-auto">
-        <table class="table table-compact w-full">
-          <thead>
-            <tr>
-              <th class="sticky left-0 z-10 bg-base-200">Habit</th>
-              <th class="text-center">Streak</th>
-              <th class="text-center">Goal Progress</th>
-              <th class="text-center">Monthly %</th>
-              <th *ngFor="let day of days" class="text-center min-w-[60px]">
-                <div class="text-xs">{{ day.dayName }}</div>
-                <div class="font-bold">{{ day.dayNumber }}</div>
-              </th>
-              <th class="text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let habit of habits" class="hover">
-              <td class="sticky left-0 z-10 bg-base-100 font-medium">
-                <div class="flex flex-col gap-1">
-                  <div class="flex items-center gap-2">
-                    <div [ngClass]="habit.color" class="w-3 h-3 rounded-full"></div>
-                    <span>{{ getHabitTypeIcon(habit.type) }}</span>
-                    <span>{{ habit.name }}</span>
-                  </div>
-                  <div class="text-xs opacity-70">
-                    <span [ngClass]="getDifficultyColor(habit.difficulty)">
-                      {{ habit.difficulty | titlecase }} • {{ habit.points }}pts
-                    </span>
-                    • Goal: {{ habit.goal }} days • Best: {{ habit.bestStreak }} days
-                  </div>
-                  <div class="text-xs opacity-60" *ngIf="habit.reward">
-                    🎁 {{ habit.reward }}
-                  </div>
-                </div>
-              </td>
-              <td class="text-center">
-                <div class="flex flex-col items-center">
-                  <span class="text-lg font-bold">{{ habit.streak }}</span>
-                  <span class="text-xs">{{ getStreakIcon(habit.streak) }}</span>
-                </div>
-              </td>
-              <td class="text-center">
-                <div class="flex flex-col items-center">
-                  <span class="text-sm font-bold" 
-                        [ngClass]="habit.streak >= habit.goal ? 'text-success' : 'text-warning'">
-                    {{ habit.streak }}/{{ habit.goal }}
-                  </span>
-                  <progress class="progress progress-primary w-16 h-1 mt-1" 
-                            [value]="getGoalProgress(habit)"
-                            max="100"></progress>
-                </div>
-              </td>
-              <td class="text-center">
-                <div class="radial-progress text-primary" 
-                     [style.--value]="getCompletionRate(habit.id)"
-                     [style.--size]="'2.5rem'">
-                  <span class="text-xs">{{ getCompletionRate(habit.id) }}%</span>
-                </div>
-              </td>
-              <td *ngFor="let day of days" class="text-center p-1">
-                <select 
-                  class="select select-ghost select-xs w-full max-w-xs text-center text-lg"
-                  [ngModel]="getEntryStatus(habit.id, day.dateString)"
-                  (ngModelChange)="updateEntry(habit.id, day.dateString, $event)">
-                  <option *ngFor="let option of statusOptions" [value]="option.value">
-                    {{ option.icon }}
-                  </option>
-                </select>
-              </td>
-              <td class="text-center">
-                <button 
-                  (click)="removeHabit(habit.id)"
-                  class="btn btn-error btn-sm btn-circle"
-                  title="Remove habit">
-                  ✕
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Game Progress Stats -->
-      <div class="stats stats-vertical lg:stats-horizontal shadow mt-6">
-        <div class="stat">
-          <div class="stat-figure text-primary">
-            <div class="text-3xl">🎯</div>
-          </div>
-          <div class="stat-title">Active Habits</div>
-          <div class="stat-value text-primary">{{ habits.length }}</div>
-          <div class="stat-desc">{{ getGoodHabitsCount() }} building, {{ getBadHabitsCount() }} breaking</div>
-        </div>
-        
-        <div class="stat">
-          <div class="stat-figure text-secondary">
-            <div class="text-3xl">🏆</div>
-          </div>
-          <div class="stat-title">Best Streak</div>
-          <div class="stat-value text-secondary">{{ gameState.longestStreak }}</div>
-          <div class="stat-desc">days in a row</div>
-        </div>
-        
-        <div class="stat">
-          <div class="stat-figure text-accent">
-            <div class="text-3xl">✨</div>
-          </div>
-          <div class="stat-title">Overall Progress</div>
-          <div class="stat-value text-accent">{{ getOverallProgress() }}%</div>
-          <div class="stat-desc">across all habits</div>
-        </div>
-        
-        <div class="stat">
-          <div class="stat-figure text-success">
-            <div class="text-3xl">⚡</div>
-          </div>
-          <div class="stat-title">Total Score</div>
-          <div class="stat-value text-success">{{ gameState.totalPoints }}</div>
-          <div class="stat-desc">points earned</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Decorative Elements -->
+  <div
+    class="fixed -z-10 top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"
+  ></div>
+  <div
+    class="fixed -z-10 top-40 right-10 w-72 h-72 bg-slate-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"
+  ></div>
+  <div
+    class="fixed -z-10 bottom-20 left-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"
+  ></div>
 </div>
-
-<router-outlet />

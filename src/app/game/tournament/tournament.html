@@ -1,0 +1,165 @@
+<div class="space-y-6">
+  <!-- Top 3 Leaderboard -->
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title">🏆 Tournament Leaders</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div *ngFor="let girl of getTopGirls(); let i = index" 
+             class="card bg-gradient-to-br"
+             [ngClass]="i === 0 ? 'from-yellow-400 to-yellow-600' : i === 1 ? 'from-gray-300 to-gray-500' : 'from-orange-400 to-orange-600'">
+          <div class="card-body text-center text-white">
+            <div class="text-4xl">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉' }}</div>
+            <div class="text-3xl">{{ girl.avatar }}</div>
+            <h3 class="font-bold text-xl">{{ girl.name }}</h3>
+            <div class="text-sm">{{ girl.tournamentScore || 0 }} pts</div>
+            <div class="text-xs opacity-90">Level {{ girl.stats?.relationshipLevel || 0 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Participants Grid -->
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="card-title">All Participants</h2>
+        <button (click)="showInteractionForm = true" class="btn btn-primary btn-sm">
+          + Add Interaction
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div *ngFor="let girl of girls" 
+             (click)="selectGirl(girl)"
+             class="card bg-base-200 hover:shadow-lg transition-all cursor-pointer">
+          <div class="card-body p-4">
+            <div class="text-center">
+              <div class="text-4xl mb-2">{{ girl.avatar }}</div>
+              <h3 class="font-bold">{{ girl.name }}</h3>
+              <div class="text-xs opacity-70 mb-2">{{ girl.characteristics?.personality || 'Unknown' }}</div>
+              
+              <!-- Stats -->
+              <div class="flex justify-between text-xs mt-2">
+                <span>Score: {{ girl.tournamentScore || 0 }}</span>
+                <span>{{ getMoodEmoji(girl.stats?.mood || 'neutral') }}</span>
+              </div>
+              
+              <!-- Relationship Progress -->
+              <progress class="progress progress-primary w-full h-2 mt-2" 
+                        [value]="girl.stats?.relationshipLevel || 0" 
+                        max="100"></progress>
+              
+              <!-- Last Interaction -->
+              <div class="text-xs opacity-60 mt-1">
+                {{ getDaysSinceLastInteraction(girl.stats?.lastInteraction || null) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Interaction Modal -->
+  <div *ngIf="showInteractionForm" class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">Add New Interaction</h3>
+      
+      <div class="form-control mb-3">
+        <label class="label">
+          <span class="label-text">Select Person</span>
+        </label>
+        <select [(ngModel)]="newInteraction.girlId" class="select select-bordered w-full">
+          <option value="">Choose...</option>
+          <option *ngFor="let girl of girls" [value]="girl.id">
+            {{ girl.avatar }} {{ girl.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Type</span>
+          </label>
+          <select [(ngModel)]="newInteraction.type" class="select select-bordered">
+            <option value="conversation">💬 Conversation</option>
+            <option value="date">❤️ Date</option>
+            <option value="message">📱 Message</option>
+            <option value="call">📞 Call</option>
+            <option value="gift">🎁 Gift</option>
+            <option value="activity">🎯 Activity</option>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Quality</span>
+          </label>
+          <select [(ngModel)]="newInteraction.quality" class="select select-bordered">
+            <option value="great">Great</option>
+            <option value="good">Good</option>
+            <option value="okay">Okay</option>
+            <option value="poor">Poor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-control mb-3">
+        <label class="label">
+          <span class="label-text">Description</span>
+        </label>
+        <input type="text" [(ngModel)]="newInteraction.description" 
+               placeholder="What happened?" 
+               class="input input-bordered w-full">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Duration (min)</span>
+          </label>
+          <input type="number" [(ngModel)]="newInteraction.duration" 
+                 class="input input-bordered">
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Mood</span>
+          </label>
+          <select [(ngModel)]="newInteraction.mood" class="select select-bordered">
+            <option value="happy">😊 Happy</option>
+            <option value="romantic">💕 Romantic</option>
+            <option value="fun">🎉 Fun</option>
+            <option value="serious">🤔 Serious</option>
+            <option value="awkward">😅 Awkward</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-control mb-3">
+        <label class="label">
+          <span class="label-text">Location (optional)</span>
+        </label>
+        <input type="text" [(ngModel)]="newInteraction.location" 
+               placeholder="Where?" 
+               class="input input-bordered w-full">
+      </div>
+
+      <div class="form-control mb-3">
+        <label class="label">
+          <span class="label-text">Notes (optional)</span>
+        </label>
+        <textarea [(ngModel)]="newInteraction.notes" 
+                  placeholder="Additional notes..." 
+                  class="textarea textarea-bordered w-full"></textarea>
+      </div>
+
+      <div class="modal-action">
+        <button (click)="addInteraction()" class="btn btn-primary">Add Interaction</button>
+        <button (click)="resetInteractionForm()" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>

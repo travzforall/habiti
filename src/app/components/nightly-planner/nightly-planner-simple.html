@@ -1,0 +1,355 @@
+<!-- Simplified Nightly Planner Modal -->
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold">🌙 Nightly Planning</h2>
+            <p class="text-indigo-100 text-sm">Reflect on today and prepare for tomorrow</p>
+          </div>
+          <button (click)="closePlanner()" class="text-white/80 hover:text-white text-2xl">
+            ✕
+          </button>
+        </div>
+        
+        <!-- Progress Steps -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between text-sm">
+            @for (step of [1,2,3,4,5]; track step) {
+              <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                     [class.bg-white]="currentStep() >= step"
+                     [class.text-indigo-600]="currentStep() >= step"
+                     [class.bg-indigo-400]="currentStep() < step"
+                     [class.text-white]="currentStep() < step">
+                  {{ step }}
+                </div>
+                @if (step < 5) {
+                  <div class="w-8 h-0.5 mx-2"
+                       [class.bg-white]="currentStep() > step"
+                       [class.bg-indigo-400]="currentStep() <= step"></div>
+                }
+              </div>
+            }
+          </div>
+          <div class="mt-2 text-center">
+            <span class="text-indigo-100 font-medium">{{ getStepTitle(currentStep()) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-6 overflow-y-auto max-h-[60vh]">
+        
+        <!-- Step 1: Daily Reflection -->
+        @if (currentStep() === 1) {
+          <div class="space-y-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold text-slate-800 mb-2">How was your day?</h3>
+              <p class="text-slate-600">Let's reflect on what happened today</p>
+            </div>
+
+            <!-- Today's Habits Summary -->
+            <div class="bg-slate-50 rounded-xl p-4 mb-6">
+              <h4 class="font-medium text-slate-800 mb-2">📊 Today's Habits</h4>
+              <div class="flex items-center gap-4">
+                <div class="text-2xl font-bold text-green-600">
+                  {{ getTodaysHabitSummary().completed }}/{{ getTodaysHabitSummary().total }}
+                </div>
+                <div class="text-sm text-slate-600">
+                  habits completed today
+                </div>
+              </div>
+            </div>
+
+            <!-- Accomplishments -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                🎉 What did you accomplish today?
+              </label>
+              <div class="space-y-2 mb-3">
+                @for (accomplishment of getAccomplishments(); track $index) {
+                  <div class="flex items-center gap-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg">
+                    <span class="flex-1">{{ accomplishment }}</span>
+                    <button (click)="removeAccomplishment($index)" class="text-green-600 hover:text-green-800">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="flex gap-2">
+                <input [(ngModel)]="newAccomplishment" 
+                       (keyup.enter)="addAccomplishment()"
+                       placeholder="I completed my morning workout..."
+                       class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button (click)="addAccomplishment()" 
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <!-- Challenges -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                💪 What challenges did you face?
+              </label>
+              <div class="space-y-2 mb-3">
+                @for (challenge of getChallenges(); track $index) {
+                  <div class="flex items-center gap-2 bg-orange-50 text-orange-800 px-3 py-2 rounded-lg">
+                    <span class="flex-1">{{ challenge }}</span>
+                    <button (click)="removeChallenge($index)" class="text-orange-600 hover:text-orange-800">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="flex gap-2">
+                <input [(ngModel)]="newChallenge" 
+                       (keyup.enter)="addChallenge()"
+                       placeholder="I struggled with staying focused..."
+                       class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button (click)="addChallenge()" 
+                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <!-- Lessons Learned -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                🧠 What did you learn today?
+              </label>
+              <textarea [(ngModel)]="getLessonsLearned()"
+                        (ngModelChange)="updateLessonsLearned($event)"
+                        placeholder="Today I learned that..."
+                        rows="3"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              </textarea>
+            </div>
+          </div>
+        }
+
+        <!-- Step 2: Gratitude & Mood -->
+        @if (currentStep() === 2) {
+          <div class="space-y-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold text-slate-800 mb-2">Gratitude & Mood</h3>
+              <p class="text-slate-600">Capture the positive moments and how you feel</p>
+            </div>
+
+            <!-- Gratitude -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                🙏 What are you grateful for today?
+              </label>
+              <div class="space-y-2 mb-3">
+                @for (gratitude of getGratitudeEntries(); track $index) {
+                  <div class="flex items-center gap-2 bg-yellow-50 text-yellow-800 px-3 py-2 rounded-lg">
+                    <span class="flex-1">{{ gratitude }}</span>
+                    <button (click)="removeGratitude($index)" class="text-yellow-600 hover:text-yellow-800">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="flex gap-2">
+                <input [(ngModel)]="newGratitude" 
+                       (keyup.enter)="addGratitude()"
+                       placeholder="I'm grateful for my health..."
+                       class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button (click)="addGratitude()" 
+                        class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <!-- Energy Level -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-3">
+                ⚡ How was your energy level today?
+              </label>
+              <div class="bg-slate-50 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm text-slate-600">Very Low</span>
+                  <span class="text-sm font-medium text-slate-800">
+                    {{ getEnergyLevel() }}/10 - {{ getEnergyLevelText(getEnergyLevel()) }}
+                  </span>
+                  <span class="text-sm text-slate-600">Excellent</span>
+                </div>
+                <input type="range" 
+                       min="1" 
+                       max="10" 
+                       [value]="getEnergyLevel()"
+                       (input)="updateEnergyLevel(+$any($event.target).value)"
+                       class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider">
+              </div>
+            </div>
+
+            <!-- Mood -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-3">
+                😊 How are you feeling overall?
+              </label>
+              <div class="grid grid-cols-5 gap-2">
+                @for (mood of [
+                  {value: 'great', emoji: '🌟', label: 'Great'}, 
+                  {value: 'good', emoji: '😊', label: 'Good'}, 
+                  {value: 'okay', emoji: '😐', label: 'Okay'}, 
+                  {value: 'challenging', emoji: '😬', label: 'Challenging'}, 
+                  {value: 'difficult', emoji: '😰', label: 'Difficult'}
+                ]; track mood.value) {
+                  <button (click)="updateMood($any(mood.value))"
+                          class="p-3 rounded-xl border-2 transition-all text-center"
+                          [class.border-indigo-500]="getMood() === mood.value"
+                          [class.bg-indigo-50]="getMood() === mood.value"
+                          [class.border-slate-200]="getMood() !== mood.value">
+                    <div class="text-xl mb-1">{{ mood.emoji }}</div>
+                    <div class="text-xs text-slate-600">{{ mood.label }}</div>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Step 3: Tomorrow's Plan -->
+        @if (currentStep() === 3) {
+          <div class="space-y-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold text-slate-800 mb-2">Tomorrow's Plan</h3>
+              <p class="text-slate-600">Set yourself up for success</p>
+            </div>
+
+            <!-- Top Priorities -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                🎯 What are your top 3-5 priorities for tomorrow?
+              </label>
+              <div class="space-y-2 mb-3">
+                @for (priority of getTopPriorities(); track $index) {
+                  <div class="flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-2 rounded-lg">
+                    <span class="font-medium">{{ $index + 1 }}.</span>
+                    <span class="flex-1">{{ priority }}</span>
+                    <button (click)="removePriority($index)" class="text-blue-600 hover:text-blue-800">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="flex gap-2">
+                <input [(ngModel)]="newPriority" 
+                       (keyup.enter)="addPriority()"
+                       placeholder="Complete the project proposal..."
+                       class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button (click)="addPriority()" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                  Add
+                </button>
+              </div>
+            </div>
+
+            <!-- Focus Area -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                🔍 What's your main focus area for tomorrow?
+              </label>
+              <input [(ngModel)]="getFocusArea()"
+                     (ngModelChange)="updateFocusArea($event)"
+                     placeholder="Deep work on creative projects..."
+                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+
+            <!-- Energy Plan -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                ⚡ How will you manage your energy tomorrow?
+              </label>
+              <textarea [(ngModel)]="getEnergyPlan()"
+                        (ngModelChange)="updateEnergyPlan($event)"
+                        placeholder="Start with my most important task when I'm fresh in the morning..."
+                        rows="3"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              </textarea>
+            </div>
+          </div>
+        }
+
+        <!-- Summary for now -->
+        @if (currentStep() > 3) {
+          <div class="space-y-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold text-slate-800 mb-2">Great Progress!</h3>
+              <p class="text-slate-600">Your nightly plan is taking shape</p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid gap-4">
+              <!-- Reflection Summary -->
+              <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4">
+                <h4 class="font-medium text-slate-800 mb-2">📝 Today's Reflection</h4>
+                <div class="text-sm text-slate-600 space-y-1">
+                  <div>{{ getAccomplishments().length }} accomplishments</div>
+                  <div>{{ getGratitudeEntries().length }} gratitude entries</div>
+                  <div>Energy: {{ getEnergyLevel() }}/10</div>
+                  <div>Mood: {{ getMoodEmoji(getMood()) }} {{ getMood() }}</div>
+                </div>
+              </div>
+
+              <!-- Tomorrow's Plan Summary -->
+              <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4">
+                <h4 class="font-medium text-slate-800 mb-2">🎯 Tomorrow's Plan</h4>
+                <div class="text-sm text-slate-600 space-y-1">
+                  <div>{{ getTopPriorities().length }} priorities set</div>
+                  <div>Focus: {{ getFocusArea() || 'Not specified' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Planning Streak -->
+            <div class="bg-yellow-50 rounded-xl p-4 text-center">
+              <div class="text-2xl font-bold text-yellow-600">{{ getPlanningStreak() }}</div>
+              <div class="text-sm text-yellow-700">day planning streak! 🎉</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-slate-50 px-6 py-4 flex items-center justify-between border-t border-slate-200">
+        <button (click)="previousStep()" 
+                [disabled]="currentStep() === 1"
+                class="px-4 py-2 text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">
+          ← Previous
+        </button>
+        
+        <div class="text-sm text-slate-500">
+          Step {{ currentStep() }} of {{ totalSteps }}
+        </div>
+        
+        @if (currentStep() < totalSteps) {
+          <button (click)="nextStep()" 
+                  [disabled]="!canProceedToNextStep()"
+                  class="px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed">
+            Next →
+          </button>
+        } @else {
+          <button (click)="savePlan()" 
+                  class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+            💾 Save Plan
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Navigation Button - More Obvious -->
+@if (!isOpen()) {
+  <!-- Add to top navigation instead -->
+}

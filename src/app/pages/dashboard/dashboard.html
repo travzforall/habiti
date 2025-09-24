@@ -1,0 +1,638 @@
+<!-- Enhanced Dashboard with Silver/Blue Theme -->
+<div class="space-y-8 px-[25px] py-6">
+  <!-- Today's Habits Section with Sim Character -->
+  <div class="flex flex-col lg:flex-row gap-6">
+    <!-- Left Side - Today's Habits -->
+    <div class="flex-1">
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+              <span class="text-white text-lg">📅</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-slate-800">Today's Habits</h3>
+              <p class="text-sm text-slate-600">Track your daily progress</p>
+            </div>
+          </div>
+          <a routerLink="/habits" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+            View All
+          </a>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          @if (habits().length > 0) {
+            @for (habit of habits(); track habit.id) {
+              <div class="group p-4 rounded-lg bg-slate-50/50 hover:bg-slate-100/80 transition-all duration-200 border border-slate-100">
+                <!-- Header with icon and completion button -->
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full"
+                          [class.bg-green-100]="habit.type === 'good'"
+                          [class.text-green-700]="habit.type === 'good'"
+                          [class.bg-red-100]="habit.type === 'bad'"
+                          [class.text-red-700]="habit.type === 'bad'">
+                      {{ habit.type }}
+                    </span>
+                  </div>
+                  <button (click)="toggleHabitToday(habit.id)"
+                          class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                          [class.bg-green-500]="isHabitCompletedToday(habit.id)"
+                          [class.border-green-500]="isHabitCompletedToday(habit.id)"
+                          [class.border-slate-300]="!isHabitCompletedToday(habit.id)"
+                          [class.hover:border-green-400]="!isHabitCompletedToday(habit.id)">
+                    @if (isHabitCompletedToday(habit.id)) {
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    }
+                  </button>
+                </div>
+                
+                <!-- Habit name -->
+                <h4 class="text-sm font-medium text-slate-800 mb-2 leading-tight"
+                    [class.line-through]="isHabitCompletedToday(habit.id) && habit.type === 'bad'"
+                    [class.text-green-700]="isHabitCompletedToday(habit.id) && habit.type === 'good'">
+                  {{ habit.name }}
+                </h4>
+                
+                <!-- Stats row -->
+                <div class="flex items-center justify-between text-xs text-slate-500">
+                  <div class="flex items-center gap-2">
+                    <span>{{ habit.streak }} day streak</span>
+                    @switch (habit.difficulty) {
+                      @case ('easy') { <span>💚</span> }
+                      @case ('medium') { <span>🟡</span> }
+                      @case ('hard') { <span>🔴</span> }
+                    }
+                  </div>
+                  <div class="text-right">
+                    <div class="text-xs font-bold text-slate-700">+{{ habit.points }} pts</div>
+                  </div>
+                </div>
+                
+                <!-- Category -->
+                <div class="mt-2 text-xs text-slate-400">
+                  {{ habit.category || 'uncategorized' }}
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="text-center py-12">
+              <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                <span class="text-2xl">✨</span>
+              </div>
+              <h4 class="text-lg font-medium text-slate-800 mb-2">No habits yet</h4>
+              <p class="text-slate-600 mb-4">Create your first habit to start tracking your progress</p>
+              <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <span>✨</span>
+                Create First Habit
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side - Sim Character Component -->
+    <div class="flex-shrink-0 self-start">
+      <app-habit-sim></app-habit-sim>
+    </div>
+  </div>
+
+  <!-- Weekly Habit Tracking Table -->
+  <div class="bg-white/70 backdrop-blur-xl rounded-xl border border-slate-200/50 shadow-lg overflow-hidden">
+    <div class="p-6 border-b border-slate-200/50">
+      <h3 class="text-lg font-bold text-slate-800">Weekly Habit Tracker</h3>
+      <p class="text-sm text-slate-600">Track your habits across the week and see points earned</p>
+    </div>
+
+    @if (habits().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <!-- Table Header -->
+          <thead class="bg-slate-50/50">
+            <tr>
+              <th class="text-left p-4 font-medium text-slate-700 border-b border-slate-200/50">
+                Habit
+              </th>
+              @for (day of getWeeklySchedule(); track day.date) {
+                <th class="text-center p-4 font-medium text-slate-700 border-b border-slate-200/50 min-w-[100px]"
+                    [class.bg-blue-50]="day.isToday"
+                    [class.text-blue-700]="day.isToday">
+                  <div class="text-xs">{{ day.dayName }}</div>
+                  <div class="text-sm font-bold">{{ day.dayNumber }}</div>
+                  <div class="text-xs text-slate-500">{{ day.month }}</div>
+                </th>
+              }
+              <th class="text-center p-4 font-medium text-slate-700 border-b border-slate-200/50">
+                Total
+              </th>
+            </tr>
+          </thead>
+
+          <!-- Table Body -->
+          <tbody>
+            @for (habit of habits(); track habit.id) {
+              <tr class="border-b border-slate-100 hover:bg-slate-50/30 transition-colors">
+                <!-- Habit Name Column -->
+                <td class="p-4">
+                  <div class="flex items-center gap-3">
+                    <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                    <div class="min-w-0">
+                      <div class="font-medium text-slate-800 truncate">{{ habit.name }}</div>
+                      <div class="flex items-center gap-2 text-xs text-slate-500">
+                        <span class="px-2 py-1 rounded-full"
+                              [class.bg-green-100]="habit.type === 'good'"
+                              [class.text-green-700]="habit.type === 'good'"
+                              [class.bg-red-100]="habit.type === 'bad'"
+                              [class.text-red-700]="habit.type === 'bad'">
+                          {{ habit.type }}
+                        </span>
+                        <span>{{ habit.points }} pts</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Daily Status Columns -->
+                @for (day of getWeeklySchedule(); track day.date) {
+                  <td class="p-4 text-center"
+                      [class.bg-blue-50]="day.isToday && !isHabitCompletedOnDate(habit.id, day.fullDate)"
+                      [class.bg-green-50]="isHabitCompletedOnDate(habit.id, day.fullDate)">
+                    <div class="flex flex-col items-center gap-1">
+                      <!-- Status Button -->
+                      <button (click)="toggleHabitForDate(habit.id, day.fullDate)"
+                              class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110"
+                              [class.bg-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                              [class.border-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                              [class.text-white]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                              [class.border-slate-300]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
+                              [class.hover:border-green-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)">
+                        @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        } @else {
+                          <span class="text-slate-400 text-xs">○</span>
+                        }
+                      </button>
+
+                      <!-- Points Display -->
+                      <div class="text-xs font-medium"
+                           [class.text-green-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'good'"
+                           [class.text-red-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'bad'"
+                           [class.text-slate-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)">
+                        @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
+                          @if (habit.type === 'good') {
+                            +{{ habit.points }}
+                          } @else {
+                            -{{ habit.points }}
+                          }
+                        } @else {
+                          0
+                        }
+                      </div>
+                    </div>
+                  </td>
+                }
+
+                <!-- Total Points Column -->
+                <td class="p-4 text-center">
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="text-sm font-bold"
+                         [class.text-green-600]="getHabitWeeklyPoints(habit.id) > 0"
+                         [class.text-red-600]="getHabitWeeklyPoints(habit.id) < 0"
+                         [class.text-slate-500]="getHabitWeeklyPoints(habit.id) === 0">
+                      {{ getHabitWeeklyPoints(habit.id) > 0 ? '+' : '' }}{{ getHabitWeeklyPoints(habit.id) }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                      {{ getHabitWeeklyCompletions(habit.id) }}/7
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+
+            <!-- Weekly Totals Row -->
+            <tr class="bg-slate-50/80 font-medium border-t-2 border-slate-200">
+              <td class="p-4 font-bold text-slate-800">
+                Weekly Totals
+              </td>
+              @for (day of getWeeklySchedule(); track day.date) {
+                <td class="p-4 text-center"
+                    [class.bg-blue-100]="day.isToday">
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="text-sm font-bold"
+                         [class.text-green-600]="getDailyTotalPoints(day.fullDate) > 0"
+                         [class.text-red-600]="getDailyTotalPoints(day.fullDate) < 0"
+                         [class.text-slate-500]="getDailyTotalPoints(day.fullDate) === 0">
+                      {{ getDailyTotalPoints(day.fullDate) > 0 ? '+' : '' }}{{ getDailyTotalPoints(day.fullDate) }}
+                    </div>
+                    <div class="text-xs text-slate-500">pts</div>
+                  </div>
+                </td>
+              }
+              <td class="p-4 text-center">
+                <div class="flex flex-col items-center gap-1">
+                  <div class="text-lg font-bold"
+                       [class.text-green-600]="getWeeklyTotalPoints() > 0"
+                       [class.text-red-600]="getWeeklyTotalPoints() < 0"
+                       [class.text-slate-500]="getWeeklyTotalPoints() === 0">
+                    {{ getWeeklyTotalPoints() > 0 ? '+' : '' }}{{ getWeeklyTotalPoints() }}
+                  </div>
+                  <div class="text-xs text-slate-500">total</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="p-8 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+          <span class="text-2xl">📋</span>
+        </div>
+        <h4 class="text-lg font-medium text-slate-800 mb-2">No habits to track</h4>
+        <p class="text-slate-600 mb-4">Create some habits to see your weekly progress table</p>
+        <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+          <span>✨</span>
+          Create First Habit
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- Enhanced Stats Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Total Points Card -->
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">⚡</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-600">Total Points</p>
+          <p class="text-2xl font-bold text-slate-800">{{ gameState().totalPoints }}</p>
+          <p class="text-xs text-slate-500">{{ getPointsForNextLevel() }} to level {{ gameState().level + 1 }}</p>
+        </div>
+      </div>
+      <!-- Progress bar for next level -->
+      <div class="mt-4">
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-500"
+               [style.width.%]="getLevelProgress()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Streak Card -->
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">🔥</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-600">Current Streak</p>
+          <p class="text-2xl font-bold text-slate-800">{{ gameState().dailyStreak }}</p>
+          <p class="text-xs text-slate-500">{{ getStreakDescription(gameState().dailyStreak) }}</p>
+        </div>
+      </div>
+      <!-- Streak milestone indicator -->
+      <div class="mt-4 flex items-center gap-2">
+        <span class="text-lg">{{ getStreakIcon(gameState().dailyStreak) }}</span>
+        <span class="text-sm text-slate-600">{{ getNextStreakMilestone(gameState().dailyStreak) }}</span>
+      </div>
+    </div>
+
+    <!-- Active Habits Card -->
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">🎯</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-600">Active Habits</p>
+          <p class="text-2xl font-bold text-slate-800">{{ habits().length }}</p>
+          <p class="text-xs text-slate-500">{{ getGoodHabitsCount() }} building • {{ getBadHabitsCount() }} breaking</p>
+        </div>
+      </div>
+      <!-- Habit type breakdown -->
+      <div class="mt-4 flex gap-2">
+        <div class="flex-1 bg-green-100 rounded-lg p-2 text-center">
+          <p class="text-xs text-green-700 font-medium">Good</p>
+          <p class="text-sm font-bold text-green-800">{{ getGoodHabitsCount() }}</p>
+        </div>
+        <div class="flex-1 bg-red-100 rounded-lg p-2 text-center">
+          <p class="text-xs text-red-700 font-medium">Bad</p>
+          <p class="text-sm font-bold text-red-800">{{ getBadHabitsCount() }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall Progress Card -->
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">📈</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-600">Today's Progress</p>
+          <p class="text-2xl font-bold text-slate-800">{{ getOverallProgress() }}%</p>
+          <p class="text-xs text-slate-500">{{ getCompletedHabitsToday() }}/{{ habits().length }} completed</p>
+        </div>
+      </div>
+      <!-- Circular progress indicator -->
+      <div class="mt-4 flex items-center justify-center">
+        <div class="relative w-12 h-12">
+          <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+            <path class="text-slate-200" stroke="currentColor" stroke-width="3" fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <path class="text-green-500" stroke="currentColor" stroke-width="3" fill="none"
+                  [attr.stroke-dasharray]="getOverallProgress() + ', 100'"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-xs font-bold text-slate-700">{{ getOverallProgress() }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Today's Habits - Enhanced -->
+    <div class="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <span class="text-white text-lg">📅</span>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-slate-800">Today's Habits</h3>
+            <p class="text-sm text-slate-600">Track your daily progress</p>
+          </div>
+        </div>
+        <a routerLink="/habits" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+          View All
+        </a>
+      </div>
+      
+      <div class="space-y-3 max-h-80 overflow-y-auto">
+        @if (habits().length > 0) {
+          @for (habit of habits(); track habit.id) {
+            <div class="group flex items-center gap-3 p-3 rounded-lg bg-slate-50/50 hover:bg-slate-100/80 transition-all duration-200 border border-slate-100">
+              <button (click)="toggleHabitToday(habit.id)"
+                      class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+                      [class.bg-green-500]="isHabitCompletedToday(habit.id)"
+                      [class.border-green-500]="isHabitCompletedToday(habit.id)"
+                      [class.border-slate-300]="!isHabitCompletedToday(habit.id)"
+                      [class.hover:border-green-400]="!isHabitCompletedToday(habit.id)">
+                @if (isHabitCompletedToday(habit.id)) {
+                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                }
+              </button>
+              
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                  <h4 class="text-sm font-medium text-slate-800 truncate"
+                      [class.line-through]="isHabitCompletedToday(habit.id) && habit.type === 'bad'"
+                      [class.text-green-700]="isHabitCompletedToday(habit.id) && habit.type === 'good'">
+                    {{ habit.name }}
+                  </h4>
+                  <span class="text-xs px-2 py-1 rounded-full"
+                        [class.bg-green-100]="habit.type === 'good'"
+                        [class.text-green-700]="habit.type === 'good'"
+                        [class.bg-red-100]="habit.type === 'bad'"
+                        [class.text-red-700]="habit.type === 'bad'">
+                    {{ habit.type }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-4 mt-1">
+                  <span class="text-xs text-slate-500">{{ habit.streak }} day streak</span>
+                  <span class="text-xs text-slate-500">{{ habit.category || 'uncategorized' }}</span>
+                  <div class="flex items-center gap-1">
+                    @switch (habit.difficulty) {
+                      @case ('easy') { <span class="text-xs">💚 Easy</span> }
+                      @case ('medium') { <span class="text-xs">🟡 Medium</span> }
+                      @case ('hard') { <span class="text-xs">🔴 Hard</span> }
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <div class="text-right">
+                <div class="text-xs font-bold text-slate-700">+{{ habit.points }}</div>
+                <div class="text-xs text-slate-500">pts</div>
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="text-center py-12">
+            <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+              <span class="text-2xl">✨</span>
+            </div>
+            <h4 class="text-lg font-medium text-slate-800 mb-2">No habits yet</h4>
+            <p class="text-slate-600 mb-4">Create your first habit to start tracking your progress</p>
+            <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+              <span>✨</span>
+              Create First Habit
+            </a>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="space-y-6">
+      <!-- Achievements Panel -->
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
+            <span class="text-white text-sm">🏆</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800">Achievements</h3>
+        </div>
+        
+        <div class="space-y-3 max-h-48 overflow-y-auto">
+          @if (getUnlockedAchievements().length > 0) {
+            @for (achievement of getUnlockedAchievements().slice(0, 3); track achievement.id) {
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+                <span class="text-xl">{{ achievement.icon }}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-yellow-800 text-sm">{{ achievement.name }}</div>
+                  <div class="text-xs text-yellow-700 truncate">{{ achievement.description }}</div>
+                </div>
+              </div>
+            }
+            @if (getUnlockedAchievements().length > 3) {
+              <div class="text-center">
+                <a routerLink="/game" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  View all {{ getUnlockedAchievements().length }} achievements
+                </a>
+              </div>
+            }
+          } @else {
+            <div class="text-center py-6">
+              <div class="text-3xl mb-2">🏆</div>
+              <p class="text-sm text-slate-600">Complete habits to unlock achievements!</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Weekly Summary -->
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+            <span class="text-white text-sm">📊</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800">This Week</h3>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Completion Rate</span>
+            <span class="font-bold text-slate-800">{{ getWeeklyCompletionRate() }}%</span>
+          </div>
+          
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Perfect Days</span>
+            <span class="font-bold text-slate-800">{{ getPerfectDaysThisWeek() }}</span>
+          </div>
+          
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Points Earned</span>
+            <span class="font-bold text-slate-800">{{ getPointsThisWeek() }}</span>
+          </div>
+          
+          <!-- Mini weekly chart -->
+          <div class="mt-4">
+            <div class="flex items-end justify-between h-16 gap-1">
+              @for (day of getWeeklyData(); track day.date) {
+                <div class="flex-1 flex flex-col items-center gap-1">
+                  <div class="bg-slate-200 rounded-full flex-1 w-full relative overflow-hidden">
+                    <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-full transition-all duration-500"
+                         [style.height.%]="day.completion"
+                         [title]="day.date + ': ' + day.completion + '%'"></div>
+                  </div>
+                  <span class="text-xs text-slate-500">{{ day.dayName }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Overview -->
+  <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+        <span class="text-white text-lg">📊</span>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-slate-800">Habits by Category</h3>
+        <p class="text-sm text-slate-600">See how your habits are distributed</p>
+      </div>
+    </div>
+    
+    @if (getUniqueCategories().length > 0) {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        @for (category of getUniqueCategories(); track category) {
+          <div class="group p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/80 transition-all duration-200 cursor-pointer border border-slate-100"
+               (click)="filterByCategory(category)">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                   [style.background-color]="getCategoryColor(category)"
+                   [style.color]="'white'">
+                <span class="text-sm">{{ getCategoryIcon(category) }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-slate-800 truncate">{{ getCategoryDisplayName(category) }}</div>
+                <div class="text-xs text-slate-500">{{ getHabitsByCategory(category).length }} habits</div>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Progress</span>
+              <span class="font-bold text-slate-800">
+                {{ getCategoryProgress(category) }}%
+              </span>
+            </div>
+            <!-- Progress bar -->
+            <div class="mt-2 w-full bg-slate-200 rounded-full h-1.5">
+              <div class="h-1.5 rounded-full transition-all duration-500"
+                   [style.background-color]="getCategoryColor(category)"
+                   [style.width.%]="getCategoryProgress(category)"></div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="text-center py-12">
+        <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+          <span class="text-2xl">📊</span>
+        </div>
+        <h4 class="text-lg font-medium text-slate-800 mb-2">No categories yet</h4>
+        <p class="text-slate-600">Start tracking habits to see category breakdowns</p>
+      </div>
+    }
+  </div>
+
+  <!-- Enhanced Quick Actions -->
+  <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-8 border border-slate-200/50">
+    <div class="text-center mb-6">
+      <h3 class="text-2xl font-bold text-slate-800 mb-2">Ready to take action?</h3>
+      <p class="text-slate-600">Choose from these quick shortcuts to enhance your habit journey</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a routerLink="/habits" class="group flex flex-col items-center gap-3 p-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border border-slate-100">
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">✨</span>
+        </div>
+        <div class="text-center">
+          <h4 class="font-semibold text-slate-800">Add New Habit</h4>
+          <p class="text-sm text-slate-600">Create a custom habit</p>
+        </div>
+      </a>
+      
+      <a routerLink="/templates" class="group flex flex-col items-center gap-3 p-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border border-slate-100">
+        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">📋</span>
+        </div>
+        <div class="text-center">
+          <h4 class="font-semibold text-slate-800">Browse Templates</h4>
+          <p class="text-sm text-slate-600">Discover habit ideas</p>
+        </div>
+      </a>
+      
+      <a routerLink="/analytics" class="group flex flex-col items-center gap-3 p-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border border-slate-100">
+        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">📈</span>
+        </div>
+        <div class="text-center">
+          <h4 class="font-semibold text-slate-800">View Analytics</h4>
+          <p class="text-sm text-slate-600">Analyze your progress</p>
+        </div>
+      </a>
+      
+      <a routerLink="/calendar" class="group flex flex-col items-center gap-3 p-6 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border border-slate-100">
+        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+          <span class="text-white text-xl">📅</span>
+        </div>
+        <div class="text-center">
+          <h4 class="font-semibold text-slate-800">Open Calendar</h4>
+          <p class="text-sm text-slate-600">Track daily completion</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+

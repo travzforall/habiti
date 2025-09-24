@@ -1,0 +1,199 @@
+<div class="space-y-6">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="card-title">📅 Date Planner</h2>
+        <button (click)="showDatePlanForm = !showDatePlanForm" class="btn btn-primary">
+          {{ showDatePlanForm ? 'Cancel' : 'Plan New Date' }}
+        </button>
+      </div>
+
+      <!-- New Date Plan Form -->
+      <div *ngIf="showDatePlanForm" class="card bg-base-200 mb-6">
+        <div class="card-body">
+          <h3 class="font-bold text-lg mb-4">Plan a New Date</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Girl</span>
+              </label>
+              <select [(ngModel)]="newDatePlan.girlId" class="select select-bordered">
+                <option value="">Select a girl</option>
+                <option *ngFor="let girl of girls" [value]="girl.id">{{ girl.name }}</option>
+              </select>
+            </div>
+            
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Date Title</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.title" type="text" class="input input-bordered" placeholder="e.g., Coffee & Walk">
+            </div>
+
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text">Description</span>
+              </label>
+              <textarea [(ngModel)]="newDatePlan.description" class="textarea textarea-bordered" placeholder="What's the plan?"></textarea>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Location</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.location" type="text" class="input input-bordered" placeholder="Where will you meet?">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Date</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.date" type="date" class="input input-bordered">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Time</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.time" type="time" class="input input-bordered">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Duration (minutes)</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.duration" type="number" class="input input-bordered" min="30" step="30">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Budget ($)</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.budget" type="number" class="input input-bordered" min="0" step="10">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Outfit Plan</span>
+              </label>
+              <input [(ngModel)]="newDatePlan.outfit" type="text" class="input input-bordered" placeholder="What will you wear?">
+            </div>
+
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text">Backup Plan</span>
+              </label>
+              <textarea [(ngModel)]="newDatePlan.backupPlan" class="textarea textarea-bordered" placeholder="If things don't go as planned..."></textarea>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button (click)="resetDatePlanForm()" class="btn btn-ghost">Cancel</button>
+            <button (click)="addDatePlan()" class="btn btn-primary" [disabled]="!newDatePlan.girlId || !newDatePlan.title">
+              Create Date Plan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Dates -->
+      <div *ngIf="getUpcomingDates().length > 0">
+        <h3 class="font-bold text-lg mb-4">🗓️ Upcoming Dates</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div *ngFor="let plan of getUpcomingDates()" class="card bg-base-200">
+            <div class="card-body">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h4 class="font-bold">{{ plan.title }}</h4>
+                  <p class="text-sm opacity-70">with {{ tournamentService.getGirlById(plan.girlId)?.name }}</p>
+                  <div class="space-y-1 mt-2">
+                    <div class="flex items-center gap-2 text-sm">
+                      <span>📍</span>
+                      <span>{{ plan.location }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span>📅</span>
+                      <span>{{ formatDate(plan.date) }} at {{ plan.time }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span>⏱️</span>
+                      <span>{{ plan.duration }} minutes</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <span>💰</span>
+                      <span>${{ plan.budget }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="dropdown dropdown-end">
+                  <div tabindex="0" role="button" class="btn btn-ghost btn-sm">⋮</div>
+                  <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                    <li><a (click)="completeDatePlan(plan.id)">Mark as Completed</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Date Plans -->
+      <div *ngIf="datePlans.length > 0">
+        <h3 class="font-bold text-lg mb-4">📋 All Date Plans</h3>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Girl</th>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let plan of datePlans">
+                <td>{{ formatDate(plan.date) }}</td>
+                <td>{{ tournamentService.getGirlById(plan.girlId)?.name }}</td>
+                <td>{{ plan.title }}</td>
+                <td>{{ plan.location }}</td>
+                <td>
+                  <div class="badge" [ngClass]="{
+                    'badge-warning': plan.status === 'planned',
+                    'badge-info': plan.status === 'in-progress',
+                    'badge-success': plan.status === 'completed',
+                    'badge-error': plan.status === 'cancelled'
+                  }">
+                    {{ plan.status }}
+                  </div>
+                </td>
+                <td>
+                  <div *ngIf="plan.rating" class="rating rating-sm">
+                    <span *ngFor="let i of [1,2,3,4,5]" 
+                          class="mask mask-star-2"
+                          [ngClass]="i <= plan.rating ? 'bg-orange-400' : 'bg-gray-300'">
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <button *ngIf="plan.status === 'planned'" 
+                          (click)="completeDatePlan(plan.id)" 
+                          class="btn btn-xs btn-success">
+                    Complete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="datePlans.length === 0" class="text-center py-8">
+        <p class="text-lg opacity-60">No date plans yet</p>
+        <p class="text-sm opacity-40">Create your first date plan to get started</p>
+      </div>
+    </div>
+  </div>
+</div>

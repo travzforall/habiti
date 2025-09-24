@@ -1,0 +1,269 @@
+<div class="space-y-6">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="card-title">🎯 Challenges</h2>
+        <button (click)="showCreateChallenge = !showCreateChallenge" class="btn btn-primary">
+          {{ showCreateChallenge ? 'Cancel' : 'Create Challenge' }}
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats stats-horizontal shadow mb-6">
+        <div class="stat">
+          <div class="stat-title">Total Points</div>
+          <div class="stat-value text-success">{{ getTotalPoints() }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Completed</div>
+          <div class="stat-value">{{ completedChallenges.length }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Active</div>
+          <div class="stat-value text-info">{{ activeChallenges.length }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Success Rate</div>
+          <div class="stat-value">{{ getCompletionRate() }}%</div>
+        </div>
+      </div>
+
+      <!-- Create Challenge Form -->
+      <div *ngIf="showCreateChallenge" class="card bg-base-200 mb-6">
+        <div class="card-body">
+          <h3 class="font-bold text-lg mb-4">Create Custom Challenge</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text">Challenge Title</span>
+              </label>
+              <input [(ngModel)]="newChallenge.title" type="text" class="input input-bordered" placeholder="What's the challenge?">
+            </div>
+
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text">Description</span>
+              </label>
+              <textarea [(ngModel)]="newChallenge.description" class="textarea textarea-bordered" placeholder="Describe the challenge in detail..." rows="3"></textarea>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Category</span>
+              </label>
+              <select [(ngModel)]="newChallenge.category" class="select select-bordered">
+                <option value="social">👥 Social</option>
+                <option value="confidence">💪 Confidence</option>
+                <option value="skill">🎯 Skill</option>
+                <option value="lifestyle">✨ Lifestyle</option>
+                <option value="fitness">🏃‍♂️ Fitness</option>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Difficulty</span>
+              </label>
+              <select [(ngModel)]="newChallenge.difficulty" class="select select-bordered">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Points Reward</span>
+              </label>
+              <input [(ngModel)]="newChallenge.points" type="number" class="input input-bordered" min="10" step="10">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Time Limit (hours, optional)</span>
+              </label>
+              <input [(ngModel)]="newChallenge.timeLimit" type="number" class="input input-bordered" min="0" placeholder="0 for no limit">
+            </div>
+
+            <div class="form-control md:col-span-2">
+              <label class="label">
+                <span class="label-text">Requirements</span>
+              </label>
+              <div class="flex flex-wrap gap-2 mb-2">
+                <div *ngFor="let req of newChallenge.requirements; let i = index" class="badge badge-outline gap-2">
+                  {{ req }}
+                  <button (click)="removeRequirement(i)" class="btn btn-xs btn-circle">×</button>
+                </div>
+              </div>
+              <input #reqInput type="text" class="input input-bordered" placeholder="Add a requirement and press Enter" 
+                     (keydown.enter)="addRequirement(reqInput.value); reqInput.value = ''">
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button (click)="resetCreateForm()" class="btn btn-ghost">Cancel</button>
+            <button (click)="createCustomChallenge()" class="btn btn-primary" [disabled]="!newChallenge.title.trim()">
+              Create Challenge
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Challenges -->
+      <div *ngIf="activeChallenges.length > 0">
+        <h3 class="font-bold text-lg mb-4">🔥 Active Challenges</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div *ngFor="let challenge of activeChallenges" class="card bg-gradient-to-r from-blue-100 to-blue-200 border-2 border-blue-300">
+            <div class="card-body">
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                  <span>{{ getCategoryIcon(challenge.category) }}</span>
+                  <h4 class="font-bold">{{ challenge.title }}</h4>
+                </div>
+                <div class="flex gap-1">
+                  <div class="badge {{ getDifficultyColor(challenge.difficulty) }} badge-sm">{{ challenge.difficulty }}</div>
+                  <div class="badge badge-info badge-sm">{{ challenge.points }}pts</div>
+                </div>
+              </div>
+              
+              <p class="text-sm opacity-80 mb-3">{{ challenge.description }}</p>
+              
+              <div *ngIf="challenge.timeLimit" class="text-xs text-error mb-2">
+                ⏰ {{ getTimeRemaining(challenge) }}
+              </div>
+
+              <div *ngIf="challenge.requirements" class="mb-3">
+                <div class="text-xs font-semibold mb-1">Requirements:</div>
+                <ul class="text-xs space-y-1">
+                  <li *ngFor="let req of challenge.requirements" class="flex items-center gap-1">
+                    <span>•</span>
+                    <span>{{ req }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="flex gap-2">
+                <button (click)="completeChallenge(challenge)" class="btn btn-xs btn-success">Complete</button>
+                <button (click)="failChallenge(challenge)" class="btn btn-xs btn-error">Failed</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available Challenges -->
+      <div>
+        <h3 class="font-bold text-lg mb-4">📋 Available Challenges</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div *ngFor="let challenge of getAvailableChallenges()" class="card bg-base-200 hover:shadow-lg transition-all">
+            <div class="card-body">
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                  <span>{{ getCategoryIcon(challenge.category) }}</span>
+                  <h4 class="font-bold">{{ challenge.title }}</h4>
+                </div>
+                <div class="flex gap-1">
+                  <div class="badge {{ getDifficultyColor(challenge.difficulty) }} badge-sm">{{ challenge.difficulty }}</div>
+                  <div class="badge badge-outline badge-sm">{{ challenge.points }}pts</div>
+                </div>
+              </div>
+              
+              <p class="text-sm opacity-70 mb-3">{{ challenge.description }}</p>
+              
+              <div *ngIf="challenge.timeLimit" class="text-xs opacity-60 mb-2">
+                ⏱️ {{ challenge.timeLimit }}h time limit
+              </div>
+
+              <div *ngIf="challenge.requirements" class="mb-3">
+                <div class="text-xs font-semibold mb-1">Requirements:</div>
+                <ul class="text-xs space-y-1">
+                  <li *ngFor="let req of challenge.requirements" class="flex items-center gap-1">
+                    <span>•</span>
+                    <span>{{ req }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div *ngIf="challenge.reward" class="text-xs text-warning mb-2">
+                🏆 Reward: {{ challenge.reward }}
+              </div>
+
+              <button (click)="startChallenge(challenge)" class="btn btn-sm btn-primary w-full">
+                Start Challenge
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Challenges -->
+      <div *ngIf="completedChallenges.length > 0">
+        <h3 class="font-bold text-lg mb-4">✅ Completed Challenges</h3>
+        <div class="space-y-2">
+          <div *ngFor="let challenge of completedChallenges" class="card bg-gradient-to-r from-green-100 to-green-200 border border-green-300">
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span>{{ getCategoryIcon(challenge.category) }}</span>
+                    <h4 class="font-bold">{{ challenge.title }}</h4>
+                    <div class="badge badge-success badge-sm">+{{ challenge.points }}pts</div>
+                  </div>
+                  
+                  <p class="text-sm opacity-70">{{ challenge.description }}</p>
+                  
+                  <div class="text-xs opacity-60 mt-2">
+                    Completed: {{ challenge.completionDate | date:'short' }}
+                  </div>
+                  
+                  <div *ngIf="challenge.notes" class="text-xs mt-1">
+                    <span class="font-semibold">Notes:</span> {{ challenge.notes }}
+                  </div>
+                </div>
+                
+                <button (click)="resetChallenge(challenge)" class="btn btn-xs btn-outline">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failed Challenges -->
+      <div *ngIf="getFailedChallenges().length > 0">
+        <h3 class="font-bold text-lg mb-4 mt-6">❌ Failed Challenges</h3>
+        <div class="space-y-2">
+          <div *ngFor="let challenge of getFailedChallenges()" class="card bg-gradient-to-r from-red-100 to-red-200 border border-red-300">
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span>{{ getCategoryIcon(challenge.category) }}</span>
+                    <h4 class="font-bold">{{ challenge.title }}</h4>
+                    <div class="badge badge-error badge-sm">Failed</div>
+                  </div>
+                  
+                  <p class="text-sm opacity-70">{{ challenge.description }}</p>
+                  
+                  <div *ngIf="challenge.notes" class="text-xs mt-1">
+                    <span class="font-semibold">Notes:</span> {{ challenge.notes }}
+                  </div>
+                </div>
+                
+                <button (click)="resetChallenge(challenge)" class="btn btn-xs btn-outline">
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="challenges.length === 0" class="text-center py-8">
+        <p class="text-lg opacity-60">No challenges available</p>
+        <p class="text-sm opacity-40">Create your first challenge to start building social skills</p>
+      </div>
+    </div>
+  </div>
+</div>

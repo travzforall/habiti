@@ -1,0 +1,98 @@
+<!-- Modern Mobile Bottom Navigation with Silver/Blue Theme -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+  <div class="grid grid-cols-5 h-16">
+    <!-- Dashboard -->
+    <a routerLink="/dashboard" 
+       routerLinkActive="text-blue-600"
+       class="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-500 transition-colors relative group">
+      <span class="text-xl group-hover:scale-110 transition-transform"
+            [class.text-blue-600]="isActive('/dashboard')">📊</span>
+      <span class="text-[10px] font-medium"
+            [class.text-blue-600]="isActive('/dashboard')">Home</span>
+      @if (isActive('/dashboard')) {
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
+      }
+    </a>
+
+    <!-- Habits -->
+    <a routerLink="/habits" 
+       routerLinkActive="text-blue-600"
+       class="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-500 transition-colors relative group">
+      <div class="relative">
+        <span class="text-xl group-hover:scale-110 transition-transform"
+              [class.text-blue-600]="isActive('/habits')">✅</span>
+        @if (habits().length > 0) {
+          <div class="absolute -top-1 -right-1 bg-blue-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+            {{ habits().length }}
+          </div>
+        }
+      </div>
+      <span class="text-[10px] font-medium"
+            [class.text-blue-600]="isActive('/habits')">Habits</span>
+      @if (isActive('/habits')) {
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
+      }
+    </a>
+
+    <!-- Quick Add (Center) - Floating Button -->
+    <div class="relative flex items-center justify-center">
+      <button (click)="toggleQuickAdd()" 
+              class="absolute -top-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-105 transition-all duration-200 hover:shadow-2xl">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v12m6-6H6"></path>
+        </svg>
+      </button>
+      
+      <!-- Quick Add Menu -->
+      @if (showQuickAdd) {
+        <div class="absolute bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-2xl p-3 w-48 border border-slate-100">
+          <a routerLink="/habits" (click)="toggleQuickAdd()" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
+            <span class="text-lg">✨</span>
+            <span class="text-sm font-medium text-slate-700">New Habit</span>
+          </a>
+          <a routerLink="/templates" (click)="toggleQuickAdd()" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
+            <span class="text-lg">📋</span>
+            <span class="text-sm font-medium text-slate-700">From Template</span>
+          </a>
+          <button (click)="quickMarkHabit()" class="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
+            <span class="text-lg">✓</span>
+            <span class="text-sm font-medium text-slate-700">Quick Complete</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Calendar -->
+    <a routerLink="/calendar" 
+       routerLinkActive="text-blue-600"
+       class="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-500 transition-colors relative group">
+      <span class="text-xl group-hover:scale-110 transition-transform"
+            [class.text-blue-600]="isActive('/calendar')">📅</span>
+      <span class="text-[10px] font-medium"
+            [class.text-blue-600]="isActive('/calendar')">Calendar</span>
+      @if (isActive('/calendar')) {
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
+      }
+    </a>
+
+    <!-- Stats -->
+    <a routerLink="/analytics" 
+       routerLinkActive="text-blue-600"
+       class="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-500 transition-colors relative group">
+      <div class="relative">
+        <span class="text-xl group-hover:scale-110 transition-transform"
+              [class.text-blue-600]="isActive('/analytics')">📈</span>
+        @if (getOverallProgress() > 0) {
+          <div class="absolute -top-1 -right-1 bg-green-500 text-white text-[9px] rounded-full px-1 font-bold">
+            {{ getOverallProgress() }}%
+          </div>
+        }
+      </div>
+      <span class="text-[10px] font-medium"
+            [class.text-blue-600]="isActive('/analytics')">Stats</span>
+      @if (isActive('/analytics')) {
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
+      }
+    </a>
+  </div>
+</nav>

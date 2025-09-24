@@ -1,0 +1,482 @@
+<!-- Enhanced Habit Calendar with Detailed Features -->
+<div class="space-y-6">
+  <!-- Calendar Header with Advanced Controls -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800 mb-2">📅 Habit Calendar</h1>
+      <p class="text-slate-600">Track your daily progress and visualize your habit patterns</p>
+    </div>
+    
+    <!-- Month Navigation & Controls -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <button (click)="previousMonth()" 
+              class="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </button>
+      
+      <div class="text-center min-w-[140px]">
+        <h2 class="text-xl font-bold text-slate-800">{{ getCurrentMonthYear() }}</h2>
+        <p class="text-sm text-slate-500">{{ getTotalDaysInMonth() }} days • {{ getCompletedDaysInMonth() }} completed</p>
+      </div>
+      
+      <button (click)="nextMonth()" 
+              class="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      
+      <button (click)="goToToday()" 
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+        Today
+      </button>
+
+      <!-- View Mode Toggle -->
+      <div class="flex bg-slate-100 rounded-lg p-1">
+        <button (click)="setViewMode('overview')"
+                [class.bg-white]="viewMode === 'overview'"
+                [class.shadow-sm]="viewMode === 'overview'"
+                class="px-3 py-1 text-sm rounded-md transition-all">
+          Overview
+        </button>
+        <button (click)="setViewMode('detailed')"
+                [class.bg-white]="viewMode === 'detailed'"
+                [class.shadow-sm]="viewMode === 'detailed'"
+                class="px-3 py-1 text-sm rounded-md transition-all">
+          Detailed
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Stats Grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span class="text-blue-600">📊</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-600">This Month</p>
+          <p class="text-xl font-bold text-slate-800">{{ getMonthProgress() }}%</p>
+          <p class="text-xs text-slate-500">{{ getCompletedDaysInMonth() }}/{{ getTotalDaysInMonth() }} days</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+          <span class="text-orange-600">🔥</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-600">Current Streak</p>
+          <p class="text-xl font-bold text-slate-800">{{ getCurrentStreak() }}</p>
+          <p class="text-xs text-slate-500">Best: {{ getBestStreak() }} days</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+          <span class="text-green-600">✅</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-600">Perfect Days</p>
+          <p class="text-xl font-bold text-slate-800">{{ getPerfectDays() }}</p>
+          <p class="text-xs text-slate-500">{{ getPerfectDaysPercentage() }}% of month</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+          <span class="text-purple-600">🎯</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-600">Active Habits</p>
+          <p class="text-xl font-bold text-slate-800">{{ habits().length }}</p>
+          <p class="text-xs text-slate-500">{{ getGoodHabitsCount() }} good • {{ getBadHabitsCount() }} bad</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <span class="text-yellow-600">⚡</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-600">Avg Completion</p>
+          <p class="text-xl font-bold text-slate-800">{{ getAverageCompletion() }}%</p>
+          <p class="text-xs text-slate-500">Last 7 days</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Habit Filters -->
+  @if (habits().length > 0) {
+    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="text-sm font-medium text-slate-700">Filter habits:</span>
+        <button (click)="toggleFilter('all')"
+                [class.bg-blue-500]="activeFilter === 'all'"
+                [class.text-white]="activeFilter === 'all'"
+                [class.bg-slate-100]="activeFilter !== 'all'"
+                class="px-3 py-1 text-sm rounded-lg transition-colors">
+          All ({{ habits().length }})
+        </button>
+        <button (click)="toggleFilter('good')"
+                [class.bg-green-500]="activeFilter === 'good'"
+                [class.text-white]="activeFilter === 'good'"
+                [class.bg-slate-100]="activeFilter !== 'good'"
+                class="px-3 py-1 text-sm rounded-lg transition-colors">
+          Good ({{ getGoodHabitsCount() }})
+        </button>
+        <button (click)="toggleFilter('bad')"
+                [class.bg-red-500]="activeFilter === 'bad'"
+                [class.text-white]="activeFilter === 'bad'"
+                [class.bg-slate-100]="activeFilter !== 'bad'"
+                class="px-3 py-1 text-sm rounded-lg transition-colors">
+          Bad ({{ getBadHabitsCount() }})
+        </button>
+        @for (category of getUniqueCategories(); track category) {
+          <button (click)="toggleFilter(category)"
+                  [class.bg-purple-500]="activeFilter === category"
+                  [class.text-white]="activeFilter === category"
+                  [class.bg-slate-100]="activeFilter !== category"
+                  class="px-3 py-1 text-sm rounded-lg transition-colors">
+            {{ getCategoryDisplayName(category) }} ({{ getHabitsInCategory(category).length }})
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Calendar Grid -->
+  <div class="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-200/50 overflow-hidden">
+    <!-- Calendar Header with Days -->
+    <div class="grid grid-cols-7 border-b border-slate-200/50">
+      <div *ngFor="let day of dayNames" 
+           class="p-4 text-center font-semibold text-slate-600 bg-slate-50/50 text-sm">
+        {{ day }}
+      </div>
+    </div>
+
+    <!-- Calendar Body -->
+    <div class="grid grid-cols-7">
+      <div *ngFor="let day of calendarDays; trackBy: trackByDate" 
+           class="border-r border-b border-slate-100/50 p-2 relative group hover:bg-slate-50/30 transition-colors cursor-pointer"
+           [class.bg-slate-50/20]="!day.isCurrentMonth"
+           [class.bg-blue-50/30]="day.isToday"
+           [class.border-blue-300]="day.isToday"
+           [style.min-height]="viewMode === 'detailed' ? '160px' : '120px'"
+           (click)="openDayDetails(day.date)">
+        
+        <!-- Date Header -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium"
+                  [class.text-slate-400]="!day.isCurrentMonth"
+                  [class.text-blue-600]="day.isToday"
+                  [class.text-slate-700]="day.isCurrentMonth && !day.isToday">
+              {{ day.date.getDate() }}
+            </span>
+            
+            <!-- Day streak indicator -->
+            @if (getDayStreakInfo(day.date).hasStreak && day.isCurrentMonth) {
+              <div class="flex items-center gap-1">
+                <span class="text-orange-500 text-xs">🔥</span>
+                <span class="text-xs font-bold text-orange-500">{{ getDayStreakInfo(day.date).streakLength }}</span>
+              </div>
+            }
+          </div>
+          
+          <!-- Progress Indicator -->
+          <div class="flex items-center gap-1">
+            @if (getDayProgress(day.date) > 0) {
+              <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold relative"
+                   [class.bg-green-500]="getDayProgress(day.date) === 100"
+                   [class.text-white]="getDayProgress(day.date) === 100"
+                   [class.bg-yellow-400]="getDayProgress(day.date) > 50 && getDayProgress(day.date) < 100"
+                   [class.text-white]="getDayProgress(day.date) > 50 && getDayProgress(day.date) < 100"
+                   [class.bg-orange-300]="getDayProgress(day.date) <= 50"
+                   [class.text-white]="getDayProgress(day.date) <= 50"
+                   [title]="'Progress: ' + getDayProgress(day.date) + '%'">
+                {{ getDayProgress(day.date) }}%
+                
+                <!-- Perfect day crown -->
+                @if (getDayProgress(day.date) === 100) {
+                  <div class="absolute -top-1 -right-1 text-yellow-400 text-xs">👑</div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Habit List -->
+        <div class="space-y-1">
+          @for (habit of getFilteredHabits(); track habit.id) {
+            <div class="flex items-center gap-2 p-1 rounded text-xs hover:bg-white/50 transition-colors group/habit"
+                 (click)="toggleHabitForDate(habit.id, day.date); $event.stopPropagation()"
+                 [title]="getHabitTooltip(habit, day.date)">
+              
+              <!-- Habit Status Indicator -->
+              <div class="relative">
+                <div class="w-3 h-3 rounded-full border-2 transition-all"
+                     [class.bg-green-500]="isHabitCompletedOnDate(habit.id, day.date)"
+                     [class.border-green-500]="isHabitCompletedOnDate(habit.id, day.date)"
+                     [class.border-slate-300]="!isHabitCompletedOnDate(habit.id, day.date)"
+                     [class.bg-white]="!isHabitCompletedOnDate(habit.id, day.date)"
+                     [class.shadow-sm]="isHabitCompletedOnDate(habit.id, day.date)">
+                </div>
+                
+                <!-- Streak indicator for individual habits -->
+                @if (getHabitStreakForDate(habit.id, day.date) > 3) {
+                  <div class="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+                }
+              </div>
+              
+              <!-- Habit Name with Category Color -->
+              <div class="flex-1 truncate flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full"
+                      [style.background-color]="getCategoryColor(habit.category || 'other')"></span>
+                <span class="truncate transition-all"
+                      [class.line-through]="isHabitCompletedOnDate(habit.id, day.date) && habit.type === 'bad'"
+                      [class.text-green-700]="isHabitCompletedOnDate(habit.id, day.date) && habit.type === 'good'"
+                      [class.text-red-700]="isHabitCompletedOnDate(habit.id, day.date) && habit.type === 'bad'"
+                      [class.font-medium]="isHabitCompletedOnDate(habit.id, day.date)"
+                      [class.text-slate-600]="!isHabitCompletedOnDate(habit.id, day.date)">
+                  {{ viewMode === 'detailed' ? habit.name : getShortHabitName(habit.name) }}
+                </span>
+              </div>
+
+              <!-- Difficulty indicator -->
+              @if (viewMode === 'detailed') {
+                <div class="text-xs opacity-60">
+                  @switch (habit.difficulty) {
+                    @case ('easy') { 💚 }
+                    @case ('medium') { 🟡 }
+                    @case ('hard') { 🔴 }
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Day Summary (detailed view) -->
+        @if (viewMode === 'detailed' && day.isCurrentMonth) {
+          <div class="mt-2 pt-2 border-t border-slate-200/50">
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span>{{ getCompletedHabitsForDay(day.date) }}/{{ getFilteredHabits().length }}</span>
+              @if (getDayMood(day.date)) {
+                <span>{{ getDayMoodEmoji(day.date) }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Empty State for Days with No Habits -->
+        @if (getFilteredHabits().length === 0 && day.isCurrentMonth) {
+          <div class="text-center text-slate-400 text-xs mt-4">
+            <p>No habits</p>
+          </div>
+        }
+
+        <!-- Hover overlay for better interaction feedback -->
+        <div class="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Legend -->
+  <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50">
+    <h3 class="font-semibold text-slate-800 mb-4">Legend & Tips</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="space-y-3">
+        <h4 class="text-sm font-medium text-slate-700">Progress</h4>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 bg-green-500 rounded-full relative">
+            <div class="absolute -top-1 -right-1 text-yellow-400 text-xs">👑</div>
+          </div>
+          <span class="text-sm text-slate-600">Perfect Day (100%)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 bg-yellow-400 rounded-full"></div>
+          <span class="text-sm text-slate-600">Good Progress (50-99%)</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 bg-orange-300 rounded-full"></div>
+          <span class="text-sm text-slate-600">Needs Work (1-49%)</span>
+        </div>
+      </div>
+      
+      <div class="space-y-3">
+        <h4 class="text-sm font-medium text-slate-700">Habits</h4>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+          <span class="text-sm text-slate-600">Completed</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 border-2 border-slate-300 bg-white rounded-full"></div>
+          <span class="text-sm text-slate-600">Not Completed</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-4 h-4 bg-green-500 rounded-full relative">
+            <div class="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"></div>
+          </div>
+          <span class="text-sm text-slate-600">On Streak (3+ days)</span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h4 class="text-sm font-medium text-slate-700">Difficulty</h4>
+        <div class="flex items-center gap-3">
+          <span>💚</span>
+          <span class="text-sm text-slate-600">Easy</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span>🟡</span>
+          <span class="text-sm text-slate-600">Medium</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span>🔴</span>
+          <span class="text-sm text-slate-600">Hard</span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h4 class="text-sm font-medium text-slate-700">Special</h4>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-blue-100 border border-blue-300 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">{{ getTodayDate() }}</div>
+          <span class="text-sm text-slate-600">Today</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-orange-500 text-sm">🔥</span>
+          <span class="text-sm text-slate-600">Streak Counter</span>
+        </div>
+        <div class="text-xs text-slate-500 mt-2">
+          💡 Click on any day to see detailed view and add notes
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Details Modal -->
+  @if (selectedDay) {
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="closeDayDetails()">
+      <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-slate-800">
+            {{ formatDateFull(selectedDay) }}
+          </h3>
+          <button (click)="closeDayDetails()" class="p-2 hover:bg-slate-100 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Day Progress Overview -->
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-medium text-slate-700">Progress Overview</span>
+            <span class="text-2xl font-bold text-slate-800">{{ getDayProgress(selectedDay) }}%</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all"
+                 [style.width.%]="getDayProgress(selectedDay)"></div>
+          </div>
+          <div class="flex justify-between text-sm text-slate-600 mt-2">
+            <span>{{ getCompletedHabitsForDay(selectedDay) }} completed</span>
+            <span>{{ habits().length - getCompletedHabitsForDay(selectedDay) }} remaining</span>
+          </div>
+        </div>
+
+        <!-- Detailed Habit List -->
+        <div class="space-y-3 mb-6">
+          <h4 class="font-medium text-slate-700">Habits for this day:</h4>
+          @for (habit of habits(); track habit.id) {
+            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <button (click)="toggleHabitForDate(habit.id, selectedDay)"
+                      class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                      [class.bg-green-500]="isHabitCompletedOnDate(habit.id, selectedDay)"
+                      [class.border-green-500]="isHabitCompletedOnDate(habit.id, selectedDay)"
+                      [class.border-slate-300]="!isHabitCompletedOnDate(habit.id, selectedDay)">
+                @if (isHabitCompletedOnDate(habit.id, selectedDay)) {
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                }
+              </button>
+              
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium"
+                        [class.line-through]="isHabitCompletedOnDate(habit.id, selectedDay) && habit.type === 'bad'"
+                        [class.text-green-700]="isHabitCompletedOnDate(habit.id, selectedDay) && habit.type === 'good'"
+                        [class.text-red-700]="isHabitCompletedOnDate(habit.id, selectedDay) && habit.type === 'bad'">
+                    {{ habit.name }}
+                  </span>
+                  <span class="text-xs px-2 py-1 rounded-full"
+                        [class.bg-green-100]="habit.type === 'good'"
+                        [class.text-green-700]="habit.type === 'good'"
+                        [class.bg-red-100]="habit.type === 'bad'"
+                        [class.text-red-700]="habit.type === 'bad'">
+                    {{ habit.type }}
+                  </span>
+                </div>
+                <div class="text-sm text-slate-600">
+                  {{ habit.category }} • {{ habit.difficulty }} • {{ habit.points }} points
+                </div>
+                @if (habit.description) {
+                  <div class="text-xs text-slate-500 mt-1">{{ habit.description }}</div>
+                }
+              </div>
+
+              <div class="text-right">
+                <div class="text-sm font-medium">Streak: {{ getHabitStreakForDate(habit.id, selectedDay) }}</div>
+                <div class="text-xs text-slate-500">Best: {{ habit.bestStreak || 0 }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex gap-3">
+          <button (click)="markAllComplete(selectedDay)" 
+                  class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+            Mark All Complete
+          </button>
+          <button (click)="markAllIncomplete(selectedDay)" 
+                  class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+            Mark All Incomplete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Actions for Empty State -->
+  @if (habits().length === 0) {
+    <div class="text-center py-12">
+      <div class="text-6xl mb-4">📝</div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2">No Habits Yet</h3>
+      <p class="text-slate-600 mb-6">Create your first habit to start tracking your progress on the calendar.</p>
+      <div class="flex gap-4 justify-center">
+        <a routerLink="/habits" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+          ✨ Create First Habit
+        </a>
+        <a routerLink="/templates" class="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium">
+          📋 Browse Templates
+        </a>
+      </div>
+    </div>
+  }
+</div>

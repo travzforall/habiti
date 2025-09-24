@@ -1,0 +1,169 @@
+<div class="space-y-6">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="card-title">💬 Pickup Lines Tracker</h2>
+        <button (click)="showPickupLineForm = !showPickupLineForm" class="btn btn-primary">
+          {{ showPickupLineForm ? 'Cancel' : 'Add New Line' }}
+        </button>
+      </div>
+
+      <!-- New Pickup Line Form -->
+      <div *ngIf="showPickupLineForm" class="card bg-base-200 mb-6">
+        <div class="card-body">
+          <h3 class="font-bold text-lg mb-4">Add New Pickup Line</h3>
+          <div class="space-y-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Pickup Line</span>
+              </label>
+              <textarea [(ngModel)]="newPickupLine.text" class="textarea textarea-bordered" placeholder="Enter your pickup line here..." rows="3"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Category</span>
+                </label>
+                <select [(ngModel)]="newPickupLine.category" class="select select-bordered">
+                  <option value="funny">😂 Funny</option>
+                  <option value="cute">🥰 Cute</option>
+                  <option value="clever">🧠 Clever</option>
+                  <option value="bold">🔥 Bold</option>
+                  <option value="casual">😊 Casual</option>
+                </select>
+              </div>
+
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Target Girl (Optional)</span>
+                </label>
+                <select [(ngModel)]="newPickupLine.girlId" class="select select-bordered">
+                  <option value="">Any girl</option>
+                  <option *ngFor="let girl of girls" [value]="girl.id">{{ girl.name }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Context/Situation</span>
+              </label>
+              <input [(ngModel)]="newPickupLine.context" type="text" class="input input-bordered" placeholder="When/where to use this line...">
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Notes</span>
+              </label>
+              <textarea [(ngModel)]="newPickupLine.notes" class="textarea textarea-bordered" placeholder="Any additional notes..." rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button (click)="resetPickupLineForm()" class="btn btn-ghost">Cancel</button>
+            <button (click)="addPickupLine()" class="btn btn-primary" [disabled]="!newPickupLine.text.trim()">
+              Add Pickup Line
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Performing Lines -->
+      <div *ngIf="getTopPickupLines().length > 0">
+        <h3 class="font-bold text-lg mb-4">🏆 Top Performing Lines</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div *ngFor="let line of getTopPickupLines()" class="card bg-gradient-to-r from-yellow-100 to-yellow-200 border border-yellow-300">
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span>{{ getCategoryIcon(line.category) }}</span>
+                    <div class="badge {{ getCategoryColor(line.category) }} badge-sm">{{ line.category }}</div>
+                    <div *ngIf="line.rating" class="rating rating-xs">
+                      <span *ngFor="let i of [1,2,3,4,5]" 
+                            class="mask mask-star-2"
+                            [ngClass]="i <= line.rating ? 'bg-orange-400' : 'bg-gray-300'">
+                      </span>
+                    </div>
+                  </div>
+                  <p class="font-medium text-sm">{{ line.text }}</p>
+                  <div class="text-xs opacity-70 mt-1">
+                    Used {{ line.timesUsed }} times
+                    <span *ngIf="line.girlId"> • For {{ tournamentService.getGirlById(line.girlId)?.name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Pickup Lines -->
+      <div *ngIf="pickupLines.length > 0">
+        <h3 class="font-bold text-lg mb-4">📝 All Pickup Lines</h3>
+        <div class="space-y-3">
+          <div *ngFor="let line of pickupLines" class="card bg-base-200">
+            <div class="card-body p-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span>{{ getCategoryIcon(line.category) }}</span>
+                    <div class="badge {{ getCategoryColor(line.category) }} badge-sm">{{ line.category }}</div>
+                    <div *ngIf="line.rating" class="rating rating-xs">
+                      <span *ngFor="let i of [1,2,3,4,5]" 
+                            class="mask mask-star-2"
+                            [ngClass]="i <= line.rating ? 'bg-orange-400' : 'bg-gray-300'">
+                      </span>
+                    </div>
+                    <span *ngIf="!line.rating" class="text-xs opacity-50">Not rated</span>
+                  </div>
+                  
+                  <p class="font-medium mb-2">{{ line.text }}</p>
+                  
+                  <div class="text-xs space-y-1">
+                    <div *ngIf="line.context" class="flex items-center gap-1">
+                      <span>📍</span>
+                      <span class="opacity-70">{{ line.context }}</span>
+                    </div>
+                    <div *ngIf="line.girlId" class="flex items-center gap-1">
+                      <span>🎯</span>
+                      <span class="opacity-70">For {{ tournamentService.getGirlById(line.girlId)?.name }}</span>
+                    </div>
+                    <div *ngIf="line.notes" class="flex items-center gap-1">
+                      <span>📝</span>
+                      <span class="opacity-70">{{ line.notes }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <span>📅</span>
+                      <span class="opacity-70">Added {{ line.dateCreated | date:'short' }}</span>
+                    </div>
+                    <div *ngIf="line.feedback" class="flex items-center gap-1">
+                      <span>💭</span>
+                      <span class="opacity-70">{{ line.feedback }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                  <div class="text-center">
+                    <div class="text-xs opacity-60">Used</div>
+                    <div class="font-bold">{{ line.timesUsed }}</div>
+                  </div>
+                  <button (click)="ratePickupLine(line.id)" class="btn btn-xs btn-outline">
+                    {{ line.rating ? 'Update' : 'Rate' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="pickupLines.length === 0" class="text-center py-8">
+        <p class="text-lg opacity-60">No pickup lines yet</p>
+        <p class="text-sm opacity-40">Add your first pickup line to track its effectiveness</p>
+      </div>
+    </div>
+  </div>
+</div>
