@@ -1,0 +1,92 @@
+<div class="container mx-auto p-4">
+  <!-- Header -->
+  <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content rounded-xl mb-6">
+    <div class="hero-content text-center py-8">
+      <div class="max-w-md">
+        <h1 class="text-4xl font-bold">🛒 Shopping Search</h1>
+        <p class="text-xl mt-2">Compare prices across Amazon, Walmart & eBay</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <!-- Search Input -->
+      <div class="form-control mb-6">
+        <label class="label">
+          <span class="label-text font-semibold">Search Products</span>
+        </label>
+        <div class="input-group">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery"
+            placeholder="Search for products across multiple stores..."
+            class="input input-bordered flex-1"
+            (keyup.enter)="searchProducts()">
+          <button 
+            (click)="searchProducts()" 
+            [disabled]="isSearching || !searchQuery.trim()"
+            class="btn btn-primary">
+            <span *ngIf="!isSearching">🔍 Search</span>
+            <span *ngIf="isSearching" class="loading loading-spinner loading-xs"></span>
+            <span *ngIf="isSearching">Searching...</span>
+          </button>
+        </div>
+        <label class="label">
+          <span class="label-text-alt">Search across Amazon, Walmart, and eBay simultaneously</span>
+        </label>
+      </div>
+
+      <!-- Search Results -->
+      <div *ngIf="shoppingItems.length === 0" class="text-center py-12 text-gray-500">
+        <div class="text-6xl mb-4">🛍️</div>
+        <h3 class="text-xl font-semibold mb-2">No searches yet</h3>
+        <p>Enter a product name above to start comparing prices across stores!</p>
+      </div>
+
+      <div *ngFor="let item of shoppingItems" class="mb-8 border border-base-300 rounded-lg p-6">
+        <div class="flex justify-between items-start mb-6">
+          <div>
+            <h2 class="text-2xl font-bold">Search: "{{ item.query }}"</h2>
+            <p class="text-sm text-gray-500">{{ item.dateAdded | date:'medium' }}</p>
+          </div>
+          <button 
+            (click)="deleteShoppingItem(item.id)"
+            class="btn btn-error btn-sm"
+            title="Delete search results">
+            🗑️ Delete
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div *ngFor="let result of item.results" 
+               class="card bg-base-100 shadow-lg border hover:shadow-xl transition-shadow">
+            <figure class="h-40">
+              <img [src]="result.image" [alt]="result.title" class="w-full h-full object-cover">
+            </figure>
+            <div class="card-body p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div [ngClass]="getStoreColor(result.store)" 
+                     class="badge text-white font-semibold">
+                  {{ getStoreIcon(result.store) }} {{ result.store | titlecase }}
+                </div>
+                <div class="text-xs">{{ result.rating }}</div>
+              </div>
+              
+              <h3 class="card-title text-sm mb-2 line-clamp-2">{{ result.title }}</h3>
+              
+              <div class="flex items-center justify-between">
+                <div class="text-2xl font-bold text-primary">{{ result.price }}</div>
+                <button 
+                  (click)="openProductLink(result.url)"
+                  class="btn btn-primary btn-sm">
+                  View →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,355 @@
+<div class="container mx-auto p-4">
+  <!-- Game Stats Header -->
+  <div class="hero bg-gradient-to-r from-primary to-secondary text-primary-content rounded-xl mb-6">
+    <div class="hero-content text-center py-8">
+      <div class="max-w-md">
+        <div class="flex justify-between items-center w-full max-w-md">
+          <div class="text-center">
+            <h1 class="text-4xl font-bold">🎮 {{ title() }}</h1>
+            <p class="text-xl mt-2">Level {{ gameState.level }} Habit Master</p>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="sendEmailReport()" class="btn btn-circle btn-outline" title="Send Email Report">
+              📧
+            </button>
+            <button (click)="toggleSettings()" class="btn btn-circle btn-outline" title="Settings">
+              ⚙️
+            </button>
+          </div>
+        </div>
+        
+        <div class="stats stats-horizontal shadow mt-4 bg-base-100 text-base-content">
+          <div class="stat place-items-center">
+            <div class="stat-title">Points</div>
+            <div class="stat-value text-2xl text-primary">{{ gameState.totalPoints }}</div>
+            <div class="stat-desc">{{ getPointsForNextLevel() }} to next level</div>
+          </div>
+          <div class="stat place-items-center">
+            <div class="stat-title">Daily Streak</div>
+            <div class="stat-value text-2xl text-accent">{{ gameState.dailyStreak }}</div>
+            <div class="stat-desc">🔥 {{ getStreakIcon(gameState.dailyStreak) }}</div>
+          </div>
+          <div class="stat place-items-center">
+            <div class="stat-title">Achievements</div>
+            <div class="stat-value text-2xl text-success">{{ gameState.achievements.length }}</div>
+            <div class="stat-desc">{{ achievements.length - gameState.achievements.length }} remaining</div>
+          </div>
+        </div>
+
+        <!-- Level Progress Bar -->
+        <div class="w-full bg-base-200 rounded-full h-2.5 mt-4">
+          <div class="bg-warning h-2.5 rounded-full transition-all duration-300" [style.width.%]="getLevelProgress()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div *ngIf="showSettings" class="modal modal-open">
+    <div class="modal-box w-11/12 max-w-2xl">
+      <h3 class="font-bold text-lg mb-4">⚙️ Settings</h3>
+      
+      <div class="tabs tabs-boxed mb-4">
+        <a class="tab tab-active">📧 EmailJS Configuration</a>
+      </div>
+
+      <form class="space-y-4">
+        <div class="alert alert-info">
+          <div class="flex-1">
+            <div class="text-sm">
+              <p><strong>Setup Instructions:</strong></p>
+              <p>1. Create a free account at <a href="https://www.emailjs.com/" target="_blank" class="link">emailjs.com</a></p>
+              <p>2. Add an email service (Gmail, Outlook, Yahoo, etc.)</p>
+              <p>3. Create an email template with these parameters: <code>from_name, from_email, to_email, subject, message, html_message</code></p>
+              <p>4. Get your Service ID, Template ID, and Public Key from EmailJS dashboard</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Service ID</span>
+          </label>
+          <input type="text" [(ngModel)]="smtpConfig.serviceId" placeholder="service_xxxxxxx" class="input input-bordered" name="serviceId">
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Template ID</span>
+          </label>
+          <input type="text" [(ngModel)]="smtpConfig.templateId" placeholder="template_xxxxxxx" class="input input-bordered" name="templateId">
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Public Key</span>
+          </label>
+          <input type="text" [(ngModel)]="smtpConfig.publicKey" placeholder="xxxxxxxxxxxxxxxx" class="input input-bordered" name="publicKey">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">From Name</span>
+            </label>
+            <input type="text" [(ngModel)]="smtpConfig.fromName" placeholder="Habiti App" class="input input-bordered" name="fromName">
+          </div>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">From Email</span>
+            </label>
+            <input type="email" [(ngModel)]="smtpConfig.fromEmail" placeholder="your-email@gmail.com" class="input input-bordered" name="fromEmail">
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Send Reports To</span>
+          </label>
+          <input type="email" [(ngModel)]="smtpConfig.toEmail" placeholder="recipient@email.com" class="input input-bordered" name="toEmail">
+        </div>
+
+        <!-- Connection Test Section -->
+        <div class="divider">Connection Test</div>
+        
+        <div class="flex gap-2 mb-4">
+          <button 
+            (click)="testSMTPConnection()" 
+            [disabled]="isTestingConnection"
+            class="btn btn-outline btn-info">
+            <span *ngIf="!isTestingConnection">🔍 Test Connection</span>
+            <span *ngIf="isTestingConnection" class="loading loading-spinner loading-xs"></span>
+            <span *ngIf="isTestingConnection">Testing...</span>
+          </button>
+        </div>
+
+        <div *ngIf="connectionStatus" class="alert" 
+             [ngClass]="{
+               'alert-success': connectionStatus.includes('✅'),
+               'alert-error': connectionStatus.includes('❌'),
+               'alert-warning': connectionStatus.includes('⚠️'),
+               'alert-info': connectionStatus.includes('⏳')
+             }">
+          <div class="flex-1">
+            <div class="text-sm">{{ connectionStatus }}</div>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-action">
+        <button (click)="saveSMTPConfig()" class="btn btn-primary">Save Settings</button>
+        <button (click)="toggleSettings()" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      
+      <!-- Achievements Banner (if any unlocked) -->
+      <div *ngIf="getUnlockedAchievements().length > 0" class="alert alert-success mb-6">
+        <div class="flex-1">
+          <h3 class="font-bold">🏆 Achievements Unlocked!</h3>
+          <div class="flex gap-2 mt-2">
+            <div *ngFor="let achievement of getUnlockedAchievements()" 
+                 class="badge badge-lg" 
+                 [title]="achievement.description">
+              {{ achievement.icon }} {{ achievement.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Add New Habit -->
+      <div class="form-control mb-6">
+        <label class="label">
+          <span class="label-text font-semibold">Create New Habit</span>
+        </label>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+          <input 
+            type="text" 
+            [(ngModel)]="newHabitName"
+            placeholder="Habit name..."
+            class="input input-bordered"
+            (keyup.enter)="addHabit()">
+          
+          <select [(ngModel)]="newHabitType" class="select select-bordered">
+            <option value="good">✨ Build (Good)</option>
+            <option value="bad">🚫 Break (Bad)</option>
+          </select>
+          
+          <select [(ngModel)]="newHabitDifficulty" class="select select-bordered">
+            <option value="easy">🟢 Easy</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="hard">🔴 Hard</option>
+          </select>
+          
+          <input 
+            type="number" 
+            [(ngModel)]="newHabitPoints"
+            placeholder="Points"
+            min="1"
+            max="100"
+            class="input input-bordered">
+          
+          <input 
+            type="number" 
+            [(ngModel)]="newHabitGoal"
+            placeholder="Goal (days)"
+            min="1"
+            max="365"
+            class="input input-bordered">
+          
+          <input 
+            type="text" 
+            [(ngModel)]="newHabitReward"
+            placeholder="Reward..."
+            class="input input-bordered">
+          
+          <button 
+            (click)="addHabit()"
+            class="btn btn-primary">
+            + Add Habit
+          </button>
+        </div>
+      </div>
+
+      <!-- Month Navigation -->
+      <div class="flex justify-between items-center mb-6">
+        <button 
+          (click)="previousMonth()" 
+          class="btn btn-circle btn-outline">
+          ←
+        </button>
+        <h2 class="text-xl font-semibold">{{ getMonthYear() }}</h2>
+        <button 
+          (click)="nextMonth()"
+          class="btn btn-circle btn-outline">
+          →
+        </button>
+      </div>
+
+      <!-- Habit Tracker Grid -->
+      <div class="overflow-x-auto">
+        <table class="table table-compact w-full">
+          <thead>
+            <tr>
+              <th class="sticky left-0 z-10 bg-base-200">Habit</th>
+              <th class="text-center">Streak</th>
+              <th class="text-center">Goal Progress</th>
+              <th class="text-center">Monthly %</th>
+              <th *ngFor="let day of days" class="text-center min-w-[60px]">
+                <div class="text-xs">{{ day.dayName }}</div>
+                <div class="font-bold">{{ day.dayNumber }}</div>
+              </th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let habit of habits" class="hover">
+              <td class="sticky left-0 z-10 bg-base-100 font-medium">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-2">
+                    <div [ngClass]="habit.color" class="w-3 h-3 rounded-full"></div>
+                    <span>{{ getHabitTypeIcon(habit.type) }}</span>
+                    <span>{{ habit.name }}</span>
+                  </div>
+                  <div class="text-xs opacity-70">
+                    <span [ngClass]="getDifficultyColor(habit.difficulty)">
+                      {{ habit.difficulty | titlecase }} • {{ habit.points }}pts
+                    </span>
+                    • Goal: {{ habit.goal }} days • Best: {{ habit.bestStreak }} days
+                  </div>
+                  <div class="text-xs opacity-60" *ngIf="habit.reward">
+                    🎁 {{ habit.reward }}
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="flex flex-col items-center">
+                  <span class="text-lg font-bold">{{ habit.streak }}</span>
+                  <span class="text-xs">{{ getStreakIcon(habit.streak) }}</span>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="flex flex-col items-center">
+                  <span class="text-sm font-bold" 
+                        [ngClass]="habit.streak >= habit.goal ? 'text-success' : 'text-warning'">
+                    {{ habit.streak }}/{{ habit.goal }}
+                  </span>
+                  <progress class="progress progress-primary w-16 h-1 mt-1" 
+                            [value]="getGoalProgress(habit)"
+                            max="100"></progress>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="radial-progress text-primary" 
+                     [style.--value]="getCompletionRate(habit.id)"
+                     [style.--size]="'2.5rem'">
+                  <span class="text-xs">{{ getCompletionRate(habit.id) }}%</span>
+                </div>
+              </td>
+              <td *ngFor="let day of days" class="text-center p-1">
+                <select 
+                  class="select select-ghost select-xs w-full max-w-xs text-center text-lg"
+                  [ngModel]="getEntryStatus(habit.id, day.dateString)"
+                  (ngModelChange)="updateEntry(habit.id, day.dateString, $event)">
+                  <option *ngFor="let option of statusOptions" [value]="option.value">
+                    {{ option.icon }}
+                  </option>
+                </select>
+              </td>
+              <td class="text-center">
+                <button 
+                  (click)="removeHabit(habit.id)"
+                  class="btn btn-error btn-sm btn-circle"
+                  title="Remove habit">
+                  ✕
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Game Progress Stats -->
+      <div class="stats stats-vertical lg:stats-horizontal shadow mt-6">
+        <div class="stat">
+          <div class="stat-figure text-primary">
+            <div class="text-3xl">🎯</div>
+          </div>
+          <div class="stat-title">Active Habits</div>
+          <div class="stat-value text-primary">{{ habits.length }}</div>
+          <div class="stat-desc">{{ getGoodHabitsCount() }} building, {{ getBadHabitsCount() }} breaking</div>
+        </div>
+        
+        <div class="stat">
+          <div class="stat-figure text-secondary">
+            <div class="text-3xl">🏆</div>
+          </div>
+          <div class="stat-title">Best Streak</div>
+          <div class="stat-value text-secondary">{{ gameState.longestStreak }}</div>
+          <div class="stat-desc">days in a row</div>
+        </div>
+        
+        <div class="stat">
+          <div class="stat-figure text-accent">
+            <div class="text-3xl">✨</div>
+          </div>
+          <div class="stat-title">Overall Progress</div>
+          <div class="stat-value text-accent">{{ getOverallProgress() }}%</div>
+          <div class="stat-desc">across all habits</div>
+        </div>
+        
+        <div class="stat">
+          <div class="stat-figure text-success">
+            <div class="text-3xl">⚡</div>
+          </div>
+          <div class="stat-title">Total Score</div>
+          <div class="stat-value text-success">{{ gameState.totalPoints }}</div>
+          <div class="stat-desc">points earned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

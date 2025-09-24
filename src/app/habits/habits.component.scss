@@ -1,0 +1,22 @@
+// Habits component styles
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.table {
+  .sticky {
+    position: sticky;
+  }
+}
+
+.radial-progress {
+  --size: 2.5rem;
+  --thickness: 2px;
+}
