@@ -1,0 +1,146 @@
+[
+  {
+    "id": "leg-day",
+    "subcategory_id": "strength",
+    "name": "Leg Day",
+    "description": "Lower body strength training exercises",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "push-day",
+    "subcategory_id": "strength",
+    "name": "Push Day",
+    "description": "Chest, shoulders, and triceps exercises",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "pull-day",
+    "subcategory_id": "strength",
+    "name": "Pull Day",
+    "description": "Back and biceps exercises",
+    "is_active": true,
+    "display_order": 3
+  },
+  {
+    "id": "full-body",
+    "subcategory_id": "strength",
+    "name": "Full Body",
+    "description": "Complete body workout routines",
+    "is_active": true,
+    "display_order": 4
+  },
+  {
+    "id": "running",
+    "subcategory_id": "cardio",
+    "name": "Running",
+    "description": "Distance and sprint running workouts",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "cycling",
+    "subcategory_id": "cardio",
+    "name": "Cycling",
+    "description": "Indoor and outdoor cycling sessions",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "hiit",
+    "subcategory_id": "cardio",
+    "name": "HIIT",
+    "description": "High-intensity interval training",
+    "is_active": true,
+    "display_order": 3
+  },
+  {
+    "id": "meal-prep",
+    "subcategory_id": "nutrition",
+    "name": "Meal Preparation",
+    "description": "Planning and preparing healthy meals",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "hydration",
+    "subcategory_id": "nutrition",
+    "name": "Hydration",
+    "description": "Daily water intake tracking",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "deep-work",
+    "subcategory_id": "work",
+    "name": "Deep Work Sessions",
+    "description": "Focused, uninterrupted work blocks",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "meetings",
+    "subcategory_id": "work",
+    "name": "Meeting Management",
+    "description": "Efficient meeting practices",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "programming",
+    "subcategory_id": "skills",
+    "name": "Programming",
+    "description": "Coding and development skills",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "languages",
+    "subcategory_id": "skills",
+    "name": "Language Learning",
+    "description": "Foreign language practice",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "books",
+    "subcategory_id": "reading",
+    "name": "Book Reading",
+    "description": "Regular book reading practice",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "daily-meditation",
+    "subcategory_id": "meditation",
+    "name": "Daily Practice",
+    "description": "Regular meditation sessions",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "gratitude",
+    "subcategory_id": "journaling",
+    "name": "Gratitude Journal",
+    "description": "Daily gratitude practice",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "family",
+    "subcategory_id": "relationships",
+    "name": "Family Time",
+    "description": "Quality time with family",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "friends",
+    "subcategory_id": "relationships",
+    "name": "Social Activities",
+    "description": "Maintaining friendships",
+    "is_active": true,
+    "display_order": 2
+  }
+]

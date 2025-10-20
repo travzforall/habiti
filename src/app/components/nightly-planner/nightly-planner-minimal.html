@@ -28,18 +28,101 @@
             <div class="text-sm text-slate-600 mb-3">Mark off any habits you completed today:</div>
             <div class="space-y-2">
               @for (habit of habits(); track habit.id) {
-                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/80 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    [checked]="isHabitCompletedToday(habit.id)"
-                    (change)="toggleHabitToday(habit.id)"
-                    class="w-4 h-4 text-blue-600 rounded">
-                  <span class="flex-1 text-sm font-medium text-slate-700">{{ habit.name }}</span>
-                  <span class="text-xs px-2 py-1 rounded-full"
-                        [class]="habit.type === 'good' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                    {{ habit.type === 'good' ? '✅ Good' : '🚫 Avoid' }}
-                  </span>
-                </label>
+                <div class="p-3 rounded-lg border border-slate-200 hover:bg-white/80 transition-all">
+                  <label class="flex items-center gap-3">
+                    <input 
+                      type="checkbox" 
+                      [checked]="isHabitCompletedToday(habit.id)"
+                      (change)="toggleHabitToday(habit.id)"
+                      class="w-4 h-4 text-blue-600 rounded">
+                    <span class="flex-1 text-sm font-medium text-slate-700">{{ habit.name }}</span>
+                    <span class="text-xs px-2 py-1 rounded-full"
+                          [class]="habit.type === 'good' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                      {{ habit.type === 'good' ? '✅ Good' : '🚫 Avoid' }}
+                    </span>
+                  </label>
+                  
+                  <!-- Proof Documentation Section -->
+                  @if (isHabitCompletedToday(habit.id)) {
+                    <div class="mt-3 pl-7 space-y-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs font-medium text-slate-600">📸 Add Proof:</span>
+                        <button 
+                          type="button"
+                          (click)="triggerFileUpload(habit.id)"
+                          class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors">
+                          Upload Image
+                        </button>
+                        <button 
+                          type="button"
+                          (click)="toggleProofNote(habit.id)"
+                          class="text-xs px-2 py-1 bg-purple-50 text-purple-600 rounded hover:bg-purple-100 transition-colors">
+                          Add Note
+                        </button>
+                      </div>
+                      
+                      <!-- Hidden file input -->
+                      <input 
+                        type="file" 
+                        [id]="'proof-upload-' + habit.id"
+                        (change)="handleProofUpload($event, habit.id)"
+                        accept="image/*"
+                        class="hidden">
+                      
+                      <!-- Proof Note Input -->
+                      @if (showProofNote(habit.id)) {
+                        <div class="flex gap-2">
+                          <input 
+                            type="text" 
+                            [value]="getProofNote(habit.id)"
+                            (input)="updateProofNote(habit.id, $any($event.target).value)"
+                            placeholder="Describe your accomplishment..."
+                            class="flex-1 text-xs px-2 py-1 border border-slate-200 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                          <button 
+                            type="button"
+                            (click)="saveProofNote(habit.id)"
+                            class="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                            Save
+                          </button>
+                        </div>
+                      }
+                      
+                      <!-- Display existing proof -->
+                      @if (getHabitProof(habit.id)) {
+                        <div class="bg-slate-50 rounded p-2 space-y-1">
+                          @if (getHabitProof(habit.id)?.imageUrl) {
+                            <div class="flex items-center gap-2">
+                              <span class="text-xs text-slate-600">📷</span>
+                              <a [href]="getHabitProof(habit.id)?.imageUrl" 
+                                 target="_blank" 
+                                 class="text-xs text-blue-600 hover:underline truncate">
+                                View uploaded image
+                              </a>
+                              <button 
+                                type="button"
+                                (click)="removeProofImage(habit.id)"
+                                class="text-xs text-red-400 hover:text-red-600 ml-auto">
+                                ×
+                              </button>
+                            </div>
+                          }
+                          @if (getHabitProof(habit.id)?.note) {
+                            <div class="flex items-start gap-2">
+                              <span class="text-xs text-slate-600">📝</span>
+                              <p class="text-xs text-slate-700 flex-1">{{ getHabitProof(habit.id)?.note }}</p>
+                              <button 
+                                type="button"
+                                (click)="removeProofNote(habit.id)"
+                                class="text-xs text-red-400 hover:text-red-600">
+                                ×
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               }
             </div>
             <div class="mt-3 text-center text-sm text-slate-600">

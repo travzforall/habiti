@@ -1,0 +1,107 @@
+{
+  "table_name": "audit_logs",
+  "description": "Tracks all user actions for security and compliance",
+  "fields": [
+    {
+      "name": "log_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique log entry identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "link_row",
+      "link_to_table": "users",
+      "description": "User who performed the action"
+    },
+    {
+      "name": "session_id",
+      "type": "link_row",
+      "link_to_table": "user_sessions",
+      "description": "Session in which action was performed"
+    },
+    {
+      "name": "action",
+      "type": "single_select",
+      "options": [
+        "login",
+        "logout",
+        "register",
+        "password_change",
+        "password_reset",
+        "email_change",
+        "profile_update",
+        "account_delete",
+        "permission_change",
+        "settings_update",
+        "data_export",
+        "data_import",
+        "subscription_change",
+        "payment",
+        "security_alert"
+      ],
+      "required": true,
+      "description": "Type of action performed"
+    },
+    {
+      "name": "entity_type",
+      "type": "text",
+      "description": "Type of entity affected (user, habit, etc.)"
+    },
+    {
+      "name": "entity_id",
+      "type": "text",
+      "description": "ID of entity affected"
+    },
+    {
+      "name": "old_value",
+      "type": "json",
+      "description": "Previous value before change"
+    },
+    {
+      "name": "new_value",
+      "type": "json",
+      "description": "New value after change"
+    },
+    {
+      "name": "ip_address",
+      "type": "text",
+      "description": "IP address from which action was performed"
+    },
+    {
+      "name": "user_agent",
+      "type": "text",
+      "description": "Browser/device user agent"
+    },
+    {
+      "name": "request_method",
+      "type": "text",
+      "description": "HTTP method used"
+    },
+    {
+      "name": "request_path",
+      "type": "text",
+      "description": "API endpoint or path accessed"
+    },
+    {
+      "name": "response_status",
+      "type": "number",
+      "description": "HTTP response status code"
+    },
+    {
+      "name": "error_message",
+      "type": "text",
+      "description": "Error message if action failed"
+    },
+    {
+      "name": "metadata",
+      "type": "json",
+      "description": "Additional context data"
+    },
+    {
+      "name": "created_at",
+      "type": "created_on",
+      "description": "When the action occurred"
+    }
+  ]
+}

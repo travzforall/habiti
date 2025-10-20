@@ -50,8 +50,12 @@
             <span class="text-lg">✨</span>
             <span class="text-sm font-medium text-slate-700">New Habit</span>
           </a>
-          <a routerLink="/templates" (click)="toggleQuickAdd()" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
+          <a routerLink="/projects" (click)="toggleQuickAdd()" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
             <span class="text-lg">📋</span>
+            <span class="text-sm font-medium text-slate-700">New Project</span>
+          </a>
+          <a routerLink="/templates" (click)="toggleQuickAdd()" class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
+            <span class="text-lg">📝</span>
             <span class="text-sm font-medium text-slate-700">From Template</span>
           </a>
           <button (click)="quickMarkHabit()" class="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-colors">
@@ -62,15 +66,15 @@
       }
     </div>
 
-    <!-- Calendar -->
-    <a routerLink="/calendar" 
+    <!-- Tasks -->
+    <a routerLink="/tasks" 
        routerLinkActive="text-blue-600"
        class="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-500 transition-colors relative group">
       <span class="text-xl group-hover:scale-110 transition-transform"
-            [class.text-blue-600]="isActive('/calendar')">📅</span>
+            [class.text-blue-600]="isActive('/tasks')">📝</span>
       <span class="text-[10px] font-medium"
-            [class.text-blue-600]="isActive('/calendar')">Calendar</span>
-      @if (isActive('/calendar')) {
+            [class.text-blue-600]="isActive('/tasks')">Tasks</span>
+      @if (isActive('/tasks')) {
         <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-blue-600 rounded-full"></div>
       }
     </a>

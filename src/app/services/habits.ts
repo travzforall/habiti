@@ -1,4 +1,6 @@
 import { Injectable, signal } from '@angular/core';
+import { BaserowService } from './baserow.service';
+import { Observable, map, of, forkJoin } from 'rxjs';
 
 export interface HabitEntry {
   habitId: string;
@@ -8,6 +10,11 @@ export interface HabitEntry {
   mood?: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
   timeSpent?: number;
   completedAt?: string;
+  proof?: {
+    imageUrl?: string;
+    note?: string;
+    uploadedAt?: string;
+  };
 }
 
 export interface Habit {
@@ -22,6 +29,8 @@ export interface Habit {
   goal: number;
   reward: string;
   category?: string;
+  subcategory?: string;
+  group?: string;
   tags?: string[];
   icon?: string;
   description?: string;
@@ -30,6 +39,9 @@ export interface Habit {
   createdAt?: string;
   targetDays?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
   frequency?: 'daily' | 'weekly' | 'custom';
+  trackingType?: 'simple' | 'quantity' | 'duration' | 'sets';
+  trackingUnit?: string;
+  targetValue?: number;
 }
 
 export interface DayColumn {
@@ -89,6 +101,48 @@ export interface HabitCategory {
   icon: string;
   color: string;
   description: string;
+  subcategories?: HabitSubcategory[];
+}
+
+export interface HabitSubcategory {
+  id: string;
+  name: string;
+  icon?: string;
+  groups?: HabitGroup[];
+}
+
+export interface HabitGroup {
+  id: string;
+  name: string;
+  description?: string;
+  exercises?: ExerciseDetail[];
+}
+
+export interface ExerciseDetail {
+  id: string;
+  name: string;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+  duration?: number;
+  unit?: string;
+  notes?: string;
+}
+
+export interface HabitProgress {
+  habitId: string;
+  date: string;
+  value?: number;
+  sets?: ExerciseSet[];
+  notes?: string;
+  mood?: string;
+}
+
+export interface ExerciseSet {
+  reps: number;
+  weight?: number;
+  duration?: number;
+  completed: boolean;
 }
 
 export interface Analytics {
@@ -147,6 +201,15 @@ export class HabitsService {
     soundEnabled: true
   });
 
+  constructor(private baserowService: BaserowService) {
+    // Initialize by loading data from Baserow
+    this.loadDataFromDatabase();
+    // Also load existing local data
+    this.loadData();
+    this.initializeSampleData();
+    this.fixDuplicateIds();
+  }
+
   // Static data
   statusOptions = [
     { label: 'Not Started', value: 'not-started', icon: '⭕' },
@@ -165,11 +228,224 @@ export class HabitsService {
   ];
 
   categories: HabitCategory[] = [
-    { id: 'health', name: 'Health & Fitness', icon: '💪', color: 'text-green-600', description: 'Physical wellbeing and exercise' },
-    { id: 'productivity', name: 'Productivity', icon: '⚡', color: 'text-blue-600', description: 'Work and efficiency habits' },
-    { id: 'learning', name: 'Learning', icon: '📚', color: 'text-purple-600', description: 'Education and skill development' },
-    { id: 'social', name: 'Social', icon: '👥', color: 'text-pink-600', description: 'Relationships and communication' },
-    { id: 'mindfulness', name: 'Mindfulness', icon: '🧘', color: 'text-indigo-600', description: 'Mental health and meditation' },
+    { 
+      id: 'health', 
+      name: 'Health & Fitness', 
+      icon: '💪', 
+      color: 'text-green-600', 
+      description: 'Physical wellbeing and exercise',
+      subcategories: [
+        {
+          id: 'strength',
+          name: 'Strength Training',
+          icon: '🏋️',
+          groups: [
+            {
+              id: 'leg-day',
+              name: 'Leg Day',
+              description: 'Lower body strength training',
+              exercises: [
+                { id: 'squats', name: 'Squats', sets: 3, reps: 12, unit: 'reps' },
+                { id: 'deadlifts', name: 'Deadlifts', sets: 3, reps: 10, unit: 'reps' },
+                { id: 'lunges', name: 'Lunges', sets: 3, reps: 12, unit: 'reps' },
+                { id: 'calf-raises', name: 'Calf Raises', sets: 3, reps: 15, unit: 'reps' }
+              ]
+            },
+            {
+              id: 'push-day',
+              name: 'Push Day',
+              description: 'Chest, shoulders, and triceps',
+              exercises: [
+                { id: 'bench-press', name: 'Bench Press', sets: 3, reps: 10, unit: 'reps' },
+                { id: 'shoulder-press', name: 'Shoulder Press', sets: 3, reps: 12, unit: 'reps' },
+                { id: 'push-ups', name: 'Push-ups', sets: 3, reps: 15, unit: 'reps' },
+                { id: 'tricep-dips', name: 'Tricep Dips', sets: 3, reps: 12, unit: 'reps' }
+              ]
+            },
+            {
+              id: 'pull-day',
+              name: 'Pull Day',
+              description: 'Back and biceps',
+              exercises: [
+                { id: 'pull-ups', name: 'Pull-ups', sets: 3, reps: 8, unit: 'reps' },
+                { id: 'rows', name: 'Rows', sets: 3, reps: 12, unit: 'reps' },
+                { id: 'bicep-curls', name: 'Bicep Curls', sets: 3, reps: 12, unit: 'reps' },
+                { id: 'lat-pulldowns', name: 'Lat Pulldowns', sets: 3, reps: 12, unit: 'reps' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'cardio',
+          name: 'Cardio & Endurance',
+          icon: '🏃',
+          groups: [
+            {
+              id: 'running',
+              name: 'Running',
+              description: 'Distance and sprint training'
+            },
+            {
+              id: 'cycling',
+              name: 'Cycling',
+              description: 'Indoor and outdoor cycling'
+            }
+          ]
+        },
+        {
+          id: 'nutrition',
+          name: 'Nutrition',
+          icon: '🥗',
+          groups: [
+            {
+              id: 'meal-prep',
+              name: 'Meal Preparation',
+              description: 'Planning and preparing healthy meals'
+            },
+            {
+              id: 'hydration',
+              name: 'Hydration',
+              description: 'Daily water intake tracking'
+            }
+          ]
+        }
+      ]
+    },
+    { 
+      id: 'productivity', 
+      name: 'Productivity', 
+      icon: '⚡', 
+      color: 'text-blue-600', 
+      description: 'Work and efficiency habits',
+      subcategories: [
+        {
+          id: 'work',
+          name: 'Work Focus',
+          icon: '💼',
+          groups: [
+            {
+              id: 'deep-work',
+              name: 'Deep Work Sessions',
+              description: 'Focused work blocks'
+            },
+            {
+              id: 'meetings',
+              name: 'Meeting Management',
+              description: 'Efficient meeting practices'
+            }
+          ]
+        },
+        {
+          id: 'organization',
+          name: 'Organization',
+          icon: '📋',
+          groups: [
+            {
+              id: 'planning',
+              name: 'Daily Planning',
+              description: 'Schedule and task organization'
+            }
+          ]
+        }
+      ]
+    },
+    { 
+      id: 'learning', 
+      name: 'Learning', 
+      icon: '📚', 
+      color: 'text-purple-600', 
+      description: 'Education and skill development',
+      subcategories: [
+        {
+          id: 'skills',
+          name: 'Skill Development',
+          icon: '🎯',
+          groups: [
+            {
+              id: 'programming',
+              name: 'Programming',
+              description: 'Coding and development skills'
+            },
+            {
+              id: 'languages',
+              name: 'Language Learning',
+              description: 'Foreign language practice'
+            }
+          ]
+        },
+        {
+          id: 'reading',
+          name: 'Reading',
+          icon: '📖',
+          groups: [
+            {
+              id: 'books',
+              name: 'Book Reading',
+              description: 'Regular reading practice'
+            }
+          ]
+        }
+      ]
+    },
+    { 
+      id: 'social', 
+      name: 'Social', 
+      icon: '👥', 
+      color: 'text-pink-600', 
+      description: 'Relationships and communication',
+      subcategories: [
+        {
+          id: 'relationships',
+          name: 'Relationships',
+          icon: '❤️',
+          groups: [
+            {
+              id: 'family',
+              name: 'Family Time',
+              description: 'Quality time with family'
+            },
+            {
+              id: 'friends',
+              name: 'Social Activities',
+              description: 'Maintaining friendships'
+            }
+          ]
+        }
+      ]
+    },
+    { 
+      id: 'mindfulness', 
+      name: 'Mindfulness', 
+      icon: '🧘', 
+      color: 'text-indigo-600', 
+      description: 'Mental health and meditation',
+      subcategories: [
+        {
+          id: 'meditation',
+          name: 'Meditation',
+          icon: '🧘‍♀️',
+          groups: [
+            {
+              id: 'daily-meditation',
+              name: 'Daily Practice',
+              description: 'Regular meditation sessions'
+            }
+          ]
+        },
+        {
+          id: 'journaling',
+          name: 'Journaling',
+          icon: '📝',
+          groups: [
+            {
+              id: 'gratitude',
+              name: 'Gratitude Journal',
+              description: 'Daily gratitude practice'
+            }
+          ]
+        }
+      ]
+    },
     { id: 'creativity', name: 'Creativity', icon: '🎨', color: 'text-orange-600', description: 'Artistic and creative pursuits' },
     { id: 'finance', name: 'Finance', icon: '💰', color: 'text-yellow-600', description: 'Money management and saving' },
     { id: 'other', name: 'Other', icon: '📌', color: 'text-gray-600', description: 'Miscellaneous habits' }
@@ -196,11 +472,6 @@ export class HabitsService {
     toEmail: ''
   };
 
-  constructor() {
-    this.loadData();
-    this.initializeSampleData();
-  }
-
   // Utility Methods
   formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
@@ -211,9 +482,51 @@ export class HabitsService {
   }
 
   // Habit Management
+  private generateUniqueId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Fix duplicate IDs if they exist
+  fixDuplicateIds(): void {
+    const currentHabits = this.habits();
+    const seenIds = new Set<string>();
+    const updatedHabits: Habit[] = [];
+    const idMapping: { [oldId: string]: string } = {};
+
+    currentHabits.forEach(habit => {
+      let newId = habit.id;
+      
+      // If ID is already seen, generate a new one
+      if (seenIds.has(habit.id)) {
+        newId = this.generateUniqueId();
+        idMapping[habit.id] = newId;
+        console.log(`Fixing duplicate ID: ${habit.id} -> ${newId} for habit: ${habit.name}`);
+      }
+      
+      seenIds.add(newId);
+      updatedHabits.push({ ...habit, id: newId });
+    });
+
+    // Update habit entries with new IDs
+    if (Object.keys(idMapping).length > 0) {
+      const newEntries = new Map<string, HabitEntry>();
+      this.habitEntries.forEach((entry, key) => {
+        const [habitId, date] = key.split('-');
+        const newHabitId = idMapping[habitId] || habitId;
+        const newKey = `${newHabitId}-${date}`;
+        newEntries.set(newKey, { ...entry, habitId: newHabitId });
+      });
+      this.habitEntries = newEntries;
+      
+      this.habits.set(updatedHabits);
+      this.saveData();
+      console.log('Fixed duplicate habit IDs');
+    }
+  }
+
   addHabit(habit: Partial<Habit>): void {
     const newHabit: Habit = {
-      id: Date.now().toString(),
+      id: this.generateUniqueId(),
       name: habit.name || '',
       type: habit.type || 'good',
       difficulty: habit.difficulty || 'medium',
@@ -441,30 +754,104 @@ export class HabitsService {
 
   private initializeSampleData(): void {
     const currentHabits = this.habits();
-    if (currentHabits.length === 0) {
-      // Health & Fitness habits
+    // Always reload sample data to demonstrate accordion functionality
+    // Comment out this condition to force reload of organized sample data
+    // if (currentHabits.length === 0) {
+    if (true) {
+      // Clear existing habits first
+      this.habits.set([]);
+      // Health & Fitness habits with proper subcategory and group organization
+      
+      // Strength Training - Leg Day Group
       this.addHabit({
-        name: 'Morning Exercise',
+        name: 'Squats',
+        type: 'good',
+        difficulty: 'medium',
+        points: 15,
+        goal: 3,
+        reward: 'Build leg strength!',
+        category: 'health',
+        subcategory: 'strength',
+        group: 'leg-day',
+        icon: '🏋️',
+        description: '3 sets of 12 squats',
+        trackingType: 'sets'
+      });
+
+      this.addHabit({
+        name: 'Lunges',
+        type: 'good',
+        difficulty: 'medium',
+        points: 12,
+        goal: 3,
+        reward: 'Strong quads and glutes!',
+        category: 'health',
+        subcategory: 'strength',
+        group: 'leg-day',
+        icon: '🦵',
+        description: '3 sets of 10 lunges each leg',
+        trackingType: 'sets'
+      });
+
+      this.addHabit({
+        name: 'Deadlifts',
+        type: 'good',
+        difficulty: 'hard',
+        points: 20,
+        goal: 3,
+        reward: 'Full body strength!',
+        category: 'health',
+        subcategory: 'strength',
+        group: 'leg-day',
+        icon: '💪',
+        description: '3 sets of 8 deadlifts',
+        trackingType: 'sets'
+      });
+
+      // Strength Training - Upper Body Group
+      this.addHabit({
+        name: 'Push-ups',
+        type: 'good',
+        difficulty: 'medium',
+        points: 12,
+        goal: 3,
+        reward: 'Strong chest and arms!',
+        category: 'health',
+        subcategory: 'strength',
+        group: 'upper-body',
+        icon: '💪',
+        description: '3 sets of 15 push-ups',
+        trackingType: 'sets'
+      });
+
+      this.addHabit({
+        name: 'Pull-ups',
+        type: 'good',
+        difficulty: 'hard',
+        points: 18,
+        goal: 3,
+        reward: 'Back and bicep strength!',
+        category: 'health',
+        subcategory: 'strength',
+        group: 'upper-body',
+        icon: '🏋️',
+        description: '3 sets of 8 pull-ups',
+        trackingType: 'sets'
+      });
+
+      // Cardio Group
+      this.addHabit({
+        name: 'Morning Run',
         type: 'good',
         difficulty: 'medium',
         points: 15,
         goal: 30,
         reward: 'Feel energized all day!',
         category: 'health',
+        subcategory: 'cardio',
         icon: '🏃',
-        description: 'Start the day with 30 minutes of exercise'
-      });
-
-      this.addHabit({
-        name: 'Drink 8 glasses of water',
-        type: 'good',
-        difficulty: 'easy',
-        points: 8,
-        goal: 8,
-        reward: 'Stay hydrated and healthy',
-        category: 'health',
-        icon: '💧',
-        description: 'Stay hydrated throughout the day'
+        description: '30 minutes of running',
+        trackingType: 'duration'
       });
 
       this.addHabit({
@@ -475,8 +862,26 @@ export class HabitsService {
         goal: 10000,
         reward: 'Improved cardiovascular health',
         category: 'health',
+        subcategory: 'cardio',
         icon: '👟',
-        description: 'Walk at least 10,000 steps each day'
+        description: 'Walk at least 10,000 steps each day',
+        trackingType: 'quantity'
+      });
+
+      // Nutrition habits
+      this.addHabit({
+        name: 'Drink 8 glasses of water',
+        type: 'good',
+        difficulty: 'easy',
+        points: 8,
+        goal: 8,
+        reward: 'Stay hydrated and healthy',
+        category: 'health',
+        subcategory: 'nutrition',
+        group: 'hydration',
+        icon: '💧',
+        description: 'Stay hydrated throughout the day',
+        trackingType: 'quantity'
       });
 
       this.addHabit({
@@ -487,48 +892,59 @@ export class HabitsService {
         goal: 1,
         reward: 'Better nutrition and energy',
         category: 'health',
+        subcategory: 'nutrition',
+        group: 'meal-prep',
         icon: '🚫',
         description: 'Avoid processed and unhealthy foods'
       });
 
-      // Learning & Development habits
+      // Learning & Development habits with proper grouping
       this.addHabit({
-        name: 'Read for 20 minutes',
+        name: 'Read technical books',
         type: 'good',
         difficulty: 'easy',
         points: 10,
         goal: 20,
         reward: 'Expand your knowledge',
         category: 'learning',
+        subcategory: 'reading',
+        group: 'books',
         icon: '📚',
-        description: 'Read books, articles, or educational content'
+        description: 'Read technical books for 20 minutes',
+        trackingType: 'duration'
       });
 
       this.addHabit({
-        name: 'Practice coding',
+        name: 'Practice JavaScript',
         type: 'good',
         difficulty: 'medium',
         points: 15,
         goal: 60,
         reward: 'Improve programming skills',
         category: 'learning',
+        subcategory: 'skills',
+        group: 'programming',
         icon: '💻',
-        description: 'Spend time coding and learning new technologies'
+        description: 'JavaScript coding practice for 1 hour',
+        trackingType: 'duration'
       });
 
       this.addHabit({
-        name: 'Learn new vocabulary',
+        name: 'Learn Spanish vocabulary',
         type: 'good',
         difficulty: 'easy',
         points: 8,
         goal: 5,
         reward: 'Expand language skills',
         category: 'learning',
-        icon: '📝',
-        description: 'Learn 5 new words in any language'
+        subcategory: 'skills',
+        group: 'languages',
+        icon: '🇪🇸',
+        description: 'Learn 5 new Spanish words',
+        trackingType: 'quantity'
       });
 
-      // Productivity habits
+      // Productivity habits with proper grouping
       this.addHabit({
         name: 'Plan daily tasks',
         type: 'good',
@@ -537,6 +953,8 @@ export class HabitsService {
         goal: 1,
         reward: 'Stay organized and focused',
         category: 'productivity',
+        subcategory: 'organization',
+        group: 'planning',
         icon: '📋',
         description: 'Write down and organize daily tasks'
       });
@@ -549,6 +967,7 @@ export class HabitsService {
         goal: 1,
         reward: 'Improved focus and productivity',
         category: 'productivity',
+        subcategory: 'work',
         icon: '📱',
         description: 'Avoid social media during work hours'
       });
@@ -561,58 +980,85 @@ export class HabitsService {
         goal: 90,
         reward: 'Accomplish meaningful work',
         category: 'productivity',
+        subcategory: 'work',
+        group: 'deep-work',
         icon: '🎯',
-        description: '90 minutes of focused, uninterrupted work'
+        description: '90 minutes of focused, uninterrupted work',
+        trackingType: 'duration'
       });
 
-      // Mindfulness & Mental Health habits
+      // Mindfulness & Mental Health habits with proper grouping
       this.addHabit({
-        name: 'Meditate for 10 minutes',
+        name: 'Daily meditation',
         type: 'good',
         difficulty: 'easy',
         points: 12,
         goal: 10,
         reward: 'Mental clarity and calmness',
         category: 'mindfulness',
+        subcategory: 'meditation',
+        group: 'daily-meditation',
         icon: '🧘',
-        description: 'Practice mindfulness and meditation'
+        description: 'Practice mindfulness and meditation for 10 minutes',
+        trackingType: 'duration'
       });
 
       this.addHabit({
-        name: 'Practice gratitude',
+        name: 'Gratitude journal',
         type: 'good',
         difficulty: 'easy',
         points: 8,
         goal: 3,
         reward: 'Improved mood and perspective',
         category: 'mindfulness',
+        subcategory: 'journaling',
+        group: 'gratitude',
         icon: '🙏',
-        description: 'Write down 3 things you\'re grateful for'
+        description: 'Write down 3 things you\'re grateful for',
+        trackingType: 'quantity'
       });
 
       this.addHabit({
-        name: 'Journal thoughts',
+        name: 'Evening reflection',
         type: 'good',
         difficulty: 'easy',
         points: 10,
         goal: 1,
         reward: 'Better self-awareness',
         category: 'mindfulness',
+        subcategory: 'journaling',
+        group: 'gratitude',
         icon: '📔',
         description: 'Reflect and write about your day'
       });
 
-      // Social & Relationships habits
+      // Social & Relationships habits with proper grouping
       this.addHabit({
-        name: 'Call family or friends',
+        name: 'Call family',
         type: 'good',
         difficulty: 'easy',
         points: 12,
         goal: 1,
-        reward: 'Stronger relationships',
+        reward: 'Stronger family bonds',
         category: 'social',
-        icon: '📞',
-        description: 'Connect with loved ones daily'
+        subcategory: 'relationships',
+        group: 'family',
+        icon: '👨‍👩‍👧‍👦',
+        description: 'Make a meaningful call to family members'
+      });
+
+      this.addHabit({
+        name: 'Meet with friends',
+        type: 'good',
+        difficulty: 'easy',
+        points: 15,
+        goal: 1,
+        reward: 'Stronger friendships',
+        category: 'social',
+        subcategory: 'relationships',
+        group: 'friends',
+        icon: '👫',
+        description: 'Spend quality time with friends'
       });
 
       this.addHabit({
@@ -814,5 +1260,264 @@ export class HabitsService {
       total: habits.length,
       habits: completedHabits
     };
+  }
+
+  // Helper method to generate habit entry key
+  private getHabitEntryKey(habitId: string, date: Date): string {
+    return `${habitId}-${this.formatDate(date)}`;
+  }
+
+  // Proof documentation methods
+  addHabitProof(habitId: string, date: Date, proof: { imageUrl?: string; note?: string }): void {
+    const key = this.getHabitEntryKey(habitId, date);
+    const entry = this.habitEntries.get(key);
+    
+    if (entry) {
+      entry.proof = {
+        ...entry.proof,
+        ...proof,
+        uploadedAt: new Date().toISOString()
+      };
+      this.habitEntries.set(key, entry);
+      this.saveData();
+    }
+  }
+
+  getHabitProof(habitId: string, date: Date): { imageUrl?: string; note?: string } | undefined {
+    const key = this.getHabitEntryKey(habitId, date);
+    const entry = this.habitEntries.get(key);
+    return entry?.proof;
+  }
+
+  removeHabitProofImage(habitId: string, date: Date): void {
+    const key = this.getHabitEntryKey(habitId, date);
+    const entry = this.habitEntries.get(key);
+    
+    if (entry?.proof) {
+      delete entry.proof.imageUrl;
+      if (!entry.proof.note) {
+        delete entry.proof;
+      }
+      this.habitEntries.set(key, entry);
+      this.saveData();
+    }
+  }
+
+  removeHabitProofNote(habitId: string, date: Date): void {
+    const key = this.getHabitEntryKey(habitId, date);
+    const entry = this.habitEntries.get(key);
+    
+    if (entry?.proof) {
+      delete entry.proof.note;
+      if (!entry.proof.imageUrl) {
+        delete entry.proof;
+      }
+      this.habitEntries.set(key, entry);
+      this.saveData();
+    }
+  }
+
+  // Database integration methods
+  
+  loadDataFromDatabase(): void {
+    // Load habits from Baserow
+    this.baserowService.getHabits(undefined, true).subscribe({
+      next: (response) => {
+        if (response.results) {
+          const habits = response.results.map((row: any) => this.transformBaserowHabitToLocal(row));
+          this.habits.set(habits);
+          console.log('Loaded habits from Baserow:', habits.length);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load habits from Baserow:', error);
+        // Fall back to local storage
+        this.loadData();
+      }
+    });
+
+    // Load habit entries
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    this.baserowService.getHabitEntries(undefined, undefined, thirtyDaysAgo.toISOString(), today.toISOString()).subscribe({
+      next: (response) => {
+        if (response.results) {
+          response.results.forEach((entry: any) => {
+            const habitEntry = this.transformBaserowEntryToLocal(entry);
+            const key = this.getHabitEntryKey(habitEntry.habitId, new Date(habitEntry.date));
+            this.habitEntries.set(key, habitEntry);
+          });
+          console.log('Loaded habit entries from Baserow:', response.results.length);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load habit entries from Baserow:', error);
+      }
+    });
+
+    // Load game state
+    const userId = localStorage.getItem('userId') || 'default';
+    this.baserowService.getGameState(userId).subscribe({
+      next: (response) => {
+        if (response.results && response.results.length > 0) {
+          const gameStateData = response.results[0];
+          this.gameState.set({
+            totalPoints: gameStateData.total_points || 0,
+            level: gameStateData.level || 1,
+            achievements: [],
+            dailyStreak: gameStateData.current_streak || 0,
+            longestStreak: gameStateData.best_streak || 0,
+            theme: 'auto',
+            weekStartsOn: 'monday',
+            notificationsEnabled: true,
+            soundEnabled: true
+          });
+          console.log('Loaded game state from Baserow');
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load game state from Baserow:', error);
+      }
+    });
+  }
+
+  transformBaserowHabitToLocal(baserowHabit: any): Habit {
+    return {
+      id: baserowHabit.id.toString(),
+      name: baserowHabit.name || '',
+      type: baserowHabit.type === 2100 ? 'good' : 'bad',
+      difficulty: this.mapDifficulty(baserowHabit.difficulty),
+      streak: baserowHabit.streak || 0,
+      bestStreak: baserowHabit.best_streak || 0,
+      points: baserowHabit.points || 0,
+      goal: baserowHabit.goal || 1,
+      reward: baserowHabit.reward || '',
+      description: baserowHabit.description || '',
+      icon: baserowHabit.icon || '',
+      reminderTime: baserowHabit.reminder_time || '',
+      isActive: baserowHabit.is_active || false,
+      frequency: this.mapFrequency(baserowHabit.frequency),
+      trackingType: this.mapTrackingType(baserowHabit.tracking_type),
+      trackingUnit: this.mapTrackingUnit(baserowHabit.tracking_unit),
+      targetValue: baserowHabit.target_value || 1
+    };
+  }
+
+  transformBaserowEntryToLocal(baserowEntry: any): HabitEntry {
+    return {
+      habitId: baserowEntry.habit_id?.[0]?.toString() || '',
+      date: baserowEntry.date || new Date().toISOString(),
+      status: baserowEntry.completed ? 'completed' : 'not-started',
+      notes: baserowEntry.notes || '',
+      mood: this.mapMood(baserowEntry.mood_after),
+      timeSpent: baserowEntry.value || 0,
+      completedAt: baserowEntry.created_at
+    };
+  }
+
+  mapDifficulty(value: number): 'easy' | 'medium' | 'hard' {
+    switch (value) {
+      case 2102: return 'easy';
+      case 2104: return 'medium';
+      case 2103: return 'hard';
+      default: return 'medium';
+    }
+  }
+
+  mapFrequency(value: number): 'daily' | 'weekly' | 'custom' {
+    switch (value) {
+      case 2112: return 'daily';
+      case 2113: return 'weekly';
+      default: return 'daily';
+    }
+  }
+
+  mapTrackingType(value: number): 'simple' | 'quantity' | 'duration' | 'sets' {
+    switch (value) {
+      case 2106: return 'simple';
+      case 2107: return 'quantity';
+      case 2105: return 'duration';
+      case 2108: return 'sets';
+      default: return 'simple';
+    }
+  }
+
+  mapTrackingUnit(value: number): string {
+    switch (value) {
+      case 2109: return 'minutes';
+      case 2110: return 'items';
+      case 2111: return 'glasses';
+      default: return '';
+    }
+  }
+
+  mapMood(value: number): 'great' | 'good' | 'okay' | 'bad' | 'terrible' {
+    if (value >= 9) return 'great';
+    if (value >= 7) return 'good';
+    if (value >= 5) return 'okay';
+    if (value >= 3) return 'bad';
+    return 'terrible';
+  }
+
+  // Sync local changes to database
+  syncHabitToDatabase(habit: Habit): void {
+    const habitData = {
+      name: habit.name,
+      type: habit.type === 'good' ? 2100 : 2101,
+      difficulty: habit.difficulty === 'easy' ? 2102 : habit.difficulty === 'hard' ? 2103 : 2104,
+      streak: habit.streak,
+      best_streak: habit.bestStreak,
+      points: habit.points,
+      goal: habit.goal,
+      reward: habit.reward,
+      description: habit.description,
+      icon: habit.icon,
+      reminder_time: habit.reminderTime,
+      is_active: habit.isActive,
+      user_id: localStorage.getItem('userId') || 'default'
+    };
+
+    if (habit.id && !habit.id.startsWith('habit-')) {
+      // Update existing habit
+      this.baserowService.updateHabit(parseInt(habit.id), habitData).subscribe({
+        next: () => console.log('Habit synced to Baserow'),
+        error: (error) => console.error('Failed to sync habit:', error)
+      });
+    } else {
+      // Create new habit
+      this.baserowService.createHabit(habitData).subscribe({
+        next: (response) => {
+          // Update local habit with Baserow ID
+          const habits = this.habits();
+          const index = habits.findIndex(h => h.id === habit.id);
+          if (index !== -1) {
+            habits[index].id = response.id.toString();
+            this.habits.set([...habits]);
+          }
+          console.log('New habit created in Baserow');
+        },
+        error: (error) => console.error('Failed to create habit:', error)
+      });
+    }
+  }
+
+  syncEntryToDatabase(entry: HabitEntry): void {
+    const entryData = {
+      habit_id: [parseInt(entry.habitId)],
+      date: entry.date,
+      completed: entry.status === 'completed',
+      notes: entry.notes,
+      mood_after: entry.mood === 'great' ? 10 : 
+                  entry.mood === 'good' ? 8 :
+                  entry.mood === 'okay' ? 6 :
+                  entry.mood === 'bad' ? 4 : 2,
+      value: entry.timeSpent,
+      user_id: localStorage.getItem('userId') || 'default'
+    };
+
+    this.baserowService.createHabitEntry(entryData).subscribe({
+      next: () => console.log('Entry synced to Baserow'),
+      error: (error) => console.error('Failed to sync entry:', error)
+    });
   }
 }

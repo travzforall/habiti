@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Habiti MVP v1.0",
+    "description": "Core habit tracking application with essential features for MVP launch",
+    "start_date": "2025-09-20T00:00:00.000Z",
+    "target_date": "2025-10-15T00:00:00.000Z",
+    "status": "active",
+    "priority": "critical",
+    "created_at": "2025-09-20T08:00:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z"
+  },
+  {
+    "name": "Habiti Analytics v2.0",
+    "description": "Advanced analytics dashboard with data visualization and user insights",
+    "start_date": "2025-10-16T00:00:00.000Z",
+    "target_date": "2025-11-30T00:00:00.000Z",
+    "status": "planning",
+    "priority": "high",
+    "created_at": "2025-09-20T08:30:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z"
+  },
+  {
+    "name": "Mobile App Launch",
+    "description": "Native iOS and Android applications with full feature parity",
+    "start_date": "2025-11-01T00:00:00.000Z", 
+    "target_date": "2026-01-15T00:00:00.000Z",
+    "status": "planning",
+    "priority": "high",
+    "created_at": "2025-09-20T09:00:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z"
+  },
+  {
+    "name": "Enterprise Features",
+    "description": "Team collaboration, admin dashboards, and enterprise-level features",
+    "start_date": "2026-01-16T00:00:00.000Z",
+    "target_date": "2026-04-30T00:00:00.000Z", 
+    "status": "planning",
+    "priority": "medium",
+    "created_at": "2025-09-20T09:30:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z"
+  },
+  {
+    "name": "AI Integration Phase 1",
+    "description": "Smart habit recommendations, pattern recognition, and AI-powered insights",
+    "start_date": "2025-12-01T00:00:00.000Z",
+    "target_date": "2026-02-28T00:00:00.000Z",
+    "status": "planning", 
+    "priority": "medium",
+    "created_at": "2025-09-20T10:00:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z"
+  }
+]

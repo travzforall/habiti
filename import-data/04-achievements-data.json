@@ -1,0 +1,113 @@
+[
+  {
+    "id": "first-habit",
+    "name": "Getting Started",
+    "description": "Create your first habit",
+    "icon": "🌱",
+    "requirement_type": "habits_count",
+    "requirement_value": 1,
+    "is_active": true,
+    "rarity": "common",
+    "points_reward": 10
+  },
+  {
+    "id": "streak-3",
+    "name": "Building Momentum",
+    "description": "Maintain a 3-day streak",
+    "icon": "🌟",
+    "requirement_type": "streak",
+    "requirement_value": 3,
+    "is_active": true,
+    "rarity": "common",
+    "points_reward": 15
+  },
+  {
+    "id": "streak-7",
+    "name": "Week Warrior",
+    "description": "Maintain a 7-day streak",
+    "icon": "🔥",
+    "requirement_type": "streak",
+    "requirement_value": 7,
+    "is_active": true,
+    "rarity": "rare",
+    "points_reward": 25
+  },
+  {
+    "id": "streak-30",
+    "name": "Monthly Master",
+    "description": "Maintain a 30-day streak",
+    "icon": "🏆",
+    "requirement_type": "streak",
+    "requirement_value": 30,
+    "is_active": true,
+    "rarity": "epic",
+    "points_reward": 100
+  },
+  {
+    "id": "level-5",
+    "name": "Level Up!",
+    "description": "Reach level 5",
+    "icon": "⭐",
+    "requirement_type": "level",
+    "requirement_value": 5,
+    "is_active": true,
+    "rarity": "rare",
+    "points_reward": 50
+  },
+  {
+    "id": "points-100",
+    "name": "Century Club",
+    "description": "Earn 100 points",
+    "icon": "💯",
+    "requirement_type": "points",
+    "requirement_value": 100,
+    "is_active": true,
+    "rarity": "common",
+    "points_reward": 20
+  },
+  {
+    "id": "points-500",
+    "name": "Point Collector",
+    "description": "Earn 500 points",
+    "icon": "💎",
+    "requirement_type": "points",
+    "requirement_value": 500,
+    "is_active": true,
+    "rarity": "rare",
+    "points_reward": 50
+  },
+  {
+    "id": "habit-master",
+    "name": "Habit Master",
+    "description": "Have 10 active habits",
+    "icon": "👑",
+    "requirement_type": "habits_count",
+    "requirement_value": 10,
+    "is_active": true,
+    "rarity": "rare",
+    "points_reward": 75
+  },
+  {
+    "id": "perfect-week",
+    "name": "Perfect Week",
+    "description": "Complete all habits for 7 consecutive days",
+    "icon": "✨",
+    "requirement_type": "perfect_days",
+    "requirement_value": 7,
+    "is_active": true,
+    "rarity": "rare",
+    "points_reward": 100
+  },
+  {
+    "id": "health-master",
+    "name": "Health Champion",
+    "description": "Master all health habits with 90% completion rate",
+    "icon": "💪",
+    "requirement_type": "category_mastery",
+    "requirement_value": 90,
+    "category_id": "health",
+    "is_active": true,
+    "rarity": "epic",
+    "points_reward": 200
+  }
+]

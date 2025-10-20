@@ -1,0 +1,95 @@
+{
+  "table_name": "user_sessions",
+  "description": "Tracks user login sessions and tokens",
+  "fields": [
+    {
+      "name": "session_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique session identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "link_row",
+      "link_to_table": "users",
+      "required": true,
+      "description": "Reference to user"
+    },
+    {
+      "name": "access_token",
+      "type": "text",
+      "required": true,
+      "unique": true,
+      "description": "JWT access token"
+    },
+    {
+      "name": "refresh_token",
+      "type": "text",
+      "unique": true,
+      "description": "JWT refresh token"
+    },
+    {
+      "name": "ip_address",
+      "type": "text",
+      "description": "IP address of login"
+    },
+    {
+      "name": "user_agent",
+      "type": "text",
+      "description": "Browser/device user agent"
+    },
+    {
+      "name": "device_type",
+      "type": "single_select",
+      "options": ["desktop", "mobile", "tablet", "unknown"],
+      "description": "Type of device used"
+    },
+    {
+      "name": "browser",
+      "type": "text",
+      "description": "Browser name and version"
+    },
+    {
+      "name": "os",
+      "type": "text",
+      "description": "Operating system"
+    },
+    {
+      "name": "location_country",
+      "type": "text",
+      "description": "Country from IP geolocation"
+    },
+    {
+      "name": "location_city",
+      "type": "text",
+      "description": "City from IP geolocation"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "default": true,
+      "description": "Whether session is still active"
+    },
+    {
+      "name": "expires_at",
+      "type": "date",
+      "required": true,
+      "description": "When the session expires"
+    },
+    {
+      "name": "last_activity",
+      "type": "date",
+      "description": "Last activity in this session"
+    },
+    {
+      "name": "created_at",
+      "type": "created_on",
+      "description": "When session was created"
+    },
+    {
+      "name": "revoked_at",
+      "type": "date",
+      "description": "When session was revoked"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Analytics Features",
+    "description": "Data visualization, reporting, and insights system for user behavior analysis",
+    "color": "#3498db",
+    "order": 1,
+    "created_at": "2025-09-20T10:00:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Dashboard Features", 
+    "description": "Main dashboard interface and habit tracking components",
+    "color": "#2ecc71",
+    "order": 2,
+    "created_at": "2025-09-20T10:05:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Habits Management",
+    "description": "Habit creation, tracking, and management features",
+    "color": "#e74c3c",
+    "order": 3,
+    "created_at": "2025-09-20T10:10:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Calendar Features",
+    "description": "Calendar integration and daily planner functionality",
+    "color": "#9b59b6",
+    "order": 4,
+    "created_at": "2025-09-20T10:15:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Gamification System",
+    "description": "Points, achievements, and game mechanics for user engagement",
+    "color": "#f39c12",
+    "order": 5,
+    "created_at": "2025-09-20T10:20:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Planning System",
+    "description": "Multi-level planning (nightly, weekly, quarterly)",
+    "color": "#1abc9c",
+    "order": 6,
+    "created_at": "2025-09-20T10:25:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Pomodoro System",
+    "description": "Focus timer and distraction blocking features",
+    "color": "#34495e",
+    "order": 7,
+    "created_at": "2025-09-20T10:30:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Project Management",
+    "description": "Goals, tasks, and project organization system",
+    "color": "#95a5a6",
+    "order": 8,
+    "created_at": "2025-09-20T10:35:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "User Experience",
+    "description": "UI/UX improvements and user interface enhancements",
+    "color": "#e67e22",
+    "order": 9,
+    "created_at": "2025-09-20T10:40:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  },
+  {
+    "name": "Infrastructure",
+    "description": "Backend infrastructure, deployment, and DevOps tasks",
+    "color": "#8e44ad",
+    "order": 10,
+    "created_at": "2025-09-20T10:45:00.000Z",
+    "updated_at": "2025-09-24T01:30:00.000Z",
+    "status": "active"
+  }
+]

@@ -1,33 +1,45 @@
 <!-- Habits Management Page -->
-<div class="habits-section space-y-6">
+<div class="habits-section space-y-8 max-w-7xl mx-auto px-4 py-6">
   <!-- Page Header -->
   <div class="text-center mb-8">
-    <div class="inline-flex items-center gap-3 bg-primary/10 px-6 py-3 rounded-full">
-      <span class="text-3xl">✨</span>
-      <h1 class="text-2xl font-bold text-primary">Habit Management</h1>
+    <div class="relative">
+      <div class="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 rounded-2xl blur-lg opacity-30"></div>
+      <div class="relative bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 px-8 py-6 rounded-2xl shadow-xl">
+        <div class="flex items-center justify-center gap-4 text-white">
+          <div class="text-4xl animate-pulse">🎯</div>
+          <div>
+            <h1 class="text-3xl font-bold">Habit Management</h1>
+            <p class="text-white/90 text-lg">Build, track, and maintain your daily habits</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="text-primary/70 mt-2">Build, track, and maintain your daily habits</p>
   </div>
 
   <!-- Add New Habit Form -->
-  <div class="card bg-base-100 shadow-xl mb-6">
-    <div class="card-body">
-      <h2 class="card-title mb-4">
-        <span class="text-2xl">🆕</span>
-        Add New Habit
-      </h2>
+  <div class="card bg-white shadow-2xl mb-8 border border-slate-200 rounded-2xl overflow-hidden">
+    <div class="card-body p-8">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="p-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg">
+          <span class="text-2xl text-white">➕</span>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">Add New Habit</h2>
+          <p class="text-slate-600">Create a new habit to track and improve</p>
+        </div>
+      </div>
       
-      <form class="space-y-4" #habitForm="ngForm" (ngSubmit)="addHabit()">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form class="space-y-6" #habitForm="ngForm" (ngSubmit)="addHabit()">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Habit Name -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Habit Name</span>
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Habit Name</span>
             </label>
             <input 
               type="text" 
               placeholder="e.g., Morning Exercise" 
-              class="input input-bordered w-full"
+              class="input input-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
               [(ngModel)]="newHabit.name"
               name="habitName"
               required
@@ -36,11 +48,11 @@
 
           <!-- Habit Type -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Habit Type</span>
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Habit Type</span>
             </label>
             <select 
-              class="select select-bordered w-full"
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
               [(ngModel)]="newHabit.type"
               name="habitType"
               required
@@ -53,13 +65,14 @@
 
           <!-- Category -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Category</span>
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Category</span>
             </label>
             <select 
-              class="select select-bordered w-full"
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
               [(ngModel)]="newHabit.categoryId"
               name="habitCategory"
+              (change)="onCategoryChange()"
               required
             >
               <option value="">Select category</option>
@@ -69,15 +82,85 @@
             </select>
           </div>
 
+          <!-- Subcategory -->
+          <div class="form-control" *ngIf="selectedCategory?.subcategories">
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Subcategory</span>
+            </label>
+            <select 
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+              [(ngModel)]="newHabit.subcategoryId"
+              name="habitSubcategory"
+              (change)="onSubcategoryChange()"
+            >
+              <option value="">Select subcategory</option>
+              <option *ngFor="let subcategory of (selectedCategory?.subcategories || [])" [value]="subcategory.id">
+                {{ subcategory.icon }} {{ subcategory.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Group (for exercises) -->
+          <div class="form-control" *ngIf="selectedSubcategory?.groups">
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Workout Group</span>
+            </label>
+            <select 
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+              [(ngModel)]="newHabit.groupId"
+              name="habitGroup"
+            >
+              <option value="">Select workout group</option>
+              <option *ngFor="let group of (selectedSubcategory?.groups || [])" [value]="group.id">
+                {{ group.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Tracking Type -->
+          <div class="form-control">
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Tracking Type</span>
+            </label>
+            <select 
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+              [(ngModel)]="newHabit.trackingType"
+              name="trackingType"
+            >
+              <option value="simple">Simple (Yes/No)</option>
+              <option value="quantity">Quantity (Count)</option>
+              <option value="duration">Duration (Time)</option>
+              <option value="sets">Sets & Reps (Exercise)</option>
+            </select>
+          </div>
+
+          <!-- Points -->
+          <div class="form-control">
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Points Reward</span>
+            </label>
+            <select 
+              class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+              [(ngModel)]="newHabit.points"
+              name="habitPoints"
+            >
+              <option value="5">⭐ Easy - 5 points</option>
+              <option value="10" selected>⭐⭐ Medium - 10 points</option>
+              <option value="15">⭐⭐⭐ Hard - 15 points</option>
+              <option value="20">⭐⭐⭐⭐ Very Hard - 20 points</option>
+              <option value="25">⭐⭐⭐⭐⭐ Extreme - 25 points</option>
+            </select>
+          </div>
+
           <!-- Custom Icon -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Icon (optional)</span>
+            <label class="label mb-2">
+              <span class="label-text font-semibold text-slate-700">Icon (optional)</span>
             </label>
             <input 
               type="text" 
               placeholder="🏃 (emoji or leave blank)" 
-              class="input input-bordered w-full"
+              class="input input-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
               [(ngModel)]="newHabit.icon"
               name="habitIcon"
             />
@@ -86,11 +169,11 @@
 
         <!-- Description -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-medium">Description (optional)</span>
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Description (optional)</span>
           </label>
           <textarea 
-            class="textarea textarea-bordered" 
+            class="textarea textarea-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all min-h-[100px]" 
             placeholder="Describe your habit and why it's important to you..."
             [(ngModel)]="newHabit.description"
             name="habitDescription"
@@ -98,13 +181,13 @@
         </div>
 
         <!-- Submit Button -->
-        <div class="form-control">
+        <div class="form-control pt-4">
           <button 
             type="submit" 
-            class="btn btn-primary"
+            class="btn btn-primary px-8 py-4 text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 border-0 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             [disabled]="!habitForm.valid"
           >
-            <span class="text-lg">✨</span>
+            <span class="text-xl">➕</span>
             Add Habit
           </button>
         </div>
@@ -113,14 +196,15 @@
   </div>
 
   <!-- Active Habits List -->
-  <div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
+  <div class="card bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
+    <div class="card-body p-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="card-title">
           <span class="text-2xl">📋</span>
           Your Habits ({{ habits().length }})
         </h2>
         <div class="flex gap-2">
+          <!-- Filter Buttons -->
           <button 
             class="btn btn-sm"
             [class.btn-primary]="filterType === 'all'"
@@ -148,71 +232,357 @@
         </div>
       </div>
 
-      <!-- Habits Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Accordion Habits View -->
+      <div *ngIf="showView === 'grouped'" class="space-y-4">
+        
+        <!-- Main Category Accordions -->
+        <div *ngFor="let categoryGroup of getHabitsGroupedByCategories()" 
+             class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          
+          <!-- Category Header (Level 1) -->
+          <div 
+            class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-150 cursor-pointer transition-all border-b border-slate-200"
+            (click)="toggleGroup('category-' + categoryGroup.id)"
+          >
+            <div class="flex items-center gap-4">
+              <!-- Category Icon -->
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-white shadow-sm">
+                <span class="text-2xl">{{ categoryGroup.icon }}</span>
+              </div>
+              
+              <!-- Category Info -->
+              <div>
+                <h3 class="text-lg font-bold text-slate-800">{{ categoryGroup.name }}</h3>
+                <p class="text-sm text-slate-500">{{ getHabitsCountInGroup(categoryGroup) }} habits</p>
+              </div>
+            </div>
+            
+            <!-- Expand/Collapse Icon -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 font-medium">
+                {{ isGroupCollapsed('category-' + categoryGroup.id) ? 'Show' : 'Hide' }}
+              </span>
+              <div class="transform transition-transform duration-300 ease-in-out"
+                   [class.rotate-180]="!isGroupCollapsed('category-' + categoryGroup.id)">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Content -->
+          <div *ngIf="!isGroupCollapsed('category-' + categoryGroup.id)" 
+               class="divide-y divide-slate-100">
+            
+            <!-- Direct Category Habits (Level 1 Habits) -->
+            <div *ngIf="categoryGroup.habits?.length > 0" class="p-4 bg-slate-25">
+              <div class="space-y-3">
+                <div *ngFor="let habit of categoryGroup.habits" 
+                     class="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-all">
+                  
+                  <!-- Habit Info -->
+                  <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-lg"
+                         [class.bg-green-100]="habit.type === 'good'"
+                         [class.bg-red-100]="habit.type === 'bad'">
+                      <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                    </div>
+                    <div>
+                      <h4 class="font-medium text-slate-800">{{ habit.name }}</h4>
+                      <div class="flex items-center gap-4 text-xs text-slate-500">
+                        <span>{{ habit.streak }} day streak</span>
+                        <span>{{ getCompletionRate(habit.id) }}% success</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Action Buttons -->
+                  <div class="flex items-center gap-2">
+                    <button 
+                      class="px-4 py-2 text-sm font-medium rounded-lg transition-all"
+                      [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                      [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                      [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                      [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                      [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                      [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
+                      [class.text-slate-500]="isHabitCompletedToday(habit.id)"
+                      (click)="markHabitComplete(habit.id)"
+                      [disabled]="isHabitCompletedToday(habit.id)"
+                    >
+                      {{ isHabitCompletedToday(habit.id) ? '✓ Done' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
+                    </button>
+                    
+                    <div class="dropdown dropdown-end">
+                      <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                        </svg>
+                      </label>
+                      <ul tabindex="0" class="dropdown-content menu p-2 shadow-lg bg-white rounded-lg border w-36">
+                        <li><a (click)="editHabit(habit)" class="text-sm">✏️ Edit</a></li>
+                        <li><a (click)="deleteHabit(habit.id)" class="text-sm text-red-600">🗑️ Delete</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subcategories (Level 2) -->
+            <div *ngFor="let subcategoryGroup of categoryGroup.subcategories" class="border-b border-slate-100 last:border-b-0">
+              
+              <!-- Subcategory Header -->
+              <div 
+                class="flex items-center justify-between px-6 py-3 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-all"
+                (click)="toggleGroup('subcategory-' + subcategoryGroup.id)"
+              >
+                <div class="flex items-center gap-3">
+                  <span class="text-lg">{{ subcategoryGroup.icon }}</span>
+                  <div>
+                    <h4 class="font-semibold text-slate-700">{{ subcategoryGroup.name }}</h4>
+                    <p class="text-xs text-slate-500">{{ getHabitsCountInSubcategory(subcategoryGroup) }} habits</p>
+                  </div>
+                </div>
+                
+                <div class="transform transition-transform duration-300"
+                     [class.rotate-180]="!isGroupCollapsed('subcategory-' + subcategoryGroup.id)">
+                  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Subcategory Content -->
+              <div *ngIf="!isGroupCollapsed('subcategory-' + subcategoryGroup.id)" class="bg-slate-25">
+                
+                <!-- Direct Subcategory Habits (Level 2 Habits) -->
+                <div *ngIf="subcategoryGroup.habits?.length > 0" class="p-4 space-y-2">
+                  <div *ngFor="let habit of subcategoryGroup.habits" 
+                       class="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-all ml-4">
+                    
+                    <div class="flex items-center gap-3">
+                      <div class="flex items-center justify-center w-8 h-8 rounded-lg"
+                           [class.bg-green-100]="habit.type === 'good'"
+                           [class.bg-red-100]="habit.type === 'bad'">
+                        <span class="text-base">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                      </div>
+                      <div>
+                        <h5 class="font-medium text-sm text-slate-800">{{ habit.name }}</h5>
+                        <div class="text-xs text-slate-500">{{ habit.streak }} days • {{ getCompletionRate(habit.id) }}%</div>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                      <button 
+                        class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+                        [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                        [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                        [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                        [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                        [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                        [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
+                        [class.text-slate-500]="isHabitCompletedToday(habit.id)"
+                        (click)="markHabitComplete(habit.id)"
+                        [disabled]="isHabitCompletedToday(habit.id)"
+                      >
+                        {{ isHabitCompletedToday(habit.id) ? '✓' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
+                      </button>
+                      
+                      <button class="btn btn-ghost btn-xs btn-circle" (click)="editHabit(habit)">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Exercise Groups (Level 3) -->
+                <div *ngFor="let exerciseGroup of subcategoryGroup.groups" class="border-t border-slate-100">
+                  
+                  <!-- Exercise Group Header -->
+                  <div 
+                    class="flex items-center justify-between px-8 py-3 bg-blue-50 hover:bg-blue-100 cursor-pointer transition-all"
+                    (click)="toggleGroup('group-' + exerciseGroup.id)"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-200">
+                        <span class="text-sm">🏋️</span>
+                      </div>
+                      <div>
+                        <h5 class="font-medium text-sm text-blue-800">{{ exerciseGroup.name }}</h5>
+                        <p class="text-xs text-blue-600">{{ exerciseGroup.habits?.length || 0 }} habits</p>
+                      </div>
+                    </div>
+                    
+                    <div class="transform transition-transform duration-300"
+                         [class.rotate-180]="!isGroupCollapsed('group-' + exerciseGroup.id)">
+                      <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Exercise Group Content -->
+                  <div *ngIf="!isGroupCollapsed('group-' + exerciseGroup.id)" class="p-4 bg-blue-25">
+                    
+                    <!-- Available Exercise Templates -->
+                    <div *ngIf="exerciseGroup.exercises?.length > 0" class="mb-4 p-3 bg-slate-50 rounded-lg border">
+                      <h6 class="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wider">Available Exercises</h6>
+                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        <div *ngFor="let exercise of exerciseGroup.exercises" 
+                             class="p-2 bg-white rounded border border-slate-200 text-center">
+                          <div class="font-medium text-xs text-slate-700">{{ exercise.name }}</div>
+                          <div class="text-xs text-slate-500 mt-1">
+                            {{ exercise.sets }}×{{ exercise.reps }} {{ exercise.unit }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Group Habits (Level 3 Habits) -->
+                    <div *ngIf="exerciseGroup.habits?.length > 0" class="space-y-2">
+                      <div *ngFor="let habit of exerciseGroup.habits" 
+                           class="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-all ml-8">
+                        
+                        <div class="flex items-center gap-3">
+                          <div class="flex items-center justify-center w-8 h-8 rounded-lg"
+                               [class.bg-green-100]="habit.type === 'good'"
+                               [class.bg-red-100]="habit.type === 'bad'">
+                            <span class="text-base">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                          </div>
+                          <div>
+                            <h6 class="font-medium text-sm text-slate-800">{{ habit.name }}</h6>
+                            <div class="text-xs text-slate-500">{{ habit.streak }} days • {{ getCompletionRate(habit.id) }}%</div>
+                          </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                          <button 
+                            class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+                            [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                            [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                            [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
+                            [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                            [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
+                            [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
+                            [class.text-slate-500]="isHabitCompletedToday(habit.id)"
+                            (click)="markHabitComplete(habit.id)"
+                            [disabled]="isHabitCompletedToday(habit.id)"
+                          >
+                            {{ isHabitCompletedToday(habit.id) ? '✓ Done' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
+                          </button>
+                          
+                          <button class="btn btn-ghost btn-xs btn-circle" (click)="editHabit(habit)">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flat View (Original Grid) -->
+      <div *ngIf="showView === 'flat'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div 
           *ngFor="let habit of getFilteredHabits()" 
-          class="habit-card p-4 rounded-lg border transition-all duration-200 hover:shadow-lg"
+          class="habit-card p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white"
           [ngClass]="{
-            'border-success bg-success/5': habit.type === 'good',
-            'border-error bg-error/5': habit.type === 'bad'
+            'border-green-200 bg-green-50/50 hover:border-green-300': habit.type === 'good',
+            'border-red-200 bg-red-50/50 hover:border-red-300': habit.type === 'bad'
           }"
         >
           <!-- Habit Header -->
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="p-3 rounded-full shadow-sm"
+                   [ngClass]="{
+                     'bg-green-100': habit.type === 'good',
+                     'bg-red-100': habit.type === 'bad'
+                   }">
+                <span class="text-2xl">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+              </div>
               <div>
-                <h3 class="font-bold text-lg">{{ habit.name }}</h3>
-                <p class="text-sm text-base-content/60">{{ habit.category || 'No category' }}</p>
+                <h3 class="font-bold text-lg text-slate-800 mb-1">{{ habit.name }}</h3>
+                <div class="text-xs text-slate-500 space-y-1">
+                  <div class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                    <span>{{ getCategoryName(habit.category || '') }}</span>
+                  </div>
+                  <div *ngIf="habit.subcategory" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
+                    <span class="text-purple-600">{{ getSubcategoryName(habit.subcategory) }}</span>
+                  </div>
+                  <div *ngIf="habit.group" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                    <span class="text-blue-600">{{ getGroupName(habit.group) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="dropdown dropdown-end">
-              <label tabindex="0" class="btn btn-ghost btn-xs">⋮</label>
-              <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32">
-                <li><a (click)="editHabit(habit)">✏️ Edit</a></li>
-                <li><a (click)="deleteHabit(habit.id)" class="text-error">🗑️ Delete</a></li>
+              <label tabindex="0" class="btn btn-ghost btn-sm w-8 h-8 rounded-full hover:bg-slate-100 transition-colors">
+                <span class="text-slate-400">⋮</span>
+              </label>
+              <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-xl border border-slate-200 w-36">
+                <li><a (click)="editHabit(habit)" class="rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600">✏️ Edit</a></li>
+                <li><a (click)="deleteHabit(habit.id)" class="rounded-lg hover:bg-red-50 text-slate-700 hover:text-red-600">🗑️ Delete</a></li>
               </ul>
             </div>
           </div>
 
           <!-- Habit Stats -->
-          <div class="space-y-3">
+          <div class="space-y-4 mb-5">
             <!-- Streak -->
-            <div class="flex items-center justify-between">
-              <span class="text-sm">Streak:</span>
-              <div class="flex items-center gap-1">
-                <span class="font-bold">{{ habit.streak }}</span>
-                <span class="text-xs">days {{ getStreakIcon(habit.streak) }}</span>
+            <div class="bg-slate-50 rounded-lg p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-600">Current Streak</span>
+                <div class="flex items-center gap-1">
+                  <span class="font-bold text-lg text-slate-800">{{ habit.streak }}</span>
+                  <span class="text-xs text-slate-500">days</span>
+                  <span class="text-lg">{{ getStreakIcon(habit.streak) }}</span>
+                </div>
               </div>
             </div>
 
             <!-- Completion Rate -->
-            <div class="flex items-center justify-between">
-              <span class="text-sm">Success Rate:</span>
-              <span class="font-bold">{{ getCompletionRate(habit.id) }}%</span>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="w-full bg-base-300 rounded-full h-2">
-              <div 
-                class="h-2 rounded-full transition-all duration-300"
-                [ngClass]="{
-                  'bg-success': habit.type === 'good',
-                  'bg-error': habit.type === 'bad'
-                }"
-                [style.width.%]="getCompletionRate(habit.id)"
-              ></div>
+            <div class="bg-slate-50 rounded-lg p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-600">Success Rate</span>
+                <span class="font-bold text-lg text-slate-800">{{ getCompletionRate(habit.id) }}%</span>
+              </div>
+              
+              <!-- Progress Bar -->
+              <div class="w-full bg-slate-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  [ngClass]="{
+                    'bg-gradient-to-r from-green-400 to-green-500': habit.type === 'good',
+                    'bg-gradient-to-r from-red-400 to-red-500': habit.type === 'bad'
+                  }"
+                  [style.width.%]="getCompletionRate(habit.id)"
+                ></div>
+              </div>
             </div>
           </div>
 
           <!-- Quick Action Buttons -->
-          <div class="flex gap-2 mt-4">
+          <div class="flex gap-3">
             <button 
-              class="btn btn-sm flex-1"
+              class="flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105"
               [ngClass]="{
-                'btn-success': habit.type === 'good',
-                'btn-error': habit.type === 'bad'
+                'bg-green-500 hover:bg-green-600 text-white shadow-lg': habit.type === 'good' && !isHabitCompletedToday(habit.id),
+                'bg-red-500 hover:bg-red-600 text-white shadow-lg': habit.type === 'bad' && !isHabitCompletedToday(habit.id),
+                'bg-slate-200 text-slate-500 cursor-not-allowed': isHabitCompletedToday(habit.id)
               }"
               (click)="markHabitComplete(habit.id)"
               [disabled]="isHabitCompletedToday(habit.id)"
@@ -220,7 +590,7 @@
               {{ isHabitCompletedToday(habit.id) ? '✓ Done Today' : getActionText(habit.type) }}
             </button>
             <button 
-              class="btn btn-sm btn-ghost"
+              class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-xl transition-all duration-200 transform hover:scale-105"
               (click)="viewHabitDetails(habit)"
             >
               📊
@@ -228,9 +598,11 @@
           </div>
 
           <!-- Description -->
-          <p *ngIf="habit.description" class="text-sm text-base-content/70 mt-3">
-            {{ habit.description }}
-          </p>
+          <div *ngIf="habit.description" class="mt-4 pt-3 border-t border-slate-200">
+            <p class="text-sm text-slate-600 italic">
+              {{ habit.description }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -255,71 +627,162 @@
 
 <!-- Edit Habit Modal -->
 <dialog #editModal class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg mb-4">✏️ Edit Habit</h3>
+  <div class="modal-box" 
+       style="max-width: 768px !important; 
+              background: white !important; 
+              border-radius: 16px !important; 
+              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; 
+              border: 0 !important; 
+              padding: 0 !important; 
+              overflow: hidden !important;">
+    <!-- Modal Header -->
+    <div style="background: linear-gradient(to right, #3b82f6, #8b5cf6) !important; 
+                color: white !important; 
+                padding: 24px !important;">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white/20 rounded-full">
+          <span class="text-2xl">✏️</span>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold">Edit Habit</h3>
+          <p class="text-blue-100 text-sm">Update your habit details</p>
+        </div>
+      </div>
+    </div>
     
-    <form *ngIf="editingHabit" class="space-y-4" #editForm="ngForm" (ngSubmit)="updateHabit()">
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-medium">Habit Name</span>
-        </label>
-        <input 
-          type="text" 
-          class="input input-bordered w-full"
-          [(ngModel)]="editingHabit.name"
-          name="editHabitName"
-          required
-        />
+    <!-- Modal Body -->
+    <div style="padding: 24px !important;">
+      <form *ngIf="editingHabit" class="space-y-6" #editForm="ngForm" (ngSubmit)="updateHabit()" id="editForm">
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Habit Name</span>
+          </label>
+          <input 
+            type="text" 
+            class="input input-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.name"
+            name="editHabitName"
+            required
+          />
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Habit Type</span>
+          </label>
+          <select 
+            class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.type"
+            name="editHabitType"
+            required
+          >
+            <option value="">Select habit type</option>
+            <option value="good">✅ Good Habit (Build)</option>
+            <option value="bad">🚫 Bad Habit (Avoid)</option>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Category</span>
+          </label>
+          <select 
+            class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.category"
+            name="editHabitCategory"
+            required
+          >
+            <option value="">Select a category</option>
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.icon }} {{ category.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Tracking Type</span>
+          </label>
+          <select 
+            class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.trackingType"
+            name="editHabitTrackingType"
+          >
+            <option value="simple">Simple (Yes/No)</option>
+            <option value="quantity">Quantity (Count)</option>
+            <option value="duration">Duration (Time)</option>
+            <option value="sets">Sets & Reps</option>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Points (Difficulty)</span>
+          </label>
+          <select 
+            class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.points"
+            name="editHabitPoints"
+          >
+            <option value="5">⭐ Easy (5 points)</option>
+            <option value="10">⭐⭐ Medium (10 points)</option>
+            <option value="15">⭐⭐⭐ Hard (15 points)</option>
+            <option value="20">⭐⭐⭐⭐ Very Hard (20 points)</option>
+            <option value="25">⭐⭐⭐⭐⭐ Extreme (25 points)</option>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Icon</span>
+          </label>
+          <input 
+            type="text" 
+            placeholder="🏃 (emoji or leave blank)"
+            class="input input-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.icon"
+            name="editHabitIcon"
+          />
       </div>
 
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-medium">Category</span>
-        </label>
-        <select 
-          class="select select-bordered w-full"
-          [(ngModel)]="editingHabit.category"
-          name="editHabitCategory"
-          required
-        >
-          <option *ngFor="let category of categories" [value]="category.id">
-            {{ category.icon }} {{ category.name }}
-          </option>
-        </select>
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Description</span>
+          </label>
+          <textarea 
+            class="textarea textarea-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all min-h-[100px]"
+            placeholder="Describe your habit and why it's important to you..."
+            [(ngModel)]="editingHabit.description"
+            name="editHabitDescription"
+          ></textarea>
       </div>
 
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-medium">Icon</span>
-        </label>
-        <input 
-          type="text" 
-          class="input input-bordered w-full"
-          [(ngModel)]="editingHabit.icon"
-          name="editHabitIcon"
-        />
-      </div>
-
-      <div class="form-control">
-        <label class="label">
-          <span class="label-text font-medium">Description</span>
-        </label>
-        <textarea 
-          class="textarea textarea-bordered"
-          [(ngModel)]="editingHabit.description"
-          name="editHabitDescription"
-        ></textarea>
-      </div>
-
-      <div class="modal-action">
-        <button type="button" class="btn" (click)="closeEditModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" [disabled]="!editForm.valid">
-          Save Changes
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
+    
+    <!-- Modal Footer -->
+    <div style="background: #f8fafc !important; 
+                padding: 16px 24px !important; 
+                border-top: 1px solid #e2e8f0 !important; 
+                display: flex !important; 
+                align-items: center !important; 
+                justify-content: space-between !important;">
+      <button 
+        type="button" 
+        class="btn btn-ghost px-6 py-3 rounded-xl hover:bg-slate-100 transition-all"
+        (click)="closeEditModal()">
+        Cancel
+      </button>
+      <button 
+        type="submit" 
+        form="editForm"
+        class="btn btn-primary px-8 py-3 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+        <span class="text-lg">💾</span>
+        Save Changes
+      </button>
+    </div>
   </div>
-  <form method="dialog" class="modal-backdrop">
-    <button type="button" (click)="closeEditModal()">close</button>
+  <form method="dialog" class="modal-backdrop bg-black/50 backdrop-blur-sm">
+    <button type="button" (click)="closeEditModal()" class="absolute inset-0 cursor-pointer">close</button>
   </form>
 </dialog>

@@ -1,0 +1,222 @@
+{
+  "table_name": "achievements",
+  "description": "Available achievements in the system - Import FIFTH (independent table)",
+  "import_order": 5,
+  "dependencies": [],
+  "fields": {
+    "id": {"type": "text", "primary": true},
+    "name": {"type": "text", "required": true},
+    "description": {"type": "text", "required": true},
+    "icon": {"type": "text", "required": true},
+    "requirement_type": {"type": "single_select", "options": ["streak", "points", "habits_count", "level", "completion_rate", "category_mastery", "perfect_days"]},
+    "requirement_value": {"type": "number"},
+    "category_id": {"type": "text", "description": "For category-specific achievements"},
+    "is_active": {"type": "boolean", "default": true},
+    "rarity": {"type": "single_select", "options": ["common", "rare", "epic", "legendary"], "default": "common"},
+    "points_reward": {"type": "number", "default": 0, "description": "Bonus points for earning achievement"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "id": "first-habit",
+      "name": "Getting Started",
+      "description": "Create your first habit",
+      "icon": "🌱",
+      "requirement_type": "habits_count",
+      "requirement_value": 1,
+      "is_active": true,
+      "rarity": "common",
+      "points_reward": 10
+    },
+    {
+      "id": "streak-3",
+      "name": "Building Momentum",
+      "description": "Maintain a 3-day streak",
+      "icon": "🌟",
+      "requirement_type": "streak",
+      "requirement_value": 3,
+      "is_active": true,
+      "rarity": "common",
+      "points_reward": 15
+    },
+    {
+      "id": "streak-7",
+      "name": "Week Warrior",
+      "description": "Maintain a 7-day streak",
+      "icon": "🔥",
+      "requirement_type": "streak",
+      "requirement_value": 7,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 25
+    },
+    {
+      "id": "streak-30",
+      "name": "Monthly Master",
+      "description": "Maintain a 30-day streak",
+      "icon": "🏆",
+      "requirement_type": "streak",
+      "requirement_value": 30,
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 100
+    },
+    {
+      "id": "streak-100",
+      "name": "Centennial Champion",
+      "description": "Maintain a 100-day streak",
+      "icon": "👑",
+      "requirement_type": "streak",
+      "requirement_value": 100,
+      "is_active": true,
+      "rarity": "legendary",
+      "points_reward": 500
+    },
+    {
+      "id": "level-5",
+      "name": "Level Up!",
+      "description": "Reach level 5",
+      "icon": "⭐",
+      "requirement_type": "level",
+      "requirement_value": 5,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 50
+    },
+    {
+      "id": "level-10",
+      "name": "Experienced",
+      "description": "Reach level 10",
+      "icon": "🎖️",
+      "requirement_type": "level",
+      "requirement_value": 10,
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 100
+    },
+    {
+      "id": "points-100",
+      "name": "Century Club",
+      "description": "Earn 100 points",
+      "icon": "💯",
+      "requirement_type": "points",
+      "requirement_value": 100,
+      "is_active": true,
+      "rarity": "common",
+      "points_reward": 20
+    },
+    {
+      "id": "points-500",
+      "name": "Point Collector",
+      "description": "Earn 500 points",
+      "icon": "💎",
+      "requirement_type": "points",
+      "requirement_value": 500,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 50
+    },
+    {
+      "id": "points-1000",
+      "name": "Point Master",
+      "description": "Earn 1000 points",
+      "icon": "💰",
+      "requirement_type": "points",
+      "requirement_value": 1000,
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 100
+    },
+    {
+      "id": "habit-master",
+      "name": "Habit Master",
+      "description": "Have 10 active habits",
+      "icon": "👑",
+      "requirement_type": "habits_count",
+      "requirement_value": 10,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 75
+    },
+    {
+      "id": "habit-guru",
+      "name": "Habit Guru",
+      "description": "Have 25 active habits",
+      "icon": "🧙",
+      "requirement_type": "habits_count",
+      "requirement_value": 25,
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 150
+    },
+    {
+      "id": "perfect-week",
+      "name": "Perfect Week",
+      "description": "Complete all habits for 7 consecutive days",
+      "icon": "✨",
+      "requirement_type": "perfect_days",
+      "requirement_value": 7,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 100
+    },
+    {
+      "id": "health-master",
+      "name": "Health Champion",
+      "description": "Master all health habits with 90% completion rate",
+      "icon": "💪",
+      "requirement_type": "category_mastery",
+      "requirement_value": 90,
+      "category_id": "health",
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 200
+    },
+    {
+      "id": "productivity-master",
+      "name": "Productivity Pro",
+      "description": "Master all productivity habits with 90% completion rate",
+      "icon": "⚡",
+      "requirement_type": "category_mastery",
+      "requirement_value": 90,
+      "category_id": "productivity",
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 200
+    },
+    {
+      "id": "learning-master",
+      "name": "Knowledge Seeker",
+      "description": "Master all learning habits with 90% completion rate",
+      "icon": "📚",
+      "requirement_type": "category_mastery",
+      "requirement_value": 90,
+      "category_id": "learning",
+      "is_active": true,
+      "rarity": "epic",
+      "points_reward": 200
+    },
+    {
+      "id": "early-bird",
+      "name": "Early Bird",
+      "description": "Complete morning habits before 8 AM for 7 days",
+      "icon": "🌅",
+      "requirement_type": "streak",
+      "requirement_value": 7,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 50
+    },
+    {
+      "id": "night-owl",
+      "name": "Night Planner",
+      "description": "Complete nightly planning for 14 consecutive days",
+      "icon": "🌙",
+      "requirement_type": "streak",
+      "requirement_value": 14,
+      "is_active": true,
+      "rarity": "rare",
+      "points_reward": 75
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "user-ach-001",
+    "user_id": "user_001",
+    "achievement_id": "first-habit",
+    "earned_date": "2024-01-01",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-01T10:30:00Z"
+  },
+  {
+    "id": "user-ach-002",
+    "user_id": "user_001",
+    "achievement_id": "streak-3",
+    "earned_date": "2024-01-03",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-03T20:15:00Z"
+  },
+  {
+    "id": "user-ach-003",
+    "user_id": "user_001",
+    "achievement_id": "streak-7",
+    "earned_date": "2024-01-07",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-07T22:00:00Z"
+  },
+  {
+    "id": "user-ach-004",
+    "user_id": "user_001",
+    "achievement_id": "points-100",
+    "earned_date": "2024-01-05",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-05T18:45:00Z"
+  },
+  {
+    "id": "user-ach-005",
+    "user_id": "user_001",
+    "achievement_id": "level-5",
+    "earned_date": "2024-01-12",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-12T16:30:00Z"
+  },
+  {
+    "id": "user-ach-006",
+    "user_id": "user_001",
+    "achievement_id": "points-500",
+    "earned_date": null,
+    "progress": 90,
+    "is_completed": false,
+    "notification_sent": false,
+    "created_at": "2024-01-15T09:00:00Z"
+  },
+  {
+    "id": "user-ach-007",
+    "user_id": "user_001",
+    "achievement_id": "streak-30",
+    "earned_date": null,
+    "progress": 27,
+    "is_completed": false,
+    "notification_sent": false,
+    "created_at": "2024-01-15T09:00:00Z"
+  },
+  {
+    "id": "user-ach-008",
+    "user_id": "user_001",
+    "achievement_id": "habit-master",
+    "earned_date": null,
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": false,
+    "created_at": "2024-01-15T15:20:00Z"
+  },
+  {
+    "id": "user-ach-009",
+    "user_id": "user_002",
+    "achievement_id": "first-habit",
+    "earned_date": "2024-01-08",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-08T14:20:00Z"
+  },
+  {
+    "id": "user-ach-010",
+    "user_id": "user_002",
+    "achievement_id": "streak-3",
+    "earned_date": "2024-01-10",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-10T19:30:00Z"
+  },
+  {
+    "id": "user-ach-011",
+    "user_id": "user_002",
+    "achievement_id": "points-100",
+    "earned_date": "2024-01-12",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-12T21:15:00Z"
+  },
+  {
+    "id": "user-ach-012",
+    "user_id": "user_003",
+    "achievement_id": "first-habit",
+    "earned_date": "2023-12-15",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2023-12-15T11:00:00Z"
+  },
+  {
+    "id": "user-ach-013",
+    "user_id": "user_003",
+    "achievement_id": "streak-7",
+    "earned_date": "2023-12-21",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2023-12-21T20:00:00Z"
+  },
+  {
+    "id": "user-ach-014",
+    "user_id": "user_003",
+    "achievement_id": "streak-30",
+    "earned_date": "2024-01-14",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-14T23:30:00Z"
+  },
+  {
+    "id": "user-ach-015",
+    "user_id": "user_003",
+    "achievement_id": "perfect-week",
+    "earned_date": "2024-01-07",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-07T23:59:00Z"
+  },
+  {
+    "id": "user-ach-016",
+    "user_id": "user_003",
+    "achievement_id": "health-master",
+    "earned_date": "2024-01-10",
+    "progress": 100,
+    "is_completed": true,
+    "notification_sent": true,
+    "created_at": "2024-01-10T22:45:00Z"
+  }
+]

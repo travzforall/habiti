@@ -1,0 +1,101 @@
+{
+  "table_name": "user_devices",
+  "description": "Tracks devices used by users for security and notifications",
+  "fields": [
+    {
+      "name": "device_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique device identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "link_row",
+      "link_to_table": "users",
+      "required": true,
+      "description": "Reference to user"
+    },
+    {
+      "name": "device_name",
+      "type": "text",
+      "description": "Friendly name for the device"
+    },
+    {
+      "name": "device_type",
+      "type": "single_select",
+      "options": ["ios", "android", "web", "desktop", "tablet"],
+      "required": true,
+      "description": "Type of device"
+    },
+    {
+      "name": "device_token",
+      "type": "text",
+      "unique": true,
+      "description": "Push notification token"
+    },
+    {
+      "name": "device_fingerprint",
+      "type": "text",
+      "unique": true,
+      "description": "Unique device fingerprint for identification"
+    },
+    {
+      "name": "platform",
+      "type": "text",
+      "description": "Platform (iOS, Android, Windows, etc.)"
+    },
+    {
+      "name": "platform_version",
+      "type": "text",
+      "description": "Platform version"
+    },
+    {
+      "name": "app_version",
+      "type": "text",
+      "description": "App version installed"
+    },
+    {
+      "name": "manufacturer",
+      "type": "text",
+      "description": "Device manufacturer"
+    },
+    {
+      "name": "model",
+      "type": "text",
+      "description": "Device model"
+    },
+    {
+      "name": "is_trusted",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether device is trusted"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "default": true,
+      "description": "Whether device is active"
+    },
+    {
+      "name": "push_enabled",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether push notifications are enabled"
+    },
+    {
+      "name": "last_seen",
+      "type": "date",
+      "description": "Last time device was seen"
+    },
+    {
+      "name": "first_seen",
+      "type": "created_on",
+      "description": "First time device was seen"
+    },
+    {
+      "name": "updated_at",
+      "type": "last_modified",
+      "description": "When device info was last updated"
+    }
+  ]
+}

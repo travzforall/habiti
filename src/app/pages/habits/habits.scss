@@ -1,0 +1,46 @@
+/* Custom modal styling to override DaisyUI defaults */
+dialog.modal .modal-box {
+  max-width: 768px !important;
+  background: white !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure form inputs have proper styling */
+.modal-box .input,
+.modal-box .select,
+.modal-box .textarea {
+  padding: 0.75rem 1rem !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 0.75rem !important;
+  font-size: 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-box .input:focus,
+.modal-box .select:focus,
+.modal-box .textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  outline: none !important;
+}
+
+/* Modal header gradient */
+.modal-box .modal-header {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6) !important;
+  color: white !important;
+  padding: 1.5rem !important;
+}
+
+/* Modal footer styling */
+.modal-box .modal-footer {
+  background: #f8fafc !important;
+  padding: 1rem 1.5rem !important;
+  border-top: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}

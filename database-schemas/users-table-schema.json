@@ -1,0 +1,257 @@
+{
+  "table_name": "users",
+  "description": "Core user authentication and profile table",
+  "fields": [
+    {
+      "name": "user_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique identifier for the user (UUID)"
+    },
+    {
+      "name": "email",
+      "type": "email",
+      "required": true,
+      "unique": true,
+      "description": "User's email address for login"
+    },
+    {
+      "name": "username",
+      "type": "text",
+      "required": true,
+      "unique": true,
+      "min_length": 3,
+      "max_length": 30,
+      "description": "Unique username for the user"
+    },
+    {
+      "name": "password_hash",
+      "type": "text",
+      "required": true,
+      "description": "Bcrypt hashed password"
+    },
+    {
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "max_length": 50,
+      "description": "User's first name"
+    },
+    {
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "max_length": 50,
+      "description": "User's last name"
+    },
+    {
+      "name": "display_name",
+      "type": "text",
+      "max_length": 100,
+      "description": "Optional display name for user"
+    },
+    {
+      "name": "avatar_url",
+      "type": "url",
+      "description": "URL to user's avatar image"
+    },
+    {
+      "name": "bio",
+      "type": "long_text",
+      "max_length": 500,
+      "description": "User's biography or description"
+    },
+    {
+      "name": "date_of_birth",
+      "type": "date",
+      "description": "User's date of birth"
+    },
+    {
+      "name": "phone_number",
+      "type": "phone_number",
+      "description": "User's phone number"
+    },
+    {
+      "name": "timezone",
+      "type": "text",
+      "default": "UTC",
+      "description": "User's preferred timezone"
+    },
+    {
+      "name": "language",
+      "type": "text",
+      "default": "en",
+      "description": "User's preferred language (ISO code)"
+    },
+    {
+      "name": "country",
+      "type": "text",
+      "max_length": 2,
+      "description": "User's country (ISO code)"
+    },
+    {
+      "name": "role",
+      "type": "single_select",
+      "options": ["user", "premium", "admin", "moderator"],
+      "default": "user",
+      "description": "User's role in the system"
+    },
+    {
+      "name": "subscription_tier",
+      "type": "single_select",
+      "options": ["free", "basic", "pro", "enterprise"],
+      "default": "free",
+      "description": "User's subscription tier"
+    },
+    {
+      "name": "subscription_expires_at",
+      "type": "date",
+      "description": "When the user's subscription expires"
+    },
+    {
+      "name": "email_verified",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user's email is verified"
+    },
+    {
+      "name": "email_verification_token",
+      "type": "text",
+      "description": "Token for email verification"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the user account is active"
+    },
+    {
+      "name": "is_deleted",
+      "type": "boolean",
+      "default": false,
+      "description": "Soft delete flag"
+    },
+    {
+      "name": "last_login",
+      "type": "date",
+      "description": "Last login timestamp"
+    },
+    {
+      "name": "login_count",
+      "type": "number",
+      "default": 0,
+      "description": "Number of times user has logged in"
+    },
+    {
+      "name": "failed_login_attempts",
+      "type": "number",
+      "default": 0,
+      "description": "Number of consecutive failed login attempts"
+    },
+    {
+      "name": "locked_until",
+      "type": "date",
+      "description": "Account locked until this timestamp"
+    },
+    {
+      "name": "password_reset_token",
+      "type": "text",
+      "description": "Token for password reset"
+    },
+    {
+      "name": "password_reset_expires",
+      "type": "date",
+      "description": "When password reset token expires"
+    },
+    {
+      "name": "two_factor_enabled",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether 2FA is enabled"
+    },
+    {
+      "name": "two_factor_secret",
+      "type": "text",
+      "description": "Secret for 2FA authentication"
+    },
+    {
+      "name": "referral_code",
+      "type": "text",
+      "unique": true,
+      "description": "User's unique referral code"
+    },
+    {
+      "name": "referred_by",
+      "type": "link_row",
+      "link_to_table": "users",
+      "description": "User who referred this user"
+    },
+    {
+      "name": "total_points",
+      "type": "number",
+      "default": 0,
+      "description": "Total gamification points earned"
+    },
+    {
+      "name": "level",
+      "type": "number",
+      "default": 1,
+      "description": "User's current level"
+    },
+    {
+      "name": "streak_count",
+      "type": "number",
+      "default": 0,
+      "description": "Current streak count"
+    },
+    {
+      "name": "best_streak",
+      "type": "number",
+      "default": 0,
+      "description": "Best streak achieved"
+    },
+    {
+      "name": "onboarding_completed",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user completed onboarding"
+    },
+    {
+      "name": "preferences",
+      "type": "json",
+      "description": "JSON object for user preferences"
+    },
+    {
+      "name": "metadata",
+      "type": "json",
+      "description": "Additional metadata as JSON"
+    },
+    {
+      "name": "created_at",
+      "type": "created_on",
+      "description": "When the user was created"
+    },
+    {
+      "name": "updated_at",
+      "type": "last_modified",
+      "description": "When the user was last updated"
+    }
+  ],
+  "relationships": [
+    {
+      "to_table": "habits",
+      "type": "one_to_many",
+      "foreign_key": "user_id"
+    },
+    {
+      "to_table": "user_sessions",
+      "type": "one_to_many",
+      "foreign_key": "user_id"
+    },
+    {
+      "to_table": "user_devices",
+      "type": "one_to_many",
+      "foreign_key": "user_id"
+    }
+  ]
+}

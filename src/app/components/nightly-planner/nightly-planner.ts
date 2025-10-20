@@ -28,6 +28,11 @@ export class NightlyPlannerComponent {
   newGratitude = signal('');
   newPriority = signal('');
   newRoutineItem = signal('');
+  
+  // Proof documentation state
+  private proofNotes = signal<Map<string, string>>(new Map());
+  private showProofNoteInput = signal<Set<string>>(new Set());
+  private habitProofs = signal<Map<string, { imageUrl?: string; note?: string }>>(new Map());
 
   ngOnInit() {
     // Check if today's plan already exists
@@ -351,5 +356,121 @@ export class NightlyPlannerComponent {
 
   toggleHabitToday(habitId: string): void {
     this.habitsService.toggleHabitForDate(habitId, new Date());
+  }
+  
+  // Proof documentation methods
+  triggerFileUpload(habitId: string): void {
+    const fileInput = document.getElementById(`proof-upload-${habitId}`) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+  
+  handleProofUpload(event: Event, habitId: string): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        const currentProofs = new Map(this.habitProofs());
+        const existingProof = currentProofs.get(habitId) || {};
+        currentProofs.set(habitId, { ...existingProof, imageUrl });
+        this.habitProofs.set(currentProofs);
+        
+        // Save to habits service
+        this.habitsService.addHabitProof(habitId, new Date(), { imageUrl });
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  
+  toggleProofNote(habitId: string): void {
+    const currentSet = new Set(this.showProofNoteInput());
+    if (currentSet.has(habitId)) {
+      currentSet.delete(habitId);
+    } else {
+      currentSet.add(habitId);
+    }
+    this.showProofNoteInput.set(currentSet);
+  }
+  
+  showProofNote(habitId: string): boolean {
+    return this.showProofNoteInput().has(habitId);
+  }
+  
+  getProofNote(habitId: string): string {
+    return this.proofNotes().get(habitId) || '';
+  }
+  
+  updateProofNote(habitId: string, value: string): void {
+    const currentNotes = new Map(this.proofNotes());
+    currentNotes.set(habitId, value);
+    this.proofNotes.set(currentNotes);
+  }
+  
+  saveProofNote(habitId: string): void {
+    const note = this.proofNotes().get(habitId);
+    if (note) {
+      const currentProofs = new Map(this.habitProofs());
+      const existingProof = currentProofs.get(habitId) || {};
+      currentProofs.set(habitId, { ...existingProof, note });
+      this.habitProofs.set(currentProofs);
+      
+      // Save to habits service
+      this.habitsService.addHabitProof(habitId, new Date(), { note });
+      
+      // Hide the input
+      this.toggleProofNote(habitId);
+      
+      // Clear the temporary note
+      const currentNotes = new Map(this.proofNotes());
+      currentNotes.delete(habitId);
+      this.proofNotes.set(currentNotes);
+    }
+  }
+  
+  getHabitProof(habitId: string): { imageUrl?: string; note?: string } | undefined {
+    // First check local state
+    const localProof = this.habitProofs().get(habitId);
+    if (localProof) return localProof;
+    
+    // Then check habits service
+    return this.habitsService.getHabitProof(habitId, new Date());
+  }
+  
+  removeProofImage(habitId: string): void {
+    const currentProofs = new Map(this.habitProofs());
+    const proof = currentProofs.get(habitId);
+    if (proof) {
+      delete proof.imageUrl;
+      if (!proof.note) {
+        currentProofs.delete(habitId);
+      } else {
+        currentProofs.set(habitId, proof);
+      }
+      this.habitProofs.set(currentProofs);
+      
+      // Update in habits service
+      this.habitsService.removeHabitProofImage(habitId, new Date());
+    }
+  }
+  
+  removeProofNote(habitId: string): void {
+    const currentProofs = new Map(this.habitProofs());
+    const proof = currentProofs.get(habitId);
+    if (proof) {
+      delete proof.note;
+      if (!proof.imageUrl) {
+        currentProofs.delete(habitId);
+      } else {
+        currentProofs.set(habitId, proof);
+      }
+      this.habitProofs.set(currentProofs);
+      
+      // Update in habits service
+      this.habitsService.removeHabitProofNote(habitId, new Date());
+    }
   }
 }

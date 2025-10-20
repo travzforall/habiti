@@ -1,0 +1,153 @@
+{
+  "table_name": "user_achievements",
+  "description": "Achievements earned by users - Import TWELFTH",
+  "import_order": 12,
+  "dependencies": ["achievements"],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "user_id": {"type": "text", "required": true},
+    "achievement_id": {"type": "link", "link_to": "achievements", "required": true},
+    "earned_at": {"type": "date_time", "auto_now_add": true},
+    "current_progress": {"type": "number", "description": "Progress towards achievement when earned"},
+    "requirement_value": {"type": "number", "description": "Required value when achievement was earned"},
+    "is_displayed": {"type": "boolean", "default": true},
+    "notification_sent": {"type": "boolean", "default": false},
+    "celebration_viewed": {"type": "boolean", "default": false},
+    "notes": {"type": "text", "description": "Additional context about earning this achievement"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "user_id": "user_001",
+      "achievement_id": "first-habit",
+      "earned_at": "2025-01-01T10:00:00Z",
+      "current_progress": 1,
+      "requirement_value": 1,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "First habit created: Morning Exercise"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "streak-3",
+      "earned_at": "2025-01-03T23:59:59Z",
+      "current_progress": 3,
+      "requirement_value": 3,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "First 3-day streak achieved with reading habit"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "streak-7",
+      "earned_at": "2025-01-08T23:59:59Z",
+      "current_progress": 7,
+      "requirement_value": 7,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "Week-long streak with meditation habit"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "points-100",
+      "earned_at": "2025-01-05T14:30:00Z",
+      "current_progress": 105,
+      "requirement_value": 100,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "Reached 100 points through consistent habit completion"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "points-500",
+      "earned_at": "2025-01-10T19:45:00Z",
+      "current_progress": 523,
+      "requirement_value": 500,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "Hit 500 points milestone"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "level-5",
+      "earned_at": "2025-01-10T19:45:00Z",
+      "current_progress": 5,
+      "requirement_value": 5,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": false,
+      "notes": "Leveled up to 5"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "habit-master",
+      "earned_at": "2025-01-12T16:20:00Z",
+      "current_progress": 10,
+      "requirement_value": 10,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": false,
+      "notes": "Created 10th active habit: Gratitude Journal"
+    },
+    {
+      "user_id": "user_001",
+      "achievement_id": "early-bird",
+      "earned_at": "2025-01-09T07:30:00Z",
+      "current_progress": 7,
+      "requirement_value": 7,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "Completed morning exercise before 8 AM for 7 consecutive days"
+    },
+    {
+      "user_id": "user_002",
+      "achievement_id": "first-habit",
+      "earned_at": "2025-01-10T14:15:00Z",
+      "current_progress": 1,
+      "requirement_value": 1,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "Started with water intake tracking"
+    },
+    {
+      "user_id": "user_002",
+      "achievement_id": "streak-3",
+      "earned_at": "2025-01-12T22:30:00Z",
+      "current_progress": 3,
+      "requirement_value": 3,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": false,
+      "notes": "3-day streak with water habit"
+    },
+    {
+      "user_id": "user_002",
+      "achievement_id": "points-100",
+      "earned_at": "2025-01-14T18:00:00Z",
+      "current_progress": 112,
+      "requirement_value": 100,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": false,
+      "notes": "First 100 points earned"
+    },
+    {
+      "user_id": "user_003",
+      "achievement_id": "first-habit",
+      "earned_at": "2025-01-14T09:00:00Z",
+      "current_progress": 1,
+      "requirement_value": 1,
+      "is_displayed": true,
+      "notification_sent": true,
+      "celebration_viewed": true,
+      "notes": "New user's first habit: Morning meditation"
+    }
+  ]
+}

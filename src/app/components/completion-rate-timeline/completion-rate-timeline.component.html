@@ -1,0 +1,209 @@
+<!-- Completion Rate Timeline Chart Template -->
+<!-- Role: Analytics-Reporter -->
+
+<div class="completion-timeline-container">
+  <!-- Chart Header -->
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>Task Completion Rate Over Time</h3>
+      <div class="chart-subtitle">
+        Track your productivity trends and completion patterns
+      </div>
+    </div>
+    
+    <!-- Chart Controls -->
+    <div class="chart-controls" *ngIf="showControls">
+      <div class="time-range-selector">
+        <label>Time Range:</label>
+        <select [value]="selectedTimeRange" 
+                (change)="onTimeRangeChange(timeRangeSelect.value)"
+                #timeRangeSelect
+                class="control-select">
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 90 Days</option>
+          <option value="1y">Last Year</option>
+        </select>
+      </div>
+      
+      <div class="period-selector">
+        <label>Group By:</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" 
+                   [value]="'daily'" 
+                   [(ngModel)]="selectedPeriod"
+                   (change)="onPeriodChange('daily')"
+                   name="period">
+            Daily
+          </label>
+          <label class="radio-option">
+            <input type="radio" 
+                   [value]="'weekly'" 
+                   [(ngModel)]="selectedPeriod"
+                   (change)="onPeriodChange('weekly')"
+                   name="period">
+            Weekly
+          </label>
+          <label class="radio-option">
+            <input type="radio" 
+                   [value]="'monthly'" 
+                   [(ngModel)]="selectedPeriod"
+                   (change)="onPeriodChange('monthly')"
+                   name="period">
+            Monthly
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="chart-loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Calculating completion rates...</div>
+  </div>
+
+  <!-- Chart Container -->
+  <div *ngIf="!isLoading" class="chart-container" #chartContainer>
+    <!-- Chart Stats -->
+    <div class="chart-stats">
+      <div class="stat-item">
+        <span class="stat-label">Average Rate:</span>
+        <span class="stat-value">{{ getAverageCompletionRate() }}%</span>
+      </div>
+      
+      <div class="stat-item">
+        <span class="stat-label">Trend:</span>
+        <span class="stat-value" 
+              [class]="'trend-' + getCurrentTrend()">
+          {{ getCurrentTrend() | titlecase }}
+          <span class="trend-icon">
+            {{ getCurrentTrend() === 'improving' ? '📈' : getCurrentTrend() === 'declining' ? '📉' : '➡️' }}
+          </span>
+        </span>
+      </div>
+      
+      <div class="stat-item">
+        <span class="stat-label">Data Points:</span>
+        <span class="stat-value">{{ timelineData.length }}</span>
+      </div>
+    </div>
+
+    <!-- Canvas Chart -->
+    <div class="chart-wrapper">
+      <canvas #chartCanvas
+              class="chart-canvas"
+              (mousemove)="onCanvasMouseMove($event)"
+              (mouseleave)="onCanvasMouseLeave()">
+      </canvas>
+      
+      <!-- Chart Tooltip -->
+      <div *ngIf="hoveredPoint && chartConfig.showTooltip"
+           class="chart-tooltip"
+           [style.left.px]="tooltipPosition.x + 10"
+           [style.top.px]="tooltipPosition.y - 10">
+        
+        <div class="tooltip-header">
+          {{ hoveredPoint.date }}
+        </div>
+        
+        <div class="tooltip-content">
+          <div class="tooltip-metric">
+            <span class="metric-label">Completion Rate:</span>
+            <span class="metric-value">{{ hoveredPoint.completionRate }}%</span>
+          </div>
+          
+          <div class="tooltip-metric">
+            <span class="metric-label">Completed:</span>
+            <span class="metric-value">{{ hoveredPoint.completedTasks }}</span>
+          </div>
+          
+          <div class="tooltip-metric">
+            <span class="metric-label">Total Tasks:</span>
+            <span class="metric-value">{{ hoveredPoint.totalTasks }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Legend -->
+    <div class="chart-legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background: #3b82f6;"></div>
+        <span class="legend-label">Completion Rate</span>
+      </div>
+      
+      <div class="legend-item">
+        <div class="legend-line trend-line"></div>
+        <span class="legend-label">Trend Line</span>
+      </div>
+      
+      <div class="legend-item">
+        <div class="legend-color grid-color"></div>
+        <span class="legend-label">Target Benchmarks</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && timelineData.length === 0" class="empty-state">
+    <div class="empty-icon">📊</div>
+    <div class="empty-title">No Data Available</div>
+    <div class="empty-message">
+      Complete some tasks to see your completion rate timeline.
+    </div>
+  </div>
+
+  <!-- Chart Insights -->
+  <div *ngIf="!isLoading && timelineData.length > 0" class="chart-insights">
+    <div class="insights-header">
+      <h4>📈 Insights & Analysis</h4>
+    </div>
+    
+    <div class="insights-grid">
+      <div class="insight-card" 
+           [class]="'insight-' + getCurrentTrend()">
+        <div class="insight-title">Trend Analysis</div>
+        <div class="insight-description">
+          <span *ngIf="getCurrentTrend() === 'improving'">
+            🎉 Your completion rate is improving! Keep up the great work.
+          </span>
+          <span *ngIf="getCurrentTrend() === 'declining'">
+            ⚠️ Your completion rate is declining. Consider reviewing your workflow.
+          </span>
+          <span *ngIf="getCurrentTrend() === 'stable'">
+            ✅ Your completion rate is stable. Consider strategies to optimize further.
+          </span>
+        </div>
+      </div>
+      
+      <div class="insight-card">
+        <div class="insight-title">Performance Target</div>
+        <div class="insight-description">
+          <span *ngIf="getAverageCompletionRate() >= 85">
+            🎯 Excellent! You're meeting productivity targets.
+          </span>
+          <span *ngIf="getAverageCompletionRate() >= 70 && getAverageCompletionRate() < 85">
+            👍 Good progress! Aim for 85% completion rate.
+          </span>
+          <span *ngIf="getAverageCompletionRate() < 70">
+            📊 Focus needed. Target 70%+ completion rate for better productivity.
+          </span>
+        </div>
+      </div>
+      
+      <div class="insight-card">
+        <div class="insight-title">Best Period</div>
+        <div class="insight-description">
+          <span *ngIf="timelineData.length >= 7">
+            {{ getBestPerformancePeriod() }}
+          </span>
+          <span *ngIf="timelineData.length < 7">
+            Need more data to identify patterns.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

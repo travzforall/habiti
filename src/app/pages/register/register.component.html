@@ -1,0 +1,135 @@
+<div class="min-h-screen flex items-center justify-center bg-base-200 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-3xl font-bold text-center mb-2">Create Account</h2>
+      <p class="text-center text-base-content/60 mb-6">Start building better habits today</p>
+      
+      <form (ngSubmit)="onSubmit()">
+        <div *ngIf="errors.general" class="alert alert-error mb-4">
+          <span>{{ errors.general }}</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">First Name</span>
+            </label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.firstName"
+              name="firstName"
+              class="input input-bordered"
+              [class.input-error]="errors.firstName"
+              placeholder="John"
+              required>
+            <label *ngIf="errors.firstName" class="label">
+              <span class="label-text-alt text-error">{{ errors.firstName }}</span>
+            </label>
+          </div>
+          
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Last Name</span>
+            </label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.lastName"
+              name="lastName"
+              class="input input-bordered"
+              [class.input-error]="errors.lastName"
+              placeholder="Doe"
+              required>
+            <label *ngIf="errors.lastName" class="label">
+              <span class="label-text-alt text-error">{{ errors.lastName }}</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Username</span>
+          </label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData.username"
+            name="username"
+            class="input input-bordered"
+            [class.input-error]="errors.username"
+            placeholder="johndoe"
+            required>
+          <label *ngIf="errors.username" class="label">
+            <span class="label-text-alt text-error">{{ errors.username }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Email</span>
+          </label>
+          <input 
+            type="email" 
+            [(ngModel)]="formData.email"
+            name="email"
+            class="input input-bordered"
+            [class.input-error]="errors.email"
+            placeholder="john@example.com"
+            required>
+          <label *ngIf="errors.email" class="label">
+            <span class="label-text-alt text-error">{{ errors.email }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Password</span>
+          </label>
+          <input 
+            type="password" 
+            [(ngModel)]="formData.password"
+            name="password"
+            class="input input-bordered"
+            [class.input-error]="errors.password"
+            placeholder="••••••••"
+            required>
+          <label *ngIf="errors.password" class="label">
+            <span class="label-text-alt text-error">{{ errors.password }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Confirm Password</span>
+          </label>
+          <input 
+            type="password" 
+            [(ngModel)]="formData.confirmPassword"
+            name="confirmPassword"
+            class="input input-bordered"
+            [class.input-error]="errors.confirmPassword"
+            placeholder="••••••••"
+            required>
+          <label *ngIf="errors.confirmPassword" class="label">
+            <span class="label-text-alt text-error">{{ errors.confirmPassword }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-6">
+          <button 
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading"
+            [class.loading]="isLoading">
+            {{ isLoading ? 'Creating account...' : 'Sign up' }}
+          </button>
+        </div>
+      </form>
+      
+      <div class="divider">OR</div>
+      
+      <p class="text-center">
+        Already have an account? 
+        <a routerLink="/login" class="link link-primary">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>

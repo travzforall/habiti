@@ -1,0 +1,87 @@
+<div class="min-h-screen flex items-center justify-center bg-base-200 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="card w-full max-w-md bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-3xl font-bold text-center mb-2">Welcome Back</h2>
+      <p class="text-center text-base-content/60 mb-6">Sign in to continue your journey</p>
+      
+      <div *ngIf="showRegistrationSuccess" class="alert alert-success mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Registration successful! Please sign in.</span>
+      </div>
+      
+      <form (ngSubmit)="onSubmit()">
+        <div *ngIf="errors.general" class="alert alert-error mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errors.general }}</span>
+        </div>
+        
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Email</span>
+          </label>
+          <input 
+            type="email" 
+            [(ngModel)]="formData.email"
+            name="email"
+            class="input input-bordered"
+            [class.input-error]="errors.email"
+            placeholder="john@example.com"
+            required>
+          <label *ngIf="errors.email" class="label">
+            <span class="label-text-alt text-error">{{ errors.email }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label">
+            <span class="label-text">Password</span>
+            <a href="#" class="label-text-alt link link-hover">Forgot password?</a>
+          </label>
+          <input 
+            type="password" 
+            [(ngModel)]="formData.password"
+            name="password"
+            class="input input-bordered"
+            [class.input-error]="errors.password"
+            placeholder="••••••••"
+            required>
+          <label *ngIf="errors.password" class="label">
+            <span class="label-text-alt text-error">{{ errors.password }}</span>
+          </label>
+        </div>
+        
+        <div class="form-control mt-4">
+          <label class="label cursor-pointer">
+            <span class="label-text">Remember me</span>
+            <input 
+              type="checkbox" 
+              [(ngModel)]="formData.rememberMe"
+              name="rememberMe"
+              class="checkbox checkbox-primary">
+          </label>
+        </div>
+        
+        <div class="form-control mt-6">
+          <button 
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading"
+            [class.loading]="isLoading">
+            {{ isLoading ? 'Signing in...' : 'Sign in' }}
+          </button>
+        </div>
+      </form>
+      
+      <div class="divider">OR</div>
+      
+      <p class="text-center">
+        Don't have an account? 
+        <a routerLink="/register" class="link link-primary">Create one now</a>
+      </p>
+    </div>
+  </div>
+</div>

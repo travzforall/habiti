@@ -1,8 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HabitsService } from '../../services/habits';
-import { HabitSimComponent } from '../../components/habit-sim/habit-sim';
+// import { HabitSimComponent } from '../../components/habit-sim/habit-sim';
+import { AuthService, User } from '../../services/auth.service';
+import { TasksService } from '../../services/tasks.service';
+// import { ProjectsService } from '../../services/projects.service';
+import { Observable } from 'rxjs';
 
 interface WeeklyData {
   date: string;
@@ -22,16 +26,62 @@ interface WeeklySchedule {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, HabitSimComponent],
+  imports: [CommonModule, RouterModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   private habitsService = inject(HabitsService);
-  private router = inject(Router);
+  private authService = inject(AuthService);
+  private tasksService = inject(TasksService);
+  // private projectsService = inject(ProjectsService);
+  protected router = inject(Router);
   
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
+  protected readonly todaysTasks = this.tasksService.todaysTasks;
+  protected readonly overdueTasks = this.tasksService.overdueTasks;
+  // protected readonly projects = this.projectsService.projects;
+  protected currentUser$: Observable<User | null> = this.authService.currentUser;
+  protected currentUser: User | null = null;
+  
+  // Week navigation
+  protected currentWeekOffset = signal(0);
+  
+  // Computed weekly schedule
+  protected readonly weeklySchedule = computed(() => {
+    const offset = this.currentWeekOffset();
+    
+    const schedule: WeeklySchedule[] = [];
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate the start of the week (Sunday) with offset
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - currentDay + (offset * 7));
+    
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      
+      const isToday = offset === 0 && this.isSameDay(date, today);
+      
+      schedule.push({
+        date: date.toISOString(),
+        dayName: dayNames[i],
+        dayNumber: date.getDate(),
+        month: monthNames[date.getMonth()],
+        isToday,
+        fullDate: date
+      });
+    }
+    
+    return schedule;
+  });
   
   // Category colors matching calendar component
   private categoryColors: { [key: string]: string } = {
@@ -56,6 +106,61 @@ export class DashboardComponent {
     'finance': '💰',
     'other': '📌'
   };
+
+  ngOnInit(): void {
+    // Subscribe to current user
+    this.currentUser$ = this.authService.currentUser;
+    this.currentUser$.subscribe(user => {
+      this.currentUser = user;
+      // If we have a user but no full data, fetch it
+      if (user && !user.bio && !user.profile_picture) {
+        this.authService.getCurrentUser().subscribe({
+          next: (fullUser) => {
+            this.currentUser = fullUser;
+          },
+          error: (error) => {
+            console.error('Error fetching user data:', error);
+          }
+        });
+      }
+    });
+
+    // Create sample tasks if none exist
+    if (this.tasksService.standaloneTasks().length === 0) {
+      this.tasksService.createSampleTasks();
+    }
+  }
+
+  // Format date for display
+  formatDate(dateInput: string | number): string {
+    if (!dateInput) return '';
+    
+    // Handle timestamp (number in milliseconds)
+    const date = typeof dateInput === 'number' 
+      ? new Date(dateInput) 
+      : new Date(dateInput);
+    
+    if (isNaN(date.getTime())) return '';
+    
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
+  // Calculate age from date of birth
+  calculateAge(dateOfBirth: string): number | null {
+    if (!dateOfBirth) return null;
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
 
   // Time-based greeting
   getTimeBasedGreeting(): string {
@@ -125,8 +230,27 @@ export class DashboardComponent {
     return this.habitsService.isHabitCompletedOnDate(habitId, new Date());
   }
 
-  toggleHabitToday(habitId: string): void {
-    this.habitsService.toggleHabitForDate(habitId, new Date());
+  private lastToggleTime: { [key: string]: number } = {};
+
+  toggleHabitToday(habitId: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
+    // Debounce rapid clicks on the same habit
+    const now = Date.now();
+    if (this.lastToggleTime[habitId] && now - this.lastToggleTime[habitId] < 300) {
+      return;
+    }
+    this.lastToggleTime[habitId] = now;
+    
+    console.log('Toggling habit today:', habitId); // Debug log
+    
+    // Use setTimeout to avoid change detection issues
+    setTimeout(() => {
+      this.habitsService.toggleHabitForDate(habitId, new Date());
+    }, 0);
   }
 
   getCompletionRate(habitId: string): number {
@@ -240,38 +364,6 @@ export class DashboardComponent {
     return type === 'good' ? '✅' : '🚫';
   }
 
-  // Weekly Schedule methods
-  getWeeklySchedule(): WeeklySchedule[] {
-    const schedule: WeeklySchedule[] = [];
-    const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    // Calculate the start of the week (Sunday)
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay);
-    
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      
-      const isToday = this.isSameDay(date, today);
-      
-      schedule.push({
-        date: date.toISOString(),
-        dayName: dayNames[i],
-        dayNumber: date.getDate(),
-        month: monthNames[date.getMonth()],
-        isToday,
-        fullDate: date
-      });
-    }
-    
-    return schedule;
-  }
 
   isHabitCompletedOnDate(habitId: string, date: Date): boolean {
     return this.habitsService.isHabitCompletedOnDate(habitId, date);
@@ -287,7 +379,7 @@ export class DashboardComponent {
     if (!habit) return 0;
 
     let totalPoints = 0;
-    const schedule = this.getWeeklySchedule();
+    const schedule = this.weeklySchedule();
     
     schedule.forEach(day => {
       if (this.isHabitCompletedOnDate(habitId, day.fullDate)) {
@@ -303,7 +395,7 @@ export class DashboardComponent {
   }
 
   getHabitWeeklyCompletions(habitId: string): number {
-    const schedule = this.getWeeklySchedule();
+    const schedule = this.weeklySchedule();
     return schedule.filter(day => 
       this.isHabitCompletedOnDate(habitId, day.fullDate)
     ).length;
@@ -327,7 +419,7 @@ export class DashboardComponent {
 
   getWeeklyTotalPoints(): number {
     let totalPoints = 0;
-    const schedule = this.getWeeklySchedule();
+    const schedule = this.weeklySchedule();
     
     schedule.forEach(day => {
       totalPoints += this.getDailyTotalPoints(day.fullDate);
@@ -340,5 +432,113 @@ export class DashboardComponent {
     return date1.getFullYear() === date2.getFullYear() &&
            date1.getMonth() === date2.getMonth() &&
            date1.getDate() === date2.getDate();
+  }
+
+  // Task management methods
+  toggleTask(taskId: string): void {
+    this.tasksService.toggleTask(taskId);
+  }
+
+  getPriorityColor(priority: string): string {
+    const colors = {
+      low: '#10b981',
+      medium: '#f59e0b',
+      high: '#ef4444',
+      urgent: '#dc2626'
+    };
+    return colors[priority as keyof typeof colors] || '#6b7280';
+  }
+
+  isTaskOverdue(dueDate: Date | undefined): boolean {
+    if (!dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  }
+
+  isTaskDueToday(dueDate: Date | undefined): boolean {
+    if (!dueDate) return false;
+    const today = new Date();
+    return dueDate.toDateString() === today.toDateString();
+  }
+
+  formatTaskDate(date: Date | undefined): string {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  // Project methods for dashboard - Temporarily disabled
+  /*
+  getProjectTodaysTasks(projectId: string) {
+    const project = this.projects().find(p => p.id === projectId);
+    if (!project) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return project.tasks.filter(task => {
+      if (!task.dueDate) return false;
+      const taskDate = new Date(task.dueDate);
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate >= today && taskDate < tomorrow;
+    });
+  }
+
+  /*
+  getProjectProgress(projectId: string): number {
+    const project = this.projects().find(p => p.id === projectId);
+    if (!project || project.tasks.length === 0) return 0;
+    
+    const completedTasks = project.tasks.filter(task => task.completed).length;
+    return Math.round((completedTasks / project.tasks.length) * 100);
+  }
+
+  getProjectColor(projectId: string): string {
+    const project = this.projects().find(p => p.id === projectId);
+    if (!project) return '#6b7280';
+    
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // green
+      '#f59e0b', // amber
+      '#ec4899', // pink
+      '#8b5cf6', // purple
+      '#ef4444', // red
+      '#06b6d4', // cyan
+      '#84cc16'  // lime
+    ];
+    
+    // Use project ID to consistently assign a color
+    const index = project.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  }
+
+  navigateToProject(projectId: string): void {
+    this.router.navigate(['/projects'], { queryParams: { project: projectId } });
+  }
+  */
+
+  // Week navigation methods
+  goToPreviousWeek(): void {
+    console.log('Previous week clicked! Current offset:', this.currentWeekOffset());
+    this.currentWeekOffset.update(offset => offset - 1);
+    console.log('New offset:', this.currentWeekOffset());
+  }
+
+  goToNextWeek(): void {
+    console.log('Next week clicked! Current offset:', this.currentWeekOffset());
+    this.currentWeekOffset.update(offset => offset + 1);
+    console.log('New offset:', this.currentWeekOffset());
+  }
+
+  goToCurrentWeek(): void {
+    console.log('Current week clicked!');
+    this.currentWeekOffset.set(0);
+    console.log('Reset to offset:', this.currentWeekOffset());
   }
 }

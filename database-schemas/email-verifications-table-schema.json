@@ -1,0 +1,67 @@
+{
+  "table_name": "email_verifications",
+  "description": "Manages email verification tokens and status",
+  "fields": [
+    {
+      "name": "verification_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique verification identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "link_row",
+      "link_to_table": "users",
+      "required": true,
+      "description": "User requesting verification"
+    },
+    {
+      "name": "email",
+      "type": "email",
+      "required": true,
+      "description": "Email address to verify"
+    },
+    {
+      "name": "token",
+      "type": "text",
+      "required": true,
+      "unique": true,
+      "description": "Verification token"
+    },
+    {
+      "name": "verification_type",
+      "type": "single_select",
+      "options": ["registration", "email_change", "password_reset"],
+      "required": true,
+      "description": "Type of verification"
+    },
+    {
+      "name": "expires_at",
+      "type": "date",
+      "required": true,
+      "description": "When token expires"
+    },
+    {
+      "name": "verified_at",
+      "type": "date",
+      "description": "When verification was completed"
+    },
+    {
+      "name": "is_used",
+      "type": "boolean",
+      "default": false,
+      "description": "Whether token has been used"
+    },
+    {
+      "name": "attempts",
+      "type": "number",
+      "default": 0,
+      "description": "Number of verification attempts"
+    },
+    {
+      "name": "created_at",
+      "type": "created_on",
+      "description": "When verification was created"
+    }
+  ]
+}

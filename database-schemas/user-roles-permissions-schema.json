@@ -1,0 +1,71 @@
+{
+  "table_name": "user_permissions",
+  "description": "Granular permissions for users beyond basic roles",
+  "fields": [
+    {
+      "name": "permission_id",
+      "type": "text",
+      "primary_key": true,
+      "description": "Unique permission identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "link_row",
+      "link_to_table": "users",
+      "required": true,
+      "description": "User with this permission"
+    },
+    {
+      "name": "permission_type",
+      "type": "single_select",
+      "options": [
+        "admin_access",
+        "user_management",
+        "content_moderation",
+        "analytics_access",
+        "billing_access",
+        "support_access",
+        "feature_beta_access",
+        "api_access",
+        "export_data",
+        "import_data",
+        "delete_account",
+        "manage_subscriptions"
+      ],
+      "required": true,
+      "description": "Type of permission granted"
+    },
+    {
+      "name": "resource_type",
+      "type": "text",
+      "description": "Type of resource this permission applies to"
+    },
+    {
+      "name": "resource_id",
+      "type": "text",
+      "description": "Specific resource ID (if applicable)"
+    },
+    {
+      "name": "granted_by",
+      "type": "link_row",
+      "link_to_table": "users",
+      "description": "User who granted this permission"
+    },
+    {
+      "name": "granted_at",
+      "type": "created_on",
+      "description": "When permission was granted"
+    },
+    {
+      "name": "expires_at",
+      "type": "date",
+      "description": "When permission expires (if applicable)"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "default": true,
+      "description": "Whether permission is currently active"
+    }
+  ]
+}

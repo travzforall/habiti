@@ -1,0 +1,82 @@
+[
+  {
+    "session_id": "session_20250923_001",
+    "start_time": "2025-09-23T10:00:00.000Z",
+    "end_time": "2025-09-23T12:30:00.000Z",
+    "agent_type": "rapid-prototyper",
+    "tasks_worked": 4,
+    "tasks_completed": 0,
+    "summary": "Initial project setup and task creation. Created analytics and dashboard task structure with proper categorization and priority assignment.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250923_002",
+    "start_time": "2025-09-23T14:00:00.000Z",
+    "end_time": "2025-09-23T16:45:00.000Z",
+    "agent_type": "ui-designer",
+    "tasks_worked": 2,
+    "tasks_completed": 0,
+    "summary": "Design work on analytics dashboard layout. Created wireframes, component specifications, and responsive design guidelines.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250923_003",
+    "start_time": "2025-09-23T19:00:00.000Z",
+    "end_time": "2025-09-23T21:30:00.000Z",
+    "agent_type": "frontend-developer",
+    "tasks_worked": 3,
+    "tasks_completed": 0,
+    "summary": "Started implementing Chart.js components and calendar grid functionality. Set up component structure and basic event handling.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250923_004",
+    "start_time": "2025-09-23T21:45:00.000Z",
+    "end_time": "2025-09-23T23:00:00.000Z",
+    "agent_type": "ui-designer",
+    "tasks_worked": 1,
+    "tasks_completed": 1,
+    "summary": "Completed habit creation interface design with form wizard and template system. Received approval for implementation.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250924_001",
+    "start_time": "2025-09-24T00:30:00.000Z",
+    "end_time": "2025-09-24T02:00:00.000Z",
+    "agent_type": "general-purpose",
+    "tasks_worked": 6,
+    "tasks_completed": 2,
+    "summary": "Major progress session: completed analytics dashboard design (approved), finished Chart.js implementation (needs mobile optimization), updated multiple task statuses, and created comprehensive Baserow integration system.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250924_002",
+    "start_time": "2025-09-24T08:00:00.000Z",
+    "end_time": null,
+    "agent_type": "backend-architect",
+    "tasks_worked": 1,
+    "tasks_completed": 0,
+    "summary": "Working on analytics data models and database optimization for large dataset handling.",
+    "status": "active"
+  },
+  {
+    "session_id": "session_20250924_003",
+    "start_time": "2025-09-24T09:30:00.000Z",
+    "end_time": "2025-09-24T11:00:00.000Z",
+    "agent_type": "security-auditor",
+    "tasks_worked": 1,
+    "tasks_completed": 0,
+    "summary": "Security audit in progress. Identified several areas for improvement in authentication and API security.",
+    "status": "completed"
+  },
+  {
+    "session_id": "session_20250924_004",
+    "start_time": "2025-09-24T13:15:00.000Z",
+    "end_time": "2025-09-24T15:45:00.000Z",
+    "agent_type": "performance-optimizer",
+    "tasks_worked": 2,
+    "tasks_completed": 0,
+    "summary": "Performance analysis and optimization planning. Identified code splitting opportunities and bundle size reduction strategies.",
+    "status": "completed"
+  }
+]

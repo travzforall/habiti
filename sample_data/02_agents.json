@@ -1,0 +1,82 @@
+[
+  {
+    "name": "UI-Designer",
+    "description": "Specializes in user interface design, wireframes, and visual design systems",
+    "specialization": ["design", "frontend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=UI-Designer",
+    "status": "active",
+    "created_at": "2025-09-20T09:00:00.000Z"
+  },
+  {
+    "name": "Frontend-Developer", 
+    "description": "Expert in React, Angular, Vue.js, and modern frontend technologies",
+    "specialization": ["frontend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Frontend-Developer",
+    "status": "active",
+    "created_at": "2025-09-20T09:05:00.000Z"
+  },
+  {
+    "name": "Backend-Architect",
+    "description": "Designs scalable backend systems, APIs, and database architecture", 
+    "specialization": ["backend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Backend-Architect",
+    "status": "active",
+    "created_at": "2025-09-20T09:10:00.000Z"
+  },
+  {
+    "name": "AI-Engineer",
+    "description": "Implements AI/ML features, language models, and intelligent automation",
+    "specialization": ["ai", "backend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=AI-Engineer",
+    "status": "active",
+    "created_at": "2025-09-20T09:15:00.000Z"
+  },
+  {
+    "name": "DevOps-Automator",
+    "description": "Specializes in CI/CD, cloud infrastructure, and deployment automation",
+    "specialization": ["devops", "backend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=DevOps-Automator",
+    "status": "active",
+    "created_at": "2025-09-20T09:20:00.000Z"
+  },
+  {
+    "name": "Mobile-App-Builder",
+    "description": "Expert in React Native, iOS, and Android app development",
+    "specialization": ["frontend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Mobile-App-Builder", 
+    "status": "active",
+    "created_at": "2025-09-20T09:25:00.000Z"
+  },
+  {
+    "name": "Whimsy-Injector",
+    "description": "Adds delightful interactions, animations, and engaging user experiences",
+    "specialization": ["design", "frontend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Whimsy-Injector",
+    "status": "active",
+    "created_at": "2025-09-20T09:30:00.000Z"
+  },
+  {
+    "name": "Test-Writer-Fixer",
+    "description": "Creates comprehensive tests, fixes test failures, and ensures code quality",
+    "specialization": ["frontend", "backend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Test-Writer-Fixer",
+    "status": "active",
+    "created_at": "2025-09-20T09:35:00.000Z"
+  },
+  {
+    "name": "Performance-Optimizer",
+    "description": "Analyzes and improves application performance, speed, and efficiency",
+    "specialization": ["frontend", "backend"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Performance-Optimizer",
+    "status": "active",
+    "created_at": "2025-09-20T09:40:00.000Z"
+  },
+  {
+    "name": "Security-Auditor",
+    "description": "Reviews code for security vulnerabilities and implements security best practices",
+    "specialization": ["backend", "devops"],
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Security-Auditor",
+    "status": "active", 
+    "created_at": "2025-09-20T09:45:00.000Z"
+  }
+]

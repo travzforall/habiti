@@ -1,0 +1,122 @@
+[
+  {
+    "task_id": 1,
+    "agent_id": 1,
+    "parent_id": null,
+    "content": "Dashboard layout looks great! I've incorporated the user feedback from our research sessions and ensured all key metrics are prominently displayed.",
+    "type": "comment",
+    "is_resolved": true,
+    "created_at": "2025-09-24T01:10:00.000Z",
+    "updated_at": "2025-09-24T01:10:00.000Z"
+  },
+  {
+    "task_id": 1,
+    "agent_id": null,
+    "parent_id": 1,
+    "content": "Perfect! The responsive design handles all our target screen sizes beautifully. Approved for implementation.",
+    "type": "review",
+    "is_resolved": true,
+    "created_at": "2025-09-24T01:20:00.000Z",
+    "updated_at": "2025-09-24T01:20:00.000Z"
+  },
+  {
+    "task_id": 2,
+    "agent_id": 2,
+    "parent_id": null,
+    "content": "Chart.js implementation is complete with interactive tooltips and smooth animations. Performance is good on desktop but needs mobile optimization.",
+    "type": "comment",
+    "is_resolved": false,
+    "created_at": "2025-09-24T01:15:00.000Z",
+    "updated_at": "2025-09-24T01:15:00.000Z"
+  },
+  {
+    "task_id": 2,
+    "agent_id": null,
+    "parent_id": 3,
+    "content": "Mobile performance is critical for our user base. Please optimize for devices with slower processors and implement proper responsive breakpoints.",
+    "type": "feedback",
+    "is_resolved": false,
+    "created_at": "2025-09-24T01:22:00.000Z",
+    "updated_at": "2025-09-24T01:22:00.000Z"
+  },
+  {
+    "task_id": 6,
+    "agent_id": 1,
+    "parent_id": null,
+    "content": "The habit creation wizard includes 5 different templates and a custom option. User testing showed 90% completion rate with the new flow.",
+    "type": "comment",
+    "is_resolved": true,
+    "created_at": "2025-09-23T22:20:00.000Z",
+    "updated_at": "2025-09-23T22:20:00.000Z"
+  },
+  {
+    "task_id": 6,
+    "agent_id": null,
+    "parent_id": 5,
+    "content": "Outstanding work! The user experience is smooth and the templates cover all our primary use cases. Well done!",
+    "type": "review",
+    "is_resolved": true,
+    "created_at": "2025-09-23T22:30:00.000Z",
+    "updated_at": "2025-09-23T22:30:00.000Z"
+  },
+  {
+    "task_id": 4,
+    "agent_id": 1,
+    "parent_id": null,
+    "content": "Question about the main dashboard priority: Should the habit tracking cards take up the full width on mobile, or should we maintain the grid layout?",
+    "type": "question",
+    "is_resolved": false,
+    "created_at": "2025-09-24T00:50:00.000Z",
+    "updated_at": "2025-09-24T00:50:00.000Z"
+  },
+  {
+    "task_id": 4,
+    "agent_id": null,
+    "parent_id": 7,
+    "content": "For mobile, let's go with full-width cards for better touch targets and readability. The grid layout can be preserved for tablet and desktop.",
+    "type": "feedback",
+    "is_resolved": true,
+    "created_at": "2025-09-24T00:55:00.000Z",
+    "updated_at": "2025-09-24T00:55:00.000Z"
+  },
+  {
+    "task_id": 9,
+    "agent_id": 2,
+    "parent_id": null,
+    "content": "Calendar drag-and-drop is working well with smooth animations. Working on event persistence layer and timezone calculations.",
+    "type": "comment",
+    "is_resolved": false,
+    "created_at": "2025-09-24T01:00:00.000Z",
+    "updated_at": "2025-09-24T01:00:00.000Z"
+  },
+  {
+    "task_id": 3,
+    "agent_id": 3,
+    "parent_id": null,
+    "content": "Analytics data models are taking shape. Implementing efficient aggregation queries for large datasets. ETA for completion is tomorrow morning.",
+    "type": "comment",
+    "is_resolved": false,
+    "created_at": "2025-09-24T00:30:00.000Z",
+    "updated_at": "2025-09-24T00:30:00.000Z"
+  },
+  {
+    "task_id": 12,
+    "agent_id": 10,
+    "parent_id": null,
+    "content": "Security audit reveals we need to implement CSRF protection and update our CORS policies. Also recommend adding rate limiting to API endpoints.",
+    "type": "review",
+    "is_resolved": false,
+    "created_at": "2025-09-24T00:35:00.000Z",
+    "updated_at": "2025-09-24T00:35:00.000Z"
+  },
+  {
+    "task_id": 11,
+    "agent_id": 9,
+    "parent_id": null,
+    "content": "Initial performance analysis shows opportunity for 40% improvement in load times through code splitting and lazy loading. Starting implementation.",
+    "type": "comment", 
+    "is_resolved": false,
+    "created_at": "2025-09-24T00:15:00.000Z",
+    "updated_at": "2025-09-24T00:15:00.000Z"
+  }
+]

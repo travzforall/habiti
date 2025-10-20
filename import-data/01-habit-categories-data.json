@@ -1,0 +1,74 @@
+[
+  {
+    "id": "health",
+    "name": "Health & Fitness",
+    "icon": "💪",
+    "color": "text-green-600",
+    "description": "Physical wellbeing and exercise",
+    "is_active": true,
+    "display_order": 1
+  },
+  {
+    "id": "productivity",
+    "name": "Productivity",
+    "icon": "⚡",
+    "color": "text-blue-600",
+    "description": "Work and efficiency habits",
+    "is_active": true,
+    "display_order": 2
+  },
+  {
+    "id": "learning",
+    "name": "Learning",
+    "icon": "📚",
+    "color": "text-purple-600",
+    "description": "Education and skill development",
+    "is_active": true,
+    "display_order": 3
+  },
+  {
+    "id": "mindfulness",
+    "name": "Mindfulness",
+    "icon": "🧘",
+    "color": "text-indigo-600",
+    "description": "Mental health and meditation",
+    "is_active": true,
+    "display_order": 4
+  },
+  {
+    "id": "social",
+    "name": "Social",
+    "icon": "👥",
+    "color": "text-pink-600",
+    "description": "Relationships and communication",
+    "is_active": true,
+    "display_order": 5
+  },
+  {
+    "id": "creativity",
+    "name": "Creativity",
+    "icon": "🎨",
+    "color": "text-orange-600",
+    "description": "Artistic and creative pursuits",
+    "is_active": true,
+    "display_order": 6
+  },
+  {
+    "id": "finance",
+    "name": "Finance",
+    "icon": "💰",
+    "color": "text-yellow-600",
+    "description": "Money management and saving",
+    "is_active": true,
+    "display_order": 7
+  },
+  {
+    "id": "other",
+    "name": "Other",
+    "icon": "📌",
+    "color": "text-gray-600",
+    "description": "Miscellaneous habits",
+    "is_active": true,
+    "display_order": 8
+  }
+]

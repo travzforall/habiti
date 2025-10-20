@@ -1,0 +1,93 @@
+{
+  "table_name": "habit_proof",
+  "description": "Proof documentation for habit completion - Import TENTH",
+  "import_order": 10,
+  "dependencies": ["habit_entries"],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "habit_entry_id": {"type": "link", "link_to": "habit_entries", "required": true},
+    "user_id": {"type": "text", "required": true},
+    "proof_type": {"type": "single_select", "options": ["image", "text", "both"], "required": true},
+    "image_url": {"type": "url", "description": "Link to uploaded proof image"},
+    "image_caption": {"type": "text", "description": "Caption for the image"},
+    "note": {"type": "long_text", "description": "Text proof/description"},
+    "file_size": {"type": "number", "description": "Image file size in bytes"},
+    "file_type": {"type": "text", "description": "Image MIME type"},
+    "is_public": {"type": "boolean", "default": false, "description": "Whether proof can be shared"},
+    "uploaded_at": {"type": "date_time", "auto_now_add": true},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "habit_entry_id": 1,
+      "user_id": "user_001",
+      "proof_type": "both",
+      "image_url": "https://storage.habiti.app/proof/user_001/2025-01-15-workout.jpg",
+      "image_caption": "Post-workout selfie at the gym",
+      "note": "Completed 35 minutes of cardio and strength training. Feeling great!",
+      "file_size": 245678,
+      "file_type": "image/jpeg",
+      "is_public": false,
+      "uploaded_at": "2025-01-15T07:35:00Z"
+    },
+    {
+      "habit_entry_id": 2,
+      "user_id": "user_001",
+      "proof_type": "text",
+      "note": "Finished reading 'Atomic Habits' chapter on habit stacking. Key insight: link new habits to existing ones for better success rate.",
+      "is_public": false,
+      "uploaded_at": "2025-01-15T21:20:00Z"
+    },
+    {
+      "habit_entry_id": 3,
+      "user_id": "user_001",
+      "proof_type": "text",
+      "note": "Resisted eating cake at office birthday party. Chose apple and water instead. Feeling proud of the discipline!",
+      "is_public": false,
+      "uploaded_at": "2025-01-15T15:30:00Z"
+    },
+    {
+      "habit_entry_id": 4,
+      "user_id": "user_001",
+      "proof_type": "image",
+      "image_url": "https://storage.habiti.app/proof/user_001/2025-01-15-meditation.jpg",
+      "image_caption": "Peaceful meditation setup",
+      "file_size": 123456,
+      "file_type": "image/jpeg",
+      "is_public": true,
+      "uploaded_at": "2025-01-15T07:45:00Z"
+    },
+    {
+      "habit_entry_id": 5,
+      "user_id": "user_001",
+      "proof_type": "both",
+      "image_url": "https://storage.habiti.app/proof/user_001/2025-01-15-water.jpg",
+      "image_caption": "8 glasses of water completed!",
+      "note": "Tracked water intake throughout the day. Used my new 32oz water bottle twice plus 2 regular glasses.",
+      "file_size": 98765,
+      "file_type": "image/jpeg",
+      "is_public": false,
+      "uploaded_at": "2025-01-15T20:35:00Z"
+    },
+    {
+      "habit_entry_id": 9,
+      "user_id": "user_001",
+      "proof_type": "both",
+      "image_url": "https://storage.habiti.app/proof/user_001/2025-01-13-legday.jpg",
+      "image_caption": "Leg day equipment setup",
+      "note": "Completed full leg workout: 3x12 squats (80kg), 3x10 deadlifts (100kg), 3x12 lunges bodyweight, 3x15 calf raises (20kg dumbbells)",
+      "file_size": 334455,
+      "file_type": "image/jpeg",
+      "is_public": true,
+      "uploaded_at": "2025-01-13T18:35:00Z"
+    },
+    {
+      "habit_entry_id": 10,
+      "user_id": "user_001",
+      "proof_type": "text",
+      "note": "Worked on React habit tracker app for 90 minutes. Implemented habit proof upload feature and improved UI styling. Very productive session!",
+      "is_public": false,
+      "uploaded_at": "2025-01-15T20:35:00Z"
+    }
+  ]
+}

@@ -1,50 +1,8 @@
-<!-- Enhanced Habit Sim Character Component -->
-<div class="bg-white/70 backdrop-blur-xl rounded-xl border border-slate-200/50 shadow-lg p-6 w-72 mx-auto">
-  <!-- Stats at Top -->
-  <div class="flex justify-center gap-6 mb-4">
-    <!-- Health -->
-    <div class="text-center">
-      <div class="text-lg">❤️</div>
-      <div class="text-sm font-bold" [ngClass]="getProgressColor(simState().health)">
-        {{ simState().health }}
-      </div>
-    </div>
-    
-    <!-- Energy -->
-    <div class="text-center">
-      <div class="text-lg">⚡</div>
-      <div class="text-sm font-bold" [ngClass]="getProgressColor(simState().energy)">
-        {{ simState().energy }}
-      </div>
-    </div>
-    
-    <!-- Motivation -->
-    <div class="text-center">
-      <div class="text-lg">🎯</div>
-      <div class="text-sm font-bold" [ngClass]="getProgressColor(simState().motivation)">
-        {{ simState().motivation }}
-      </div>
-    </div>
-  </div>
-
-  <!-- Large Centered Character with Shake Animation -->
-  <div class="text-center mb-4">
-    <div class="shake-animation text-7xl mb-2 transition-transform duration-500 hover:scale-110">
-      {{ simState().appearance.body }}
-    </div>
-    
-    <!-- Accessories (if any) -->
-    @if (simState().appearance.accessories.length > 0) {
-      <div class="flex justify-center gap-2 mt-2">
-        @for (accessory of simState().appearance.accessories; track accessory) {
-          <span class="text-lg">{{ accessory }}</span>
-        }
-      </div>
-    }
-  </div>
-
+<!-- Compact Mood Display -->
+<div class="bg-white/70 backdrop-blur-xl rounded-xl border border-slate-200/50 shadow-lg p-4">
   <!-- Mood Indicator -->
   <div class="text-center mb-3">
+    <div class="text-lg">🤕</div>
     <div class="text-sm text-slate-500 mb-2">Mood:</div>
     <div class="flex justify-center">
       @switch (simState().mood) {
@@ -63,13 +21,16 @@
         @case ('depressed') {
           <span class="text-red-500 text-lg">🌟</span>
         }
+        @default {
+          <span class="text-yellow-500 text-lg">🌟🌟</span>
+        }
       }
     </div>
   </div>
 
   <!-- Interaction Hint -->
   <div class="text-center">
-    <p class="text-sm text-slate-500">
+    <p class="text-xs text-slate-500">
       Complete habits to improve your buddy!
     </p>
   </div>

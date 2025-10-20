@@ -1,0 +1,128 @@
+<!-- Key Metrics Cards Template -->
+<!-- Role: Analytics-Reporter -->
+
+<div class="key-metrics-container" [class.compact]="getCompactLayout()">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="loading-cards">
+      <div class="loading-card" *ngFor="let item of [1,2,3,4,5,6]">
+        <div class="loading-shimmer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics Cards Grid -->
+  <div *ngIf="!isLoading" class="metrics-grid" 
+       [class.compact-grid]="getCompactLayout()">
+    
+    <div *ngFor="let metric of metricsData" 
+         class="metric-card" 
+         [class]="getPerformanceClass(metric.performance)">
+      
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="metric-icon">
+          <span class="kpi-category-icon" 
+                [attr.data-category]="metric.kpi.category">
+            {{ getCategoryIcon(metric.kpi.category) }}
+          </span>
+        </div>
+        
+        <div class="card-actions" *ngIf="!getCompactLayout()">
+          <button class="action-btn" (click)="refreshMetrics()" title="Refresh">
+            🔄
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Value -->
+      <div class="metric-value">
+        <div class="value-display">
+          <span class="value-number">
+            {{ getFormattedValue(metric.value, metric.kpi.unit) }}
+          </span>
+          
+          <!-- Trend Indicator -->
+          <div class="trend-indicator" 
+               [class]="getTrendClass(metric.changeDirection || 'stable')"
+               *ngIf="metric.change !== undefined">
+            <span class="trend-icon">
+              {{ getTrendIcon(metric.changeDirection || 'stable') }}
+            </span>
+            <span class="trend-value">
+              {{ Math.abs(metric.change || 0) }}
+            </span>
+          </div>
+        </div>
+        
+        <!-- Target Comparison -->
+        <div class="target-comparison" *ngIf="metric.kpi.target">
+          <div class="target-bar">
+            <div class="target-progress" 
+                 [style.width.%]="Math.min(100, (metric.value.value / metric.kpi.target) * 100)">
+            </div>
+          </div>
+          <span class="target-text">
+            Target: {{ metric.kpi.target }}{{ metric.kpi.unit }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="card-footer">
+        <div class="metric-name">
+          {{ metric.kpi.name }}
+        </div>
+        
+        <div class="metric-description" *ngIf="!getCompactLayout()">
+          {{ metric.kpi.description }}
+        </div>
+        
+        <!-- Performance Badge -->
+        <div class="performance-badge" 
+             [class]="'badge-' + metric.performance">
+          {{ getPerformanceLabel(metric.performance) }}
+        </div>
+      </div>
+
+      <!-- Metadata (expandable) -->
+      <div class="card-metadata" *ngIf="!getCompactLayout() && metric.value.metadata">
+        <details class="metadata-details">
+          <summary>Details</summary>
+          <div class="metadata-content">
+            <div *ngFor="let item of getMetadataItems(metric.value.metadata)" 
+                 class="metadata-item">
+              <span class="metadata-key">{{ item.key }}:</span>
+              <span class="metadata-value">{{ item.value }}</span>
+            </div>
+            <div class="calculation-time">
+              Calculated: {{ getFormattedTime(metric.value.calculated_at) }}
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Footer -->
+  <div class="metrics-summary" *ngIf="!isLoading && !getCompactLayout()">
+    <div class="summary-stats">
+      <span class="summary-item">
+        <strong>{{ getExcellentCount() }}</strong> Excellent
+      </span>
+      <span class="summary-item">
+        <strong>{{ getGoodCount() }}</strong> Good
+      </span>
+      <span class="summary-item" *ngIf="getWarningCount() > 0">
+        <strong>{{ getWarningCount() }}</strong> Need Attention
+      </span>
+      <span class="summary-item" *ngIf="getCriticalCount() > 0">
+        <strong>{{ getCriticalCount() }}</strong> Critical
+      </span>
+    </div>
+    
+    <div class="last-updated">
+      Last updated: {{ getFormattedTime(getCurrentTime()) }}
+    </div>
+  </div>
+</div>

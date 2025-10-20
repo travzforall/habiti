@@ -1,0 +1,108 @@
+{
+  "table_name": "habit_subcategories",
+  "description": "Subcategories within main categories - Import SECOND (depends on habit_categories)",
+  "import_order": 2,
+  "dependencies": ["habit_categories"],
+  "fields": {
+    "id": {"type": "text", "primary": true},
+    "category_id": {"type": "link", "link_to": "habit_categories", "required": true},
+    "name": {"type": "text", "required": true},
+    "icon": {"type": "text"},
+    "description": {"type": "long_text"},
+    "is_active": {"type": "boolean", "default": true},
+    "display_order": {"type": "number"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "id": "strength",
+      "category_id": "health",
+      "name": "Strength Training",
+      "icon": "🏋️",
+      "description": "Weight lifting and resistance training",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "cardio",
+      "category_id": "health",
+      "name": "Cardio & Endurance",
+      "icon": "🏃",
+      "description": "Cardiovascular exercise and endurance training",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "nutrition",
+      "category_id": "health",
+      "name": "Nutrition",
+      "icon": "🥗",
+      "description": "Diet and eating habits",
+      "is_active": true,
+      "display_order": 3
+    },
+    {
+      "id": "work",
+      "category_id": "productivity",
+      "name": "Work Focus",
+      "icon": "💼",
+      "description": "Work-related productivity habits",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "organization",
+      "category_id": "productivity",
+      "name": "Organization",
+      "icon": "📋",
+      "description": "Planning and organizational habits",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "skills",
+      "category_id": "learning",
+      "name": "Skill Development",
+      "icon": "🎯",
+      "description": "Learning new skills and competencies",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "reading",
+      "category_id": "learning",
+      "name": "Reading",
+      "icon": "📖",
+      "description": "Reading books, articles, and educational content",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "meditation",
+      "category_id": "mindfulness",
+      "name": "Meditation",
+      "icon": "🧘‍♀️",
+      "description": "Mindfulness and meditation practices",
+      "is_active": true,
+      "display_order": 1
+    },
+    {
+      "id": "journaling",
+      "category_id": "mindfulness",
+      "name": "Journaling",
+      "icon": "📝",
+      "description": "Writing and reflection practices",
+      "is_active": true,
+      "display_order": 2
+    },
+    {
+      "id": "relationships",
+      "category_id": "social",
+      "name": "Relationships",
+      "icon": "❤️",
+      "description": "Building and maintaining relationships",
+      "is_active": true,
+      "display_order": 1
+    }
+  ]
+}
