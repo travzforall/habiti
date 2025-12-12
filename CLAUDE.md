@@ -1,24 +1,53 @@
 # 🤖 Claude Session Instructions
 
+## 📋 Task Management
+
+### Quick Start
+
+For current tasks and project status, refer to:
+
+- **[docs/TASKS.md](docs/TASKS.md)** - Central task index with all feature tasks
+- **Task Files:** Located in `docs/tasks/` (sorted by date)
+- **Naming Convention:** `YYYYMMDD-feature-name-status.md`
+
+### Task File Organization
+
+```
+docs/
+├── TASKS.md                 # Central task index
+├── tasks/                   # Feature task specifications
+│   ├── 20251207-analytics-dashboard-in-progress.md
+│   ├── 20251206-dashboard-ui-in-progress.md
+│   ├── 20251206-habits-system-planned.md
+│   └── ... (8 more task files)
+├── setup-guides/            # Setup and configuration guides
+│   ├── BASEROW_SETUP.md
+│   ├── XANO_SETUP_GUIDE.md
+│   └── ... (8 more guides)
+└── database-schemas/        # Database schema JSON files
+    ├── baserow-database-models.json
+    └── ... (schema files)
+```
+
 ## Auto-Initialization Commands
 
 **Every Claude session should start by running these commands:**
 
 ```bash
 # Navigate to project directory
-cd /Users/travz/Documents/Work/habiti/habiti
+cd /Users/admin/Documents/Work/habiti
 
-# Check system status
-npm start &
-sleep 5
+# Check current task status
+cat docs/TASKS.md
 
-# Access task database and instructions
-curl -s http://localhost:4200/assets/tasks/ | grep -o 'href="[^"]*\.md"' | head -10
+# Or review specific task file
+cat docs/tasks/20251207-analytics-dashboard-in-progress.md
 ```
 
 ## Database Connection & Task Retrieval
 
 ### 1. Connect to Baserow Database
+
 ```javascript
 // Use the MCP connection to scan the database
 // Database URL: https://db.jollycares.com
@@ -26,26 +55,31 @@ curl -s http://localhost:4200/assets/tasks/ | grep -o 'href="[^"]*\.md"' | head 
 ```
 
 ### 2. Task Source Locations
+
+- **Task Index**: `docs/TASKS.md` (central overview)
+- **Task Files**: `docs/tasks/*.md` (detailed specifications)
 - **Primary Source**: Baserow database tables
-- **Local Cache**: `/Users/travz/Documents/Work/habiti/habiti/src/assets/tasks/*.md`
 - **Queue Manager**: `http://localhost:4200/secret-task-manager-queue`
 - **Approval System**: `http://localhost:4200/secret-task-manager-x9z2k`
 
 ## Session Startup Protocol
 
 ### Step 1: System Check
+
 ```bash
 # Verify system is running
 curl -s http://localhost:4200/secret-task-manager-queue >/dev/null && echo "✅ System Online" || echo "❌ System Offline"
 ```
 
 ### Step 2: Load Current Tasks
+
 ```bash
 # Access the queue manager to see current task status
 open http://localhost:4200/secret-task-manager-queue
 ```
 
 ### Step 3: Check for Instructions
+
 - **Check database** for new task assignments
 - **Review priority queue** for next tasks to execute
 - **Verify agent assignments** match your capabilities
@@ -53,25 +87,47 @@ open http://localhost:4200/secret-task-manager-queue
 ## Task Execution Workflow
 
 ### 1. **Get Tasks from Database**
+
 Use MCP Baserow connection to:
+
 - List current pending tasks
 - Check task priorities and assignments
 - Identify which agent role to assume
 
-### 2. **Load Specific Task Lists**
-Access markdown files for detailed task descriptions:
-- `analytics.md` - Analytics & reporting tasks
-- `dashboard.md` - Dashboard UI components
-- `calendar.md` - Calendar functionality
-- `gamification.md` - Gamification features
-- `habits.md` - Habit tracking system
-- `planner.md` - Planning tools
-- `pomodoro.md` - Pomodoro timer features
-- `project-management.md` - PM tools
-- `misc.md` - Miscellaneous tasks
+### 2. **Check for Existing Task Files FIRST**
 
-### 3. **Execute Tasks**
+**IMPORTANT**: Before creating any new task files, ALWAYS check `docs/TASKS.md` and `docs/tasks/` directory for existing task files related to the feature you're working on.
+
+```bash
+# Check the task index
+cat docs/TASKS.md | grep -i "feature-name"
+
+# List all task files
+ls -la docs/tasks/
+
+# Search for specific feature in task files
+grep -r "feature-name" docs/tasks/
+```
+
+### 3. **Load Specific Task Lists**
+
+Access markdown files in `docs/tasks/` for detailed task descriptions:
+
+- `20251207-analytics-dashboard-in-progress.md` - Analytics & reporting
+- `20251206-dashboard-ui-in-progress.md` - Dashboard UI components
+- `20251206-calendar-views-planned.md` - Calendar functionality
+- `20251206-calendar-advanced-planned.md` - Advanced calendar features
+- `20251206-gamification-features-planned.md` - Gamification features
+- `20251206-habits-system-planned.md` - Habit tracking system
+- `20251206-planner-system-planned.md` - Planning tools
+- `20251206-pomodoro-timer-planned.md` - Pomodoro timer features
+- `20251206-project-management-planned.md` - PM tools
+- `20251206-ui-improvements-planned.md` - UI/UX improvements
+
+### 4. **Execute Tasks**
+
 For each assigned task:
+
 1. **Mark as started** in database
 2. **Complete the work** according to specifications
 3. **Mark as completed** with `[x]` in markdown
@@ -83,18 +139,18 @@ For each assigned task:
 Based on task type, assume the appropriate agent persona:
 
 - **🎨 UI-Designer**: Visual design, wireframes, user experience
-- **👨‍💻 Frontend-Developer**: React components, JavaScript, CSS
-- **🏗️ Backend-Architect**: APIs, databases, server architecture  
+- **👨‍💻 Frontend-Developer**: Angular components, JavaScript, CSS
+- **🏗️ Backend-Architect**: APIs, databases, server architecture
 - **🚀 DevOps-Automator**: CI/CD, deployment, infrastructure
 - **🤖 AI-Engineer**: Machine learning, AI features
 - **⚡ Performance-Benchmarker**: Optimization, testing
-- **📱 Mobile-App-Builder**: React Native, mobile interfaces
 - **✨ Whimsy-Injector**: Delightful interactions, animations
 - **🚀 Rapid-Prototyper**: Quick prototypes, MVPs
 
 ## Database Schema Reference
 
 ### Tasks Table (ID: 508)
+
 - `title`: Task name
 - `description`: Detailed description
 - `status`: pending/in_progress/completed/approved
@@ -107,6 +163,7 @@ Based on task type, assume the appropriate agent persona:
 - `dependencies`: Related tasks
 
 ### Task Updates Table (ID: 509)
+
 - `task_id`: Reference to task
 - `action`: created/updated/completed/approved
 - `agent_id`: Who made the change
@@ -117,14 +174,16 @@ Based on task type, assume the appropriate agent persona:
 ## Automatic Status Updates
 
 When working on tasks, automatically:
+
 1. **Create task update record** when starting
-2. **Update progress** periodically  
+2. **Update progress** periodically
 3. **Log completion** when finished
 4. **Request approval** from human oversight
 
 ## Error Handling & Fallbacks
 
 If database is unavailable:
+
 1. **Fall back to local markdown files**
 2. **Use offline task list**
 3. **Queue updates for when database returns**
@@ -133,6 +192,7 @@ If database is unavailable:
 ## Human Oversight Integration
 
 All completed work requires approval:
+
 1. **Mark tasks complete** in markdown with `[x]`
 2. **System auto-detects** changes within 2 seconds
 3. **Appears in approval interface** for human review
@@ -142,18 +202,20 @@ All completed work requires approval:
 ## Session Commands Reference
 
 ### Quick Database Check
+
 ```javascript
 // Check database connection
-mcp__Baserow_MCP__list_tables
+mcp__Baserow_MCP__list_tables;
 
 // Get current tasks
-mcp__Baserow_MCP__list_table_rows({ table_id: 508 })
+mcp__Baserow_MCP__list_table_rows({ table_id: 508 });
 
 // Get task updates
-mcp__Baserow_MCP__list_table_rows({ table_id: 509 })
+mcp__Baserow_MCP__list_table_rows({ table_id: 509 });
 ```
 
 ### Task Management
+
 ```bash
 # Open queue manager
 open http://localhost:4200/secret-task-manager-queue
@@ -166,7 +228,9 @@ ls src/assets/tasks/
 ```
 
 ### Emergency Procedures
+
 If systems are down:
+
 1. **Check background processes**: `ps aux | grep npm`
 2. **Restart system**: `./start-automation.sh`
 3. **Use fallback**: Access `http://localhost:4200/legacy-task-manager`
@@ -182,18 +246,21 @@ If systems are down:
 ## Integration Points
 
 ### With Git
+
 - All approved changes create git commits
 - Commit messages include task details
 - Branch workflow supported
 - History preserved for auditing
 
 ### With Development Server
+
 - Hot reload for immediate testing
 - Live preview of changes
 - Automatic asset serving
 - Real-time sync monitoring
 
 ### With Human Oversight
+
 - Never bypass approval requirements
 - Provide detailed completion notes
 - Request clarification when needed
@@ -204,6 +271,7 @@ If systems are down:
 ## Quick Start Checklist
 
 Every session should verify:
+
 - [ ] System is running (`npm start`)
 - [ ] Database connection works (MCP tools)
 - [ ] Task queue is accessible

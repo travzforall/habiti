@@ -1,0 +1,179 @@
+<div class="habit-detail-section max-w-6xl mx-auto px-4 py-6 space-y-6">
+  @if (habit(); as habit) {
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-6">
+      <button
+        (click)="goBack()"
+        class="btn btn-ghost btn-circle hover:bg-slate-100"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-4 rounded-full shadow-lg"
+               [class.bg-green-100]="habit.type === 'good'"
+               [class.bg-red-100]="habit.type === 'bad'">
+            <span class="text-4xl">{{ habit.icon || (habit.type === 'good' ? '✅' : '🚫') }}</span>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-slate-800">{{ habit.name }}</h1>
+            <div class="flex items-center gap-2 text-sm text-slate-600 mt-1">
+              <span class="px-2 py-1 rounded-full text-xs font-medium"
+                    [class.bg-green-100]="habit.type === 'good'"
+                    [class.text-green-700]="habit.type === 'good'"
+                    [class.bg-red-100]="habit.type === 'bad'"
+                    [class.text-red-700]="habit.type === 'bad'">
+                {{ habit.type === 'good' ? '✅ Building' : '🚫 Breaking' }}
+              </span>
+              <span class="text-slate-400">•</span>
+              <span>{{ habit.trackingType }}</span>
+              <span class="text-slate-400">•</span>
+              <span>{{ habit.points }} points</span>
+            </div>
+          </div>
+        </div>
+        @if (habit.description) {
+          <p class="text-slate-600 italic mt-2">{{ habit.description }}</p>
+        }
+      </div>
+    </div>
+
+    <!-- Stats Overview -->
+    @if (stats(); as stats) {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Current Streak -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-orange-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-600">Current Streak</span>
+            <span class="text-2xl">🔥</span>
+          </div>
+          <div class="text-3xl font-bold text-orange-600">{{ stats.currentStreak }}</div>
+          <div class="text-xs text-slate-500 mt-1">days in a row</div>
+        </div>
+
+        <!-- Best Streak (30 days) -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-purple-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-600">Best Streak</span>
+            <span class="text-2xl">🏆</span>
+          </div>
+          <div class="text-3xl font-bold text-purple-600">{{ stats.bestStreak }}</div>
+          <div class="text-xs text-slate-500 mt-1">last 30 days</div>
+        </div>
+
+        <!-- Completion Rate -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-600">Success Rate</span>
+            <span class="text-2xl">📈</span>
+          </div>
+          <div class="text-3xl font-bold text-blue-600">{{ stats.completionRate }}%</div>
+          <div class="text-xs text-slate-500 mt-1">{{ stats.completedDays }}/{{ stats.totalDays }} days</div>
+        </div>
+
+        <!-- Total Points -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border-2 border-green-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-600">Points Earned</span>
+            <span class="text-2xl">⭐</span>
+          </div>
+          <div class="text-3xl font-bold text-green-600">{{ stats.totalPoints }}</div>
+          <div class="text-xs text-slate-500 mt-1">from this habit</div>
+        </div>
+      </div>
+
+      <!-- Habit Information -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">📋 Habit Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <span class="text-2xl">📅</span>
+            <div>
+              <div class="text-xs text-slate-500">Created</div>
+              <div class="font-semibold text-slate-800">{{ formatDate(stats.createdDate) }}</div>
+              <div class="text-xs text-slate-600">{{ stats.daysSinceCreation }} days ago</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <span class="text-2xl">🎯</span>
+            <div>
+              <div class="text-xs text-slate-500">Tracking Type</div>
+              <div class="font-semibold text-slate-800 capitalize">{{ habit.trackingType }}</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <span class="text-2xl">⚡</span>
+            <div>
+              <div class="text-xs text-slate-500">Difficulty</div>
+              <div class="font-semibold text-slate-800">{{ habit.points }} points per completion</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <span class="text-2xl">{{ habit.type === 'good' ? '✅' : '🚫' }}</span>
+            <div>
+              <div class="text-xs text-slate-500">Status</div>
+              <div class="font-semibold text-slate-800">{{ habit.isActive !== false ? 'Active' : 'Inactive' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 30-Day Calendar View -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-xl font-bold text-slate-800 mb-4">📊 30-Day Activity</h2>
+      <div class="grid grid-cols-7 gap-2">
+        @for (day of completionHistory(); track day.date) {
+          <div class="flex flex-col items-center gap-1">
+            <div
+              class="w-full aspect-square rounded-lg flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+              [class]="getStatusClass(day.status)"
+              [title]="day.date + ' - ' + (day.completed ? 'Completed' : 'Not completed')"
+            >
+              <span class="text-white text-xs font-bold">
+                {{ day.date.split('-')[2] }}
+              </span>
+            </div>
+            <span class="text-xs text-slate-500">{{ day.dayName }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Legend -->
+      <div class="flex items-center gap-4 mt-6 pt-4 border-t border-slate-200">
+        <span class="text-sm text-slate-600 font-medium">Legend:</span>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-green-500"></div>
+          <span class="text-xs text-slate-600">Completed</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-slate-200"></div>
+          <span class="text-xs text-slate-600">Not Done</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-yellow-500"></div>
+          <span class="text-xs text-slate-600">Skipped</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-red-500"></div>
+          <span class="text-xs text-slate-600">Failed</span>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="text-center py-12">
+      <div class="text-6xl mb-4">❓</div>
+      <h2 class="text-2xl font-bold mb-2">Habit Not Found</h2>
+      <p class="text-slate-600 mb-4">The habit you're looking for doesn't exist.</p>
+      <button (click)="goBack()" class="btn btn-primary">
+        Back to Habits
+      </button>
+    </div>
+  }
+</div>

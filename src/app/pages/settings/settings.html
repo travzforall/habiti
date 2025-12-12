@@ -59,7 +59,40 @@
       </h2>
       <div class="space-y-4">
         <button class="btn btn-outline w-full">Export Data</button>
-        <button class="btn btn-outline w-full">Import Data</button>
+
+        <!-- CSV Import Section -->
+        <div class="space-y-2">
+          <input
+            #fileInput
+            type="file"
+            accept=".csv"
+            (change)="onImportCSV($event)"
+            class="hidden"
+          />
+          <button
+            class="btn btn-outline w-full"
+            (click)="triggerFileInput()"
+            [disabled]="isImporting()"
+          >
+            @if (isImporting()) {
+              <span class="loading loading-spinner loading-sm"></span>
+              Importing...
+            } @else {
+              📥 Import Habits from CSV
+            }
+          </button>
+
+          @if (importMessage()) {
+            <div
+              class="alert text-sm py-2"
+              [class.alert-success]="importSuccess()"
+              [class.alert-error]="!importSuccess()"
+            >
+              {{ importMessage() }}
+            </div>
+          }
+        </div>
+
         <button class="btn btn-error btn-outline w-full">Clear All Data</button>
       </div>
     </div>

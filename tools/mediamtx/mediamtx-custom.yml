@@ -1,0 +1,94 @@
+# MediaMTX Configuration for Habiti Camera System
+# Run with: ./mediamtx mediamtx-custom.yml
+
+###############################################
+# Global settings
+###############################################
+logLevel: info
+logDestinations: [stdout]
+
+# Timeouts
+readTimeout: 10s
+writeTimeout: 10s
+writeQueueSize: 512
+
+###############################################
+# RTSP server (for receiving streams)
+###############################################
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp, udp]
+
+###############################################
+# HLS server (for browser playback)
+###############################################
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: no
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsAllowOrigin: '*'
+
+###############################################
+# WebRTC server (alternative low-latency option)
+###############################################
+webrtc: yes
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+
+###############################################
+# API server (for status checks)
+###############################################
+api: yes
+apiAddress: :9997
+
+###############################################
+# Authentication (disabled for local use)
+###############################################
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+        path:
+      - action: read
+        path:
+      - action: playback
+        path:
+  - user: any
+    pass:
+    ips: ['127.0.0.1', '::1']
+    permissions:
+      - action: api
+      - action: metrics
+
+###############################################
+# Camera Paths
+###############################################
+paths:
+  # Your IP Camera
+  # Access HLS stream at: http://localhost:8888/ipcam/stream.m3u8
+  ipcam:
+    source: rtsp://@192.168.1.199:554/cam/realmonitor?channel=1&subtype=0
+    # Automatically start pulling the stream
+    sourceOnDemand: yes
+    # Keep stream alive for 10 seconds after last viewer disconnects
+    sourceOnDemandCloseAfter: 10s
+
+  # Add more cameras here:
+  # frontdoor:
+  #   source: rtsp://user:pass@192.168.1.101:554/stream1
+  #   sourceOnDemand: yes
+
+  # backyard:
+  #   source: rtsp://user:pass@192.168.1.102:554/stream1
+  #   sourceOnDemand: yes
+
+  # Fallback for any other path (allows dynamic streams)
+  all_others:

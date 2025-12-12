@@ -204,8 +204,17 @@
           Your Habits ({{ habits().length }})
         </h2>
         <div class="flex gap-2">
+          <!-- View Toggle -->
+          <button
+            class="btn btn-sm btn-ghost"
+            (click)="toggleView()"
+            title="Toggle view mode"
+          >
+            {{ showView === 'flat' ? '📊 Grid' : '📁 Grouped' }}
+          </button>
+
           <!-- Filter Buttons -->
-          <button 
+          <button
             class="btn btn-sm"
             [class.btn-primary]="filterType === 'all'"
             [class.btn-outline]="filterType !== 'all'"
@@ -213,7 +222,7 @@
           >
             All
           </button>
-          <button 
+          <button
             class="btn btn-sm"
             [class.btn-success]="filterType === 'good'"
             [class.btn-outline]="filterType !== 'good'"
@@ -221,7 +230,7 @@
           >
             ✅ Good
           </button>
-          <button 
+          <button
             class="btn btn-sm"
             [class.btn-error]="filterType === 'bad'"
             [class.btn-outline]="filterType !== 'bad'"
@@ -282,48 +291,94 @@
                      class="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-all">
                   
                   <!-- Habit Info -->
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-3 flex-1" (click)="$event.stopPropagation()">
                     <div class="flex items-center justify-center w-10 h-10 rounded-lg"
                          [class.bg-green-100]="habit.type === 'good'"
                          [class.bg-red-100]="habit.type === 'bad'">
                       <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
                     </div>
-                    <div>
+                    <div class="flex-1">
                       <h4 class="font-medium text-slate-800">{{ habit.name }}</h4>
-                      <div class="flex items-center gap-4 text-xs text-slate-500">
-                        <span>{{ habit.streak }} day streak</span>
-                        <span>{{ getCompletionRate(habit.id) }}% success</span>
+                      <div class="flex items-center gap-3 mt-2 flex-wrap">
+                        <!-- Type Toggle -->
+                        <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1" (click)="$event.stopPropagation()">
+                          <button
+                            class="px-3 py-1 rounded text-xs font-medium transition-all"
+                            [class.bg-green-500]="habit.type === 'good'"
+                            [class.text-white]="habit.type === 'good'"
+                            [class.text-slate-600]="habit.type !== 'good'"
+                            (click)="updateHabitType(habit.id, 'good'); $event.stopPropagation()">
+                            ✅ Good
+                          </button>
+                          <button
+                            class="px-3 py-1 rounded text-xs font-medium transition-all"
+                            [class.bg-red-500]="habit.type === 'bad'"
+                            [class.text-white]="habit.type === 'bad'"
+                            [class.text-slate-600]="habit.type !== 'bad'"
+                            (click)="updateHabitType(habit.id, 'bad'); $event.stopPropagation()">
+                            🚫 Bad
+                          </button>
+                        </div>
+
+                        <!-- Points -->
+                        <select
+                          (change)="updateHabitPoints(habit.id, $event)"
+                          (click)="$event.stopPropagation()"
+                          [value]="habit.points"
+                          class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                          <option value="5">⭐ 5 pts</option>
+                          <option value="10">⭐⭐ 10 pts</option>
+                          <option value="15">⭐⭐⭐ 15 pts</option>
+                          <option value="20">⭐⭐⭐⭐ 20 pts</option>
+                          <option value="25">⭐⭐⭐⭐⭐ 25 pts</option>
+                        </select>
+
+                        <!-- Reward -->
+                        <select
+                          (change)="updateHabitReward(habit.id, $event)"
+                          (click)="$event.stopPropagation()"
+                          [value]="habit.reward || ''"
+                          class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                          <option value="">Select Reward</option>
+                          <option value="Keep up the great work!">🎉 Keep it up!</option>
+                          <option value="You're doing amazing!">⭐ Amazing!</option>
+                          <option value="Incredible progress!">🔥 Incredible!</option>
+                          <option value="You're unstoppable!">💪 Unstoppable!</option>
+                        </select>
+
+                        <!-- Punishment -->
+                        <select
+                          (change)="updateHabitPunishment(habit.id, $event)"
+                          (click)="$event.stopPropagation()"
+                          [value]="habit.punishment || ''"
+                          class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                          <option value="">Select Consequence</option>
+                          <option value="Try again tomorrow">🔄 Try tomorrow</option>
+                          <option value="Don't give up!">💭 Don't quit!</option>
+                          <option value="Learn from this">📚 Learn from it</option>
+                          <option value="You can do better">💡 Do better</option>
+                        </select>
                       </div>
                     </div>
                   </div>
                   
                   <!-- Action Buttons -->
                   <div class="flex items-center gap-2">
-                    <button 
-                      class="px-4 py-2 text-sm font-medium rounded-lg transition-all"
-                      [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                      [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                      [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                      [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                      [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                      [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
-                      [class.text-slate-500]="isHabitCompletedToday(habit.id)"
-                      (click)="markHabitComplete(habit.id)"
-                      [disabled]="isHabitCompletedToday(habit.id)"
-                    >
-                      {{ isHabitCompletedToday(habit.id) ? '✓ Done' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
-                    </button>
-                    
-                    <div class="dropdown dropdown-end">
-                      <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
+                    <div class="relative">
+                      <button
+                        class="btn btn-ghost btn-sm btn-circle flex items-center justify-center"
+                        (click)="toggleDropdown(habit.id, $event)"
+                      >
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
                         </svg>
-                      </label>
-                      <ul tabindex="0" class="dropdown-content menu p-2 shadow-lg bg-white rounded-lg border w-36">
-                        <li><a (click)="editHabit(habit)" class="text-sm">✏️ Edit</a></li>
-                        <li><a (click)="deleteHabit(habit.id)" class="text-sm text-red-600">🗑️ Delete</a></li>
-                      </ul>
+                      </button>
+                      @if (isDropdownOpen(habit.id)) {
+                        <ul class="menu p-2 shadow-lg bg-white rounded-lg border w-36 z-50 absolute right-0 mt-2">
+                          <li><a (click)="editHabit(habit); closeDropdown()" class="text-sm cursor-pointer">✏️ Edit</a></li>
+                          <li><a (click)="deleteHabit(habit.id); closeDropdown()" class="text-sm text-red-600 cursor-pointer">🗑️ Delete</a></li>
+                        </ul>
+                      }
                     </div>
                   </div>
                 </div>
@@ -359,42 +414,99 @@
                 
                 <!-- Direct Subcategory Habits (Level 2 Habits) -->
                 <div *ngIf="subcategoryGroup.habits?.length > 0" class="p-4 space-y-2">
-                  <div *ngFor="let habit of subcategoryGroup.habits" 
+                  <div *ngFor="let habit of subcategoryGroup.habits"
                        class="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-all ml-4">
-                    
-                    <div class="flex items-center gap-3">
+
+                    <!-- Habit Info -->
+                    <div class="flex items-center gap-3 flex-1" (click)="$event.stopPropagation()">
                       <div class="flex items-center justify-center w-8 h-8 rounded-lg"
                            [class.bg-green-100]="habit.type === 'good'"
                            [class.bg-red-100]="habit.type === 'bad'">
                         <span class="text-base">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
                       </div>
-                      <div>
+                      <div class="flex-1">
                         <h5 class="font-medium text-sm text-slate-800">{{ habit.name }}</h5>
-                        <div class="text-xs text-slate-500">{{ habit.streak }} days • {{ getCompletionRate(habit.id) }}%</div>
+                        <div class="flex items-center gap-2 mt-2 flex-wrap">
+                          <!-- Type Toggle -->
+                          <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1" (click)="$event.stopPropagation()">
+                            <button
+                              class="px-2 py-1 rounded text-xs font-medium transition-all"
+                              [class.bg-green-500]="habit.type === 'good'"
+                              [class.text-white]="habit.type === 'good'"
+                              [class.text-slate-600]="habit.type !== 'good'"
+                              (click)="updateHabitType(habit.id, 'good'); $event.stopPropagation()">
+                              ✅ Good
+                            </button>
+                            <button
+                              class="px-2 py-1 rounded text-xs font-medium transition-all"
+                              [class.bg-red-500]="habit.type === 'bad'"
+                              [class.text-white]="habit.type === 'bad'"
+                              [class.text-slate-600]="habit.type !== 'bad'"
+                              (click)="updateHabitType(habit.id, 'bad'); $event.stopPropagation()">
+                              🚫 Bad
+                            </button>
+                          </div>
+
+                          <!-- Points -->
+                          <select
+                            (change)="updateHabitPoints(habit.id, $event)"
+                            (click)="$event.stopPropagation()"
+                            [value]="habit.points"
+                            class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                            <option value="5">⭐ 5 pts</option>
+                            <option value="10">⭐⭐ 10 pts</option>
+                            <option value="15">⭐⭐⭐ 15 pts</option>
+                            <option value="20">⭐⭐⭐⭐ 20 pts</option>
+                            <option value="25">⭐⭐⭐⭐⭐ 25 pts</option>
+                          </select>
+
+                          <!-- Reward -->
+                          <select
+                            (change)="updateHabitReward(habit.id, $event)"
+                            (click)="$event.stopPropagation()"
+                            [value]="habit.reward || ''"
+                            class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                            <option value="">Select Reward</option>
+                            <option value="Keep up the great work!">🎉 Keep it up!</option>
+                            <option value="You're doing amazing!">⭐ Amazing!</option>
+                            <option value="Incredible progress!">🔥 Incredible!</option>
+                            <option value="You're unstoppable!">💪 Unstoppable!</option>
+                          </select>
+
+                          <!-- Punishment -->
+                          <select
+                            (change)="updateHabitPunishment(habit.id, $event)"
+                            (click)="$event.stopPropagation()"
+                            [value]="habit.punishment || ''"
+                            class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                            <option value="">Select Consequence</option>
+                            <option value="Try again tomorrow">🔄 Try tomorrow</option>
+                            <option value="Don't give up!">💭 Don't quit!</option>
+                            <option value="Learn from this">📚 Learn from it</option>
+                            <option value="You can do better">💡 Do better</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    
+
+                    <!-- Action Buttons -->
                     <div class="flex items-center gap-2">
-                      <button 
-                        class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-                        [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                        [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                        [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                        [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                        [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                        [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
-                        [class.text-slate-500]="isHabitCompletedToday(habit.id)"
-                        (click)="markHabitComplete(habit.id)"
-                        [disabled]="isHabitCompletedToday(habit.id)"
-                      >
-                        {{ isHabitCompletedToday(habit.id) ? '✓' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
-                      </button>
-                      
-                      <button class="btn btn-ghost btn-xs btn-circle" (click)="editHabit(habit)">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                        </svg>
-                      </button>
+                      <div class="relative">
+                        <button
+                          class="btn btn-ghost btn-sm btn-circle flex items-center justify-center"
+                          (click)="toggleDropdown(habit.id, $event)"
+                        >
+                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                          </svg>
+                        </button>
+                        @if (isDropdownOpen(habit.id)) {
+                          <ul class="menu p-2 shadow-lg bg-white rounded-lg border w-36 z-50 absolute right-0 mt-2">
+                            <li><a (click)="editHabit(habit); closeDropdown()" class="text-sm cursor-pointer">✏️ Edit</a></li>
+                            <li><a (click)="deleteHabit(habit.id); closeDropdown()" class="text-sm text-red-600 cursor-pointer">🗑️ Delete</a></li>
+                          </ul>
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -444,42 +556,99 @@
 
                     <!-- Group Habits (Level 3 Habits) -->
                     <div *ngIf="exerciseGroup.habits?.length > 0" class="space-y-2">
-                      <div *ngFor="let habit of exerciseGroup.habits" 
+                      <div *ngFor="let habit of exerciseGroup.habits"
                            class="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-all ml-8">
-                        
-                        <div class="flex items-center gap-3">
+
+                        <!-- Habit Info -->
+                        <div class="flex items-center gap-3 flex-1" (click)="$event.stopPropagation()">
                           <div class="flex items-center justify-center w-8 h-8 rounded-lg"
                                [class.bg-green-100]="habit.type === 'good'"
                                [class.bg-red-100]="habit.type === 'bad'">
                             <span class="text-base">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
                           </div>
-                          <div>
+                          <div class="flex-1">
                             <h6 class="font-medium text-sm text-slate-800">{{ habit.name }}</h6>
-                            <div class="text-xs text-slate-500">{{ habit.streak }} days • {{ getCompletionRate(habit.id) }}%</div>
+                            <div class="flex items-center gap-2 mt-2 flex-wrap">
+                              <!-- Type Toggle -->
+                              <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-1" (click)="$event.stopPropagation()">
+                                <button
+                                  class="px-2 py-1 rounded text-xs font-medium transition-all"
+                                  [class.bg-green-500]="habit.type === 'good'"
+                                  [class.text-white]="habit.type === 'good'"
+                                  [class.text-slate-600]="habit.type !== 'good'"
+                                  (click)="updateHabitType(habit.id, 'good'); $event.stopPropagation()">
+                                  ✅ Good
+                                </button>
+                                <button
+                                  class="px-2 py-1 rounded text-xs font-medium transition-all"
+                                  [class.bg-red-500]="habit.type === 'bad'"
+                                  [class.text-white]="habit.type === 'bad'"
+                                  [class.text-slate-600]="habit.type !== 'bad'"
+                                  (click)="updateHabitType(habit.id, 'bad'); $event.stopPropagation()">
+                                  🚫 Bad
+                                </button>
+                              </div>
+
+                              <!-- Points -->
+                              <select
+                                (change)="updateHabitPoints(habit.id, $event)"
+                                (click)="$event.stopPropagation()"
+                                [value]="habit.points"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                                <option value="5">⭐ 5 pts</option>
+                                <option value="10">⭐⭐ 10 pts</option>
+                                <option value="15">⭐⭐⭐ 15 pts</option>
+                                <option value="20">⭐⭐⭐⭐ 20 pts</option>
+                                <option value="25">⭐⭐⭐⭐⭐ 25 pts</option>
+                              </select>
+
+                              <!-- Reward -->
+                              <select
+                                (change)="updateHabitReward(habit.id, $event)"
+                                (click)="$event.stopPropagation()"
+                                [value]="habit.reward || ''"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                                <option value="">Select Reward</option>
+                                <option value="Keep up the great work!">🎉 Keep it up!</option>
+                                <option value="You're doing amazing!">⭐ Amazing!</option>
+                                <option value="Incredible progress!">🔥 Incredible!</option>
+                                <option value="You're unstoppable!">💪 Unstoppable!</option>
+                              </select>
+
+                              <!-- Punishment -->
+                              <select
+                                (change)="updateHabitPunishment(habit.id, $event)"
+                                (click)="$event.stopPropagation()"
+                                [value]="habit.punishment || ''"
+                                class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
+                                <option value="">Select Consequence</option>
+                                <option value="Try again tomorrow">🔄 Try tomorrow</option>
+                                <option value="Don't give up!">💭 Don't quit!</option>
+                                <option value="Learn from this">📚 Learn from it</option>
+                                <option value="You can do better">💡 Do better</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
-                        
+
+                        <!-- Action Buttons -->
                         <div class="flex items-center gap-2">
-                          <button 
-                            class="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-                            [class.bg-green-500]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                            [class.hover:bg-green-600]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                            [class.text-white]="habit.type === 'good' && !isHabitCompletedToday(habit.id)"
-                            [class.bg-red-500]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                            [class.hover:bg-red-600]="habit.type === 'bad' && !isHabitCompletedToday(habit.id)"
-                            [class.bg-slate-200]="isHabitCompletedToday(habit.id)"
-                            [class.text-slate-500]="isHabitCompletedToday(habit.id)"
-                            (click)="markHabitComplete(habit.id)"
-                            [disabled]="isHabitCompletedToday(habit.id)"
-                          >
-                            {{ isHabitCompletedToday(habit.id) ? '✓ Done' : (habit.type === 'good' ? 'Complete' : 'Avoided') }}
-                          </button>
-                          
-                          <button class="btn btn-ghost btn-xs btn-circle" (click)="editHabit(habit)">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                            </svg>
-                          </button>
+                          <div class="relative">
+                            <button
+                              class="btn btn-ghost btn-sm btn-circle flex items-center justify-center"
+                              (click)="toggleDropdown(habit.id, $event)"
+                            >
+                              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                              </svg>
+                            </button>
+                            @if (isDropdownOpen(habit.id)) {
+                              <ul class="menu p-2 shadow-lg bg-white rounded-lg border w-36 z-50 absolute right-0 mt-2">
+                                <li><a (click)="editHabit(habit); closeDropdown()" class="text-sm cursor-pointer">✏️ Edit</a></li>
+                                <li><a (click)="deleteHabit(habit.id); closeDropdown()" class="text-sm text-red-600 cursor-pointer">🗑️ Delete</a></li>
+                              </ul>
+                            }
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -493,13 +662,14 @@
 
       <!-- Flat View (Original Grid) -->
       <div *ngIf="showView === 'flat'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div 
-          *ngFor="let habit of getFilteredHabits()" 
-          class="habit-card p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white"
+        <div
+          *ngFor="let habit of getFilteredHabits()"
+          class="habit-card p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-105 bg-white cursor-pointer"
           [ngClass]="{
             'border-green-200 bg-green-50/50 hover:border-green-300': habit.type === 'good',
             'border-red-200 bg-red-50/50 hover:border-red-300': habit.type === 'bad'
           }"
+          (click)="viewHabitDetails(habit)"
         >
           <!-- Habit Header -->
           <div class="flex items-start justify-between mb-4">
@@ -529,14 +699,19 @@
                 </div>
               </div>
             </div>
-            <div class="dropdown dropdown-end">
-              <label tabindex="0" class="btn btn-ghost btn-sm w-8 h-8 rounded-full hover:bg-slate-100 transition-colors">
+            <div class="relative" (click)="$event.stopPropagation()">
+              <button
+                class="btn btn-ghost btn-sm w-8 h-8 rounded-full hover:bg-slate-100 transition-colors flex items-center justify-center"
+                (click)="toggleDropdown(habit.id, $event)"
+              >
                 <span class="text-slate-400">⋮</span>
-              </label>
-              <ul tabindex="0" class="dropdown-content menu p-2 shadow-xl bg-white rounded-xl border border-slate-200 w-36">
-                <li><a (click)="editHabit(habit)" class="rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600">✏️ Edit</a></li>
-                <li><a (click)="deleteHabit(habit.id)" class="rounded-lg hover:bg-red-50 text-slate-700 hover:text-red-600">🗑️ Delete</a></li>
-              </ul>
+              </button>
+              @if (isDropdownOpen(habit.id)) {
+                <ul class="menu p-2 shadow-xl bg-white rounded-xl border border-slate-200 w-36 z-50 absolute right-0 mt-2">
+                  <li><a (click)="editHabit(habit); closeDropdown()" class="rounded-lg hover:bg-blue-50 text-slate-700 hover:text-blue-600 cursor-pointer">✏️ Edit</a></li>
+                  <li><a (click)="deleteHabit(habit.id); closeDropdown()" class="rounded-lg hover:bg-red-50 text-slate-700 hover:text-red-600 cursor-pointer">🗑️ Delete</a></li>
+                </ul>
+              }
             </div>
           </div>
 
@@ -573,28 +748,6 @@
                 ></div>
               </div>
             </div>
-          </div>
-
-          <!-- Quick Action Buttons -->
-          <div class="flex gap-3">
-            <button 
-              class="flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-105"
-              [ngClass]="{
-                'bg-green-500 hover:bg-green-600 text-white shadow-lg': habit.type === 'good' && !isHabitCompletedToday(habit.id),
-                'bg-red-500 hover:bg-red-600 text-white shadow-lg': habit.type === 'bad' && !isHabitCompletedToday(habit.id),
-                'bg-slate-200 text-slate-500 cursor-not-allowed': isHabitCompletedToday(habit.id)
-              }"
-              (click)="markHabitComplete(habit.id)"
-              [disabled]="isHabitCompletedToday(habit.id)"
-            >
-              {{ isHabitCompletedToday(habit.id) ? '✓ Done Today' : getActionText(habit.type) }}
-            </button>
-            <button 
-              class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-xl transition-all duration-200 transform hover:scale-105"
-              (click)="viewHabitDetails(habit)"
-            >
-              📊
-            </button>
           </div>
 
           <!-- Description -->
@@ -747,9 +900,56 @@
 
         <div class="form-control">
           <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Frequency</span>
+          </label>
+          <select
+            class="select select-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.frequency"
+            name="editHabitFrequency"
+          >
+            <option value="daily">📅 Daily</option>
+            <option value="weekly">📆 Weekly</option>
+            <option value="custom">🎯 Custom Days</option>
+          </select>
+        </div>
+
+        <div class="form-control" *ngIf="editingHabit.frequency === 'custom' || editingHabit.frequency === 'weekly'">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Target Days</span>
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <label *ngFor="let day of ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']"
+                   class="cursor-pointer">
+              <input
+                type="checkbox"
+                [checked]="isTargetDay(day)"
+                (change)="toggleTargetDay(day)"
+                class="hidden peer"
+              />
+              <div class="px-4 py-2 rounded-lg border-2 border-slate-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 font-medium transition-all hover:border-slate-300">
+                {{ day.substring(0, 3).toUpperCase() }}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
+            <span class="label-text font-semibold text-slate-700">Reminder Time (Optional)</span>
+          </label>
+          <input
+            type="time"
+            class="input input-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            [(ngModel)]="editingHabit.reminderTime"
+            name="editHabitReminderTime"
+          />
+        </div>
+
+        <div class="form-control">
+          <label class="label mb-2">
             <span class="label-text font-semibold text-slate-700">Description</span>
           </label>
-          <textarea 
+          <textarea
             class="textarea textarea-bordered w-full px-4 py-3 text-base border-2 border-slate-200 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all min-h-[100px]"
             placeholder="Describe your habit and why it's important to you..."
             [(ngModel)]="editingHabit.description"

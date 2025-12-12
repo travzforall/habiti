@@ -2,6 +2,42 @@ import { Injectable, signal } from '@angular/core';
 import { BaserowService } from './baserow.service';
 import { Observable, map, of, forkJoin } from 'rxjs';
 
+export interface WorkoutExercise {
+  name: string;
+  sets: number;
+  reps: number;
+  weight: number; // in lbs
+  weightProgression?: {
+    startWeight: number;
+    increaseAfterWeeks: number;
+    increaseAmount: number;
+  };
+}
+
+export interface CardioSession {
+  type: 'intervals' | 'incline-walk' | 'steady-jog';
+  distance: number; // in miles
+  description: string;
+  pace?: string; // e.g., "3.0-3.8 mph"
+  incline?: string; // e.g., "5-9%"
+}
+
+export interface WorkoutPlan {
+  id: string;
+  name: string;
+  description: string;
+  durationWeeks: number;
+  daysPerWeek: string[]; // e.g., ['monday', 'wednesday', 'friday']
+  exercises: WorkoutExercise[];
+  cardio: {
+    monday?: CardioSession;
+    wednesday?: CardioSession;
+    friday?: CardioSession;
+    [key: string]: CardioSession | undefined;
+  };
+  notes?: string;
+}
+
 export interface HabitEntry {
   habitId: string;
   date: string;
@@ -14,6 +50,20 @@ export interface HabitEntry {
     imageUrl?: string;
     note?: string;
     uploadedAt?: string;
+  };
+  workoutData?: {
+    exercises: {
+      name: string;
+      sets: number;
+      reps: number;
+      weight: number;
+    }[];
+    cardio?: {
+      type: string;
+      distance: number;
+      duration?: number; // in minutes
+      pace?: number; // mph
+    };
   };
 }
 
@@ -28,6 +78,7 @@ export interface Habit {
   points: number;
   goal: number;
   reward: string;
+  punishment?: string;
   category?: string;
   subcategory?: string;
   group?: string;
@@ -42,6 +93,7 @@ export interface Habit {
   trackingType?: 'simple' | 'quantity' | 'duration' | 'sets';
   trackingUnit?: string;
   targetValue?: number;
+  workoutPlan?: WorkoutPlan;
 }
 
 export interface DayColumn {
@@ -202,11 +254,12 @@ export class HabitsService {
   });
 
   constructor(private baserowService: BaserowService) {
-    // Initialize by loading data from Baserow
+    // Initialize by loading data from Baserow (ONLY data source)
     this.loadDataFromDatabase();
-    // Also load existing local data
-    this.loadData();
-    this.initializeSampleData();
+    // DISABLED: Not using localStorage - only Baserow database
+    // this.loadData();
+    // DISABLED: Sample data not needed
+    // this.initializeSampleData();
     this.fixDuplicateIds();
   }
 
@@ -570,6 +623,16 @@ export class HabitsService {
   getEntryStatus(habitId: string, date: string): string {
     const key = `${habitId}-${date}`;
     return this.habitEntries.get(key)?.status || 'not-started';
+  }
+
+  getHabitEntries(habitId: string): HabitEntry[] {
+    const entries: HabitEntry[] = [];
+    this.habitEntries.forEach((entry, key) => {
+      if (key.startsWith(`${habitId}-`)) {
+        entries.push(entry);
+      }
+    });
+    return entries.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   // Analytics and Progress
@@ -1323,14 +1386,19 @@ export class HabitsService {
     // Load habits from Baserow
     this.baserowService.getHabits(undefined, true).subscribe({
       next: (response) => {
+        console.log('🔍 RAW Baserow Response:', JSON.stringify(response, null, 2));
         if (response.results) {
           const habits = response.results.map((row: any) => this.transformBaserowHabitToLocal(row));
           this.habits.set(habits);
-          console.log('Loaded habits from Baserow:', habits.length);
+          console.log('✅ Loaded habits from Baserow:', habits.length);
+          console.log('📊 Habits Data:', JSON.stringify(habits, null, 2));
+        } else {
+          console.warn('⚠️ No results in Baserow response');
         }
       },
       error: (error) => {
-        console.error('Failed to load habits from Baserow:', error);
+        console.error('❌ Failed to load habits from Baserow:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         // Fall back to local storage
         this.loadData();
       }
@@ -1382,6 +1450,8 @@ export class HabitsService {
   }
 
   transformBaserowHabitToLocal(baserowHabit: any): Habit {
+    console.log('🔄 Transforming Baserow habit:', baserowHabit);
+
     return {
       id: baserowHabit.id.toString(),
       name: baserowHabit.name || '',
@@ -1399,7 +1469,12 @@ export class HabitsService {
       frequency: this.mapFrequency(baserowHabit.frequency),
       trackingType: this.mapTrackingType(baserowHabit.tracking_type),
       trackingUnit: this.mapTrackingUnit(baserowHabit.tracking_unit),
-      targetValue: baserowHabit.target_value || 1
+      targetValue: baserowHabit.target_value || 1,
+      // Lookup fields for category hierarchy
+      category: baserowHabit.category?.[0]?.value || undefined,
+      subcategory: baserowHabit.subcategory?.[0]?.value || undefined,
+      group: baserowHabit.group || undefined,
+      targetDays: baserowHabit.target_days || undefined
     };
   }
 

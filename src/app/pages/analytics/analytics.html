@@ -3,14 +3,117 @@
     <h1 class="text-3xl font-bold text-base-content mb-4">📊 Analytics</h1>
     <p class="text-base-content/70">Track your habit progress and insights</p>
   </div>
-  
-  <!-- Test content to enable scrolling -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="bg-base-100 p-6 rounded-lg shadow-md" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]">
-      <h3 class="text-lg font-semibold mb-3">Chart {{ i }}</h3>
-      <div class="h-32 bg-base-200 rounded flex items-center justify-center">
-        <span class="text-base-content/50">Chart placeholder</span>
+
+  <!-- Key Metrics Cards -->
+  <section>
+    <h2 class="text-xl font-semibold text-base-content mb-4">📈 Key Metrics</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div *ngFor="let metric of metrics()"
+           class="bg-base-100 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+        <div class="p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="text-4xl">{{ metric.icon }}</div>
+            <div *ngIf="metric.trend"
+                 class="flex items-center gap-1 text-sm font-medium"
+                 [class.text-success]="metric.trend.direction === 'up'"
+                 [class.text-warning]="metric.trend.direction === 'stable'"
+                 [class.text-error]="metric.trend.direction === 'down'">
+              <span *ngIf="metric.trend.direction === 'up'">↑</span>
+              <span *ngIf="metric.trend.direction === 'down'">↓</span>
+              <span *ngIf="metric.trend.direction === 'stable'">→</span>
+            </div>
+          </div>
+          <h3 class="text-sm font-medium text-base-content/70 mb-2">{{ metric.title }}</h3>
+          <div class="text-3xl font-bold text-base-content mb-2">{{ metric.value }}</div>
+          <p class="text-sm text-base-content/60">{{ metric.subtitle }}</p>
+        </div>
+        <div [class]="metric.color + ' h-2 w-full'"></div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Habit Performance Charts -->
+  <section>
+    <h2 class="text-xl font-semibold text-base-content mb-4">📊 Habit Performance</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Completion Rate Timeline -->
+      <div class="bg-base-100 p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-3">📈 Completion Rate Timeline (Last 7 Days)</h3>
+        <div class="h-64 flex flex-col justify-end gap-2 p-4">
+          <div class="flex items-end justify-between gap-2 h-full">
+            <div *ngFor="let day of completionTimeline()" class="flex-1 flex flex-col items-center gap-1">
+              <div class="text-xs font-medium text-base-content/70">{{ day.rate }}%</div>
+              <div class="w-full bg-base-300 rounded-t flex-1 flex flex-col justify-end overflow-hidden">
+                <div
+                  class="w-full rounded-t transition-all"
+                  [class.bg-success]="day.rate >= 80"
+                  [class.bg-warning]="day.rate >= 50 && day.rate < 80"
+                  [class.bg-error]="day.rate < 50"
+                  [style.height.%]="day.rate">
+                </div>
+              </div>
+              <div class="text-xs font-medium text-base-content/60">{{ day.dayName }}</div>
+              <div class="text-xs text-base-content/40">{{ day.completed }}/{{ day.total }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Habit Comparison Matrix -->
+      <div class="bg-base-100 p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-3">🏆 Top Performing Habits</h3>
+        <div class="h-64 overflow-y-auto space-y-2">
+          <div *ngFor="let habit of habitComparison()"
+               class="flex items-center gap-3 p-2 rounded hover:bg-base-200 transition-colors">
+            <div class="flex-1">
+              <div class="font-medium text-sm">{{ habit.name }}</div>
+              <div class="text-xs text-base-content/60">{{ habit.category }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="text-xs text-base-content/60">🔥 {{ habit.streak }}</div>
+              <div class="w-20 h-2 bg-base-300 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full"
+                  [class.bg-success]="habit.completionRate >= 80"
+                  [class.bg-warning]="habit.completionRate >= 50 && habit.completionRate < 80"
+                  [class.bg-error]="habit.completionRate < 50"
+                  [style.width.%]="habit.completionRate">
+                </div>
+              </div>
+              <div class="text-sm font-semibold w-10 text-right">{{ habit.completionRate }}%</div>
+            </div>
+          </div>
+          <div *ngIf="habitComparison().length === 0" class="h-full flex items-center justify-center text-base-content/50">
+            No habits to compare yet
+          </div>
+        </div>
+      </div>
+
+      <!-- Streak History Placeholder -->
+      <div class="bg-base-100 p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-3">Streak History</h3>
+        <div class="h-64 bg-base-200 rounded flex items-center justify-center">
+          <span class="text-base-content/50">Coming soon: Area chart showing streak progression</span>
+        </div>
+      </div>
+
+      <!-- Day of Week Analysis Placeholder -->
+      <div class="bg-base-100 p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-3">Day of Week Performance</h3>
+        <div class="h-64 bg-base-200 rounded flex items-center justify-center">
+          <span class="text-base-content/50">Coming soon: Radar chart showing best days</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Heatmap Calendar -->
+  <section>
+    <h2 class="text-xl font-semibold text-base-content mb-4">🔥 Activity Heatmap</h2>
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <div class="h-48 bg-base-200 rounded flex items-center justify-center">
+        <span class="text-base-content/50">Coming soon: GitHub-style contribution calendar</span>
+      </div>
+    </div>
+  </section>
 </div>

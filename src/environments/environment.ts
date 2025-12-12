@@ -31,4 +31,16 @@ export const environment = {
       },
     },
   },
+  // Security & Monitoring Services
+  wsUrl: 'wss://ws.jollycares.com',
+  googleMapsApiKey: '', // Add your Google Maps API key here
+  twilioAccountSid: '', // Add your Twilio Account SID here
+  firebaseConfig: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    storageBucket: '',
+    messagingSenderId: '',
+    appId: '',
+  },
 };
