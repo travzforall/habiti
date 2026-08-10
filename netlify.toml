@@ -1,6 +1,17 @@
+# Netlify build for the Habiti frontend.
+#
+# NODE_VERSION is 22 and must stay in step with .nvmrc and the `engines` field
+# in package.json and realtime-server/package.json. It was 20 here while the
+# relay required >=22, so the two halves of the app were built and run on
+# different majors — fine until the day something in the shared protocol used
+# syntax one of them did not have.
+#
+# publish must stay in step with `outputPath` in angular.json. Angular's default
+# output path is derived from the project name, so leaving it implicit means a
+# rename silently breaks the deploy. It is set explicitly there for that reason.
 [build]
   publish = "dist/habiti/browser"
   command = "npm run build"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
