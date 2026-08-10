@@ -3,16 +3,25 @@
  * Creates a Baserow table from one of the database-schemas/NN-*.json files.
  *
  * WHY THIS EXISTS
- * The API token in src/environments/environment.ts is a Baserow *database
- * token*: it can read and write rows, and read field definitions, but every
- * table-management endpoint rejects it with "Authentication credentials were
- * not provided". Creating a table needs a user JWT, which means a real login.
+ * The API token the app ships is a Baserow *database token*: it can read and
+ * write rows, and read field definitions, but every table-management endpoint
+ * rejects it with "Authentication credentials were not provided". Creating a
+ * table needs a user JWT, which means a real login.
  *
- * CREDENTIALS
- * Read from the environment so they never land in a file or a shell history:
+ * CONFIGURATION AND CREDENTIALS
+ * All from the environment, all required, so they never land in a file or a
+ * shell history — and so this can never guess which database to write to:
  *
- *   read -s BASEROW_PASSWORD && export BASEROW_PASSWORD
+ *   export BASEROW_URL=https://db.example.com
+ *   export BASEROW_DATABASE_ID=128
  *   export BASEROW_EMAIL=you@example.com
+ *   read -s BASEROW_PASSWORD && export BASEROW_PASSWORD
+ *
+ * BASEROW_URL and BASEROW_DATABASE_ID previously defaulted to one specific
+ * instance and database. A default is fine for a value that is merely
+ * convenient; these two decide WHERE SCHEMA GETS WRITTEN, and getting that
+ * silently wrong is unrecoverable in a way a missing-variable error is not.
+ * Run with --list-databases to see the ids you can choose from.
  *
  * USAGE
  *   node scripts/create-baserow-table.mjs 26-user-onboarding.json            # dry run
@@ -28,12 +37,40 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA_DIR = join(ROOT, 'database-schemas');
 
-const BASE_URL = process.env.BASEROW_URL ?? 'https://db.jollycares.com';
-const DATABASE_ID = Number(process.env.BASEROW_DATABASE_ID ?? 128);
-
 const [, , schemaArg, ...flags] = process.argv;
 const APPLY = flags.includes('--apply');
 const LIST_DATABASES = process.argv.includes('--list-databases');
+
+/**
+ * Exits rather than guessing.
+ *
+ * Both values below decide which Baserow instance and database this writes
+ * schema to. A default would turn a moved file or an unset shell into a silent
+ * write against the wrong database.
+ */
+function required(value, name, description) {
+  if (value) return value;
+  console.error(`\n  Missing ${name} — ${description}.\n`);
+  console.error(`  Set it in the environment:  ${name}=... node ${process.argv[1]} ...\n`);
+  process.exit(1);
+}
+
+const BASE_URL = required(
+  process.env.BASEROW_URL,
+  'BASEROW_URL',
+  'the Baserow host, e.g. https://db.example.com'
+);
+
+// --list-databases is how you FIND the id, so it must not demand one first.
+const DATABASE_ID = LIST_DATABASES
+  ? Number(process.env.BASEROW_DATABASE_ID ?? 0)
+  : Number(
+      required(
+        process.env.BASEROW_DATABASE_ID,
+        'BASEROW_DATABASE_ID',
+        'the database to create the table in — run with --list-databases to see the ids'
+      )
+    );
 
 if (!schemaArg && !LIST_DATABASES) {
   console.error('usage: node scripts/create-baserow-table.mjs <schema-file.json> [--apply]\n');

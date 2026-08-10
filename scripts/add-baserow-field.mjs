@@ -7,27 +7,50 @@
  * /api/database/fields/... returns 401 for it. Creating a field needs a user
  * JWT, which means a real login — same constraint as create-baserow-table.mjs.
  *
- * WHY THIS EXISTS: tables 507 (projects) and 508 (tasks) have no `user_id`
- * column, so every row belongs to nobody. Until they do, per-user tasks and
- * projects cannot be stored server-side at all.
+ * NOTE ON --preset user-scoping: it adds `user_id` to tables 507 and 508,
+ * which belong to the SCHEDULER app in Baserow database 127, not to Habiti.
+ * That preset is spent — the columns exist, and Habiti no longer wants those
+ * tables anyway. A user's own work lives in user_projects (630) and user_tasks
+ * (631) in database 128, which were created with their own schema files and
+ * carry user_id from the start. Keep the preset only as a worked example of
+ * altering an existing table; do not reach for it to scope Habiti data.
  *
  * Idempotent: a field that already exists is reported and skipped, so re-running
  * is safe.
  *
+ * CONFIGURATION COMES FROM THE ENVIRONMENT, AND IS REQUIRED.
+ *
+ * This script used to regex the host and token out of
+ * src/environments/environment.ts. That read was wrapped in a try/catch that
+ * fell back to a hardcoded default host on any failure — so the day that file
+ * moved, it would have kept running and written fields to whatever instance the
+ * default pointed at, with no error and no output to suggest anything was
+ * wrong. Writing schema to the wrong database is not a failure worth being
+ * quiet about. Missing config is now a hard exit.
+ *
  * Usage:
+ *   BASEROW_URL=https://db.example.com \
  *   BASEROW_EMAIL=you@example.com BASEROW_PASSWORD=... \
  *     node scripts/add-baserow-field.mjs --table 508 --name user_id
  *
  *   # both tables at once, the actual reason this exists:
- *   BASEROW_EMAIL=... BASEROW_PASSWORD=... node scripts/add-baserow-field.mjs --preset user-scoping
+ *   BASEROW_URL=... BASEROW_EMAIL=... BASEROW_PASSWORD=... \
+ *     node scripts/add-baserow-field.mjs --preset user-scoping
+ *
+ * Environment:
+ *   BASEROW_URL      Baserow host, e.g. https://db.example.com  (required)
+ *   BASEROW_EMAIL    Login email                                (required)
+ *   BASEROW_PASSWORD Login password, unless passed another way
+ *   BASEROW_TOKEN    Database token; optional, lets a --dry-run read field
+ *                    definitions without logging in
  *
  * Options:
  *   --table <id>     Table to alter
  *   --name <name>    Field name (default: user_id)
  *   --type <type>    Baserow field type (default: text)
  *   --preset user-scoping   Adds user_id to tables 507 and 508
- *   --url <base>     Overrides the Baserow host
- *   --email <addr>   Baserow login email (or BASEROW_EMAIL)
+ *   --url <base>     Overrides BASEROW_URL
+ *   --email <addr>   Overrides BASEROW_EMAIL
  *   --password-stdin Read the password from stdin — the shell never sees it,
  *                    so characters like $ ! ` cannot be expanded away
  *   --password-file <path>  Read the password from a file
@@ -36,11 +59,6 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const envPath = path.resolve(here, '../src/environments/environment.ts');
 
 /**
  * Flags that take NO value.
@@ -56,7 +74,11 @@ const envPath = path.resolve(here, '../src/environments/environment.ts');
 const BOOLEAN_FLAGS = new Set(['dry-run', 'password-stdin', 'check-login']);
 
 const args = parseArgs(process.argv.slice(2));
-const baseUrl = args.url || hostFromEnvironment() || 'https://db.jollycares.com';
+const baseUrl = required(
+  args.url || process.env.BASEROW_URL,
+  'BASEROW_URL',
+  'the Baserow host to alter, e.g. https://db.example.com'
+);
 const email = args.email || process.env.BASEROW_EMAIL;
 const password = readPassword();
 const dryRun = !!args['dry-run'];
@@ -207,12 +229,16 @@ function describePassword(value) {
   );
 }
 
-/** Field definitions are readable with the database token, so dry runs work signed out. */
+/**
+ * Field definitions are readable with a database token, so a dry run can work
+ * signed out — but only if BASEROW_TOKEN is set. Without it a signed-out dry
+ * run simply reports nothing rather than pretending the table has no fields.
+ */
 async function fields(tableId, jwt) {
   try {
     return await api(`/api/database/fields/table/${tableId}/`, {
       jwt,
-      token: jwt ? undefined : tokenFromEnvironment()
+      token: jwt ? undefined : process.env.BASEROW_TOKEN
     });
   } catch {
     return null;
@@ -237,22 +263,17 @@ async function api(pathname, { method = 'GET', body, jwt, token } = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-function hostFromEnvironment() {
-  const match = readEnv(/apiUrl:\s*'(https?:\/\/[^/]+)/);
-  return match || null;
-}
-
-function tokenFromEnvironment() {
-  return readEnv(/token:\s*'([^']+)'/);
-}
-
-function readEnv(pattern) {
-  try {
-    const found = fs.readFileSync(envPath, 'utf8').match(pattern);
-    return found ? found[1] : null;
-  } catch {
-    return null;
-  }
+/**
+ * Exits rather than guessing.
+ *
+ * Every value this guards decides WHICH Baserow instance gets written to. A
+ * default here is not a convenience, it is a silent wrong answer.
+ */
+function required(value, name, description) {
+  if (value) return value;
+  console.error(`\n  Missing ${name} — ${description}.\n`);
+  console.error(`  Set it in the environment:  ${name}=... node ${process.argv[1]} ...\n`);
+  process.exit(1);
 }
 
 function parseArgs(argv) {
