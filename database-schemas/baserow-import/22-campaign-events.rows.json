@@ -1,0 +1,242 @@
+[
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 1,
+    "event_type": "created",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"type\":\"shared_goal\",\"title\":\"30 days, no missed workouts\"}",
+    "prev_hash": "",
+    "hash": "3f8a1c6e9b2d5f7a4c1e8b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 2,
+    "event_type": "invited",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"email\":\"partner@example.com\"}",
+    "prev_hash": "3f8a1c6e9b2d5f7a4c1e8b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a",
+    "hash": "4c1e8b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 3,
+    "event_type": "invite_accepted",
+    "actor_user_id": "2",
+    "actor_name": "Accountability Partner",
+    "payload_json": "{}",
+    "prev_hash": "4c1e8b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e",
+    "hash": "5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 4,
+    "event_type": "rules_proposed",
+    "actor_user_id": "2",
+    "actor_name": "Accountability Partner",
+    "payload_json": "{\"version\":2,\"summary\":\"Allow 2 excused sick days\"}",
+    "prev_hash": "5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a",
+    "hash": "6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 5,
+    "event_type": "rules_accepted",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"version\":2}",
+    "prev_hash": "6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a",
+    "hash": "7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 6,
+    "event_type": "pledge_locked",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"pledgeKind\":\"non_monetary\"}",
+    "prev_hash": "7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d",
+    "hash": "8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 7,
+    "event_type": "locked",
+    "actor_user_id": "2",
+    "actor_name": "Accountability Partner",
+    "payload_json": "{\"rulesVersion\":2,\"rulesHash\":\"a4c7e2b9...\"}",
+    "prev_hash": "8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d",
+    "hash": "9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 8,
+    "event_type": "activated",
+    "actor_user_id": "system",
+    "actor_name": "Habiti",
+    "payload_json": "{\"startsOn\":\"2026-08-01\"}",
+    "prev_hash": "9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d",
+    "hash": "1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 9,
+    "event_type": "report_submitted",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"periodKey\":\"2026-08-06\",\"selfClaim\":\"pass\"}",
+    "prev_hash": "1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e",
+    "hash": "2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e"
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "seq": 10,
+    "event_type": "report_confirmed",
+    "actor_user_id": "2",
+    "actor_name": "Accountability Partner",
+    "payload_json": "{\"periodKey\":\"2026-08-06\"}",
+    "prev_hash": "2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e",
+    "hash": "3c6e9b2d5f8a1c4e7b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a2c5e"
+  },
+  {
+    "campaign_key": "cmp_disputed_10",
+    "seq": 1,
+    "event_type": "report_challenged",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"periodKey\":\"2026-07-29\",\"reason\":\"Submitted after the grace window\"}",
+    "prev_hash": "",
+    "hash": "4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a"
+  },
+  {
+    "campaign_key": "cmp_disputed_10",
+    "seq": 2,
+    "event_type": "outcome_declared",
+    "actor_user_id": "2",
+    "actor_name": "Accountability Partner",
+    "payload_json": "{\"outcome\":\"partial\"}",
+    "prev_hash": "4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a",
+    "hash": "5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c"
+  },
+  {
+    "campaign_key": "cmp_disputed_10",
+    "seq": 3,
+    "event_type": "outcome_challenged",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"reason\":\"Final week should not count\"}",
+    "prev_hash": "5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c",
+    "hash": "6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f"
+  },
+  {
+    "campaign_key": "cmp_disputed_10",
+    "seq": 4,
+    "event_type": "dispute_resolution_proposed",
+    "actor_user_id": "3",
+    "actor_name": "Sam Okafor",
+    "payload_json": "{\"proposedOutcome\":\"partial\"}",
+    "prev_hash": "6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f",
+    "hash": "7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d"
+  },
+  {
+    "campaign_key": "cmp_disputed_10",
+    "seq": 5,
+    "event_type": "dispute_resolved",
+    "actor_user_id": "3",
+    "actor_name": "Sam Okafor",
+    "payload_json": "{\"outcome\":\"partial\",\"note\":\"Both parties accepted the arbiter's call\"}",
+    "prev_hash": "7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d",
+    "hash": "8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a"
+  },
+  {
+    "campaign_key": "cmp_failed_07",
+    "seq": 1,
+    "event_type": "breach_detected",
+    "actor_user_id": "system",
+    "actor_name": "Habiti",
+    "payload_json": "{\"missedPeriods\":19,\"maxMissedPeriods\":2}",
+    "prev_hash": "",
+    "hash": "9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b"
+  },
+  {
+    "campaign_key": "cmp_failed_07",
+    "seq": 2,
+    "event_type": "settlement_created",
+    "actor_user_id": "system",
+    "actor_name": "Habiti",
+    "payload_json": "{\"amount\":100,\"currency\":\"USD\"}",
+    "prev_hash": "9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b",
+    "hash": "0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e"
+  },
+  {
+    "campaign_key": "cmp_forfeited_08",
+    "seq": 1,
+    "event_type": "forfeited",
+    "actor_user_id": "3",
+    "actor_name": "Sam Okafor",
+    "payload_json": "{\"reason\":\"Injured, stopping here\"}",
+    "prev_hash": "",
+    "hash": "1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d"
+  },
+  {
+    "campaign_key": "cmp_forfeited_08",
+    "seq": 2,
+    "event_type": "settlement_reported",
+    "actor_user_id": "3",
+    "actor_name": "Sam Okafor",
+    "payload_json": "{\"receiptNote\":\"Donated, confirmation #A82K1\"}",
+    "prev_hash": "1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d",
+    "hash": "2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a"
+  },
+  {
+    "campaign_key": "cmp_completed_06",
+    "seq": 1,
+    "event_type": "settlement_confirmed",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"amount\":50,\"currency\":\"USD\"}",
+    "prev_hash": "",
+    "hash": "3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c"
+  },
+  {
+    "campaign_key": "cmp_cancelled_09",
+    "seq": 1,
+    "event_type": "cancelled",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"reason\":\"Schedules did not line up\"}",
+    "prev_hash": "",
+    "hash": "4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e"
+  },
+  {
+    "campaign_key": "cmp_cancelled_09",
+    "seq": 2,
+    "event_type": "settlement_waived",
+    "actor_user_id": "5",
+    "actor_name": "Jo Baptiste",
+    "payload_json": "{\"reason\":\"Cancelled before it started\"}",
+    "prev_hash": "4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e",
+    "hash": "5c8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b"
+  },
+  {
+    "campaign_key": "cmp_locked_04",
+    "seq": 1,
+    "event_type": "unlock_requested",
+    "actor_user_id": "1",
+    "actor_name": "Testing User",
+    "payload_json": "{\"reason\":\"Want to push the start date back a week\"}",
+    "prev_hash": "",
+    "hash": "6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a"
+  },
+  {
+    "campaign_key": "cmp_negotiating_03",
+    "seq": 1,
+    "event_type": "invite_declined",
+    "actor_user_id": "5",
+    "actor_name": "Jo Baptiste",
+    "payload_json": "{\"reason\":\"Too much for me right now\"}",
+    "prev_hash": "",
+    "hash": "7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b"
+  }
+]

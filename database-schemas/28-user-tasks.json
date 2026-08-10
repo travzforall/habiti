@@ -1,0 +1,68 @@
+{
+  "table_name": "user_tasks",
+  "description": "A user's own tasks, both standalone and belonging to a user_project. NOT the scheduler app's `tasks` table (508) - that one belongs to the Claude automation system, lives in a different Baserow database, and carries agent/phase columns that mean nothing here. Import TWENTY-EIGHTH (after user_projects)",
+  "import_order": 28,
+  "dependencies": ["user_projects"],
+  "notes": [
+    "Named user_tasks so it can never be confused with the scheduler's `tasks` in the other database.",
+    "Users live in Xano, so user_id is TEXT holding String(user.id) - never a link field. EVERY read filters on it.",
+    "project_id is TEXT holding the user_projects ROW id, or the literal 'standalone'. Deliberately not a link_row: link fields cannot express 'standalone', and filtering a link field needs link_row_has with a row id, which the client does not always have.",
+    "completed is a real BOOLEAN. The scheduler table expresses completion through a status select (pending/approved/in_progress/...), which forced a lossy mapping in both directions.",
+    "priority uses 'urgent', the word the app uses, rather than the scheduler's 'critical'.",
+    "estimated_hours and actual_hours allow 2 DECIMAL PLACES. With 0 places Baserow REJECTS the whole row - not just the field - so logging 2.5 hours failed the entire write.",
+    "tags is free TEXT (comma separated). A multiple_select would reject any tag not planned in advance."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "Task name. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "description": "user_projects row id, or 'standalone'"},
+    "description": {"type": "long_text"},
+    "completed": {"type": "boolean", "default": false},
+    "priority": {"type": "single_select", "options": ["low", "medium", "high", "urgent"], "default": "medium"},
+    "due_date": {"type": "date"},
+    "completed_at": {"type": "date_time"},
+    "estimated_hours": {"type": "number", "decimal_places": 2, "description": "2 dp: Baserow rejects the whole row on excess decimals"},
+    "actual_hours": {"type": "number", "decimal_places": 2},
+    "tags": {"type": "text", "description": "Comma separated. Free text on purpose"},
+    "assignee": {"type": "text", "description": "Display name, denormalized"},
+    "sort_order": {"type": "number", "description": "Manual ordering within a list"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Call the insurance company",
+      "user_id": "6",
+      "project_id": "standalone",
+      "description": "Follow up on the claim status.",
+      "completed": false,
+      "priority": "urgent",
+      "due_date": "2026-08-10",
+      "estimated_hours": 0.5,
+      "tags": "personal,insurance",
+      "sort_order": 1
+    },
+    {
+      "title": "Write the launch post",
+      "user_id": "6",
+      "project_id": "standalone",
+      "completed": false,
+      "priority": "high",
+      "estimated_hours": 2.5,
+      "actual_hours": 1.25,
+      "tags": "writing",
+      "sort_order": 2
+    },
+    {
+      "title": "Book the skip",
+      "user_id": "6",
+      "project_id": "standalone",
+      "completed": true,
+      "priority": "low",
+      "completed_at": "2026-08-08T10:00:00Z",
+      "tags": "home",
+      "sort_order": 3
+    }
+  ]
+}

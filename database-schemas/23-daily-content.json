@@ -1,0 +1,72 @@
+{
+  "table_name": "daily_content",
+  "description": "Rotating daily inspiration shown on the dashboard. Free members get scripture; paid members pick a category. Import TWENTY-THIRD (no dependencies)",
+  "import_order": 23,
+  "dependencies": [],
+  "notes": [
+    "Selection is DETERMINISTIC, not random: index = dayOfYear % <count of active rows in that category>. Everyone sees the same item on the same day, and it does not change on refresh.",
+    "Set `pinned_date` to force a specific item on a specific day (holidays, launches). A pinned match always wins over the rotation.",
+    "`sort_index` gives the rotation a stable order. Without it the order depends on Baserow's default row ordering, which can shift when rows are edited.",
+    "`min_tier` gates a row: 'free' rows are visible to everyone, 'plus' rows only to paid members. Category access is enforced separately in the app.",
+    "The app ships a small bundled seed set as a fallback, so the dashboard still renders if this table is empty, unreachable, or not yet created."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "category": {"type": "single_select", "options": ["scripture", "quotes", "stoic", "affirmations"], "required": true},
+    "body": {"type": "long_text", "required": true, "description": "The verse, quote, or affirmation itself"},
+    "attribution": {"type": "text", "description": "Speaker or author, e.g. 'Marcus Aurelius'. Empty for affirmations"},
+    "reference": {"type": "text", "description": "Citation, e.g. 'Philippians 4:13' or 'Meditations, 6.8'"},
+    "translation": {"type": "text", "description": "Scripture only, e.g. 'NIV', 'ESV'"},
+    "source_url": {"type": "url", "description": "Where it came from, for attribution and rights checking"},
+    "sort_index": {"type": "number", "required": true, "description": "Stable position in the rotation within a category"},
+    "pinned_date": {"type": "date", "description": "Force this item on this exact date, overriding the rotation"},
+    "min_tier": {"type": "single_select", "options": ["free", "plus"], "default": "free"},
+    "active": {"type": "boolean", "default": true, "description": "Deactivate rather than delete, so the rotation stays reproducible"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "category": "scripture",
+      "body": "I can do all things through Christ who strengthens me.",
+      "reference": "Philippians 4:13",
+      "translation": "NKJV",
+      "sort_index": 1,
+      "min_tier": "free",
+      "active": true
+    },
+    {
+      "category": "scripture",
+      "body": "Commit to the Lord whatever you do, and he will establish your plans.",
+      "reference": "Proverbs 16:3",
+      "translation": "NIV",
+      "sort_index": 2,
+      "min_tier": "free",
+      "active": true
+    },
+    {
+      "category": "quotes",
+      "body": "We are what we repeatedly do. Excellence, then, is not an act but a habit.",
+      "attribution": "Will Durant",
+      "sort_index": 1,
+      "min_tier": "plus",
+      "active": true
+    },
+    {
+      "category": "stoic",
+      "body": "You have power over your mind - not outside events. Realize this, and you will find strength.",
+      "attribution": "Marcus Aurelius",
+      "reference": "Meditations",
+      "sort_index": 1,
+      "min_tier": "plus",
+      "active": true
+    },
+    {
+      "category": "affirmations",
+      "body": "I show up for myself today, even when it is hard.",
+      "sort_index": 1,
+      "min_tier": "plus",
+      "active": true
+    }
+  ]
+}

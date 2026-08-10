@@ -1,0 +1,55 @@
+{
+  "table_name": "friendships",
+  "description": "Social graph. One row per relationship - a friend REQUEST is simply a friendship in 'pending', there is no separate requests table. Addressed by email because no user-search endpoint exists; the recipient discovers invites by filtering on addressee_email. Import FIFTEENTH (no dependencies)",
+  "import_order": 15,
+  "dependencies": [],
+  "notes": [
+    "Users live in Xano, not Baserow, so every user reference is a TEXT field holding String(user.id) - never a link field.",
+    "Emails must be stored lowercased by the client; all lookups compare lowercased.",
+    "requester_* is always the initiator. addressee_user_id is null until the invite is accepted.",
+    "The *_name / *_avatar_url columns are denormalized snapshots and may go stale. Accepted tradeoff."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "requester_user_id": {"type": "text", "required": true, "description": "Xano user id as a string"},
+    "requester_name": {"type": "text", "description": "Denormalized at invite time"},
+    "requester_email": {"type": "text", "required": true, "description": "Lowercased"},
+    "requester_avatar_url": {"type": "url", "description": "Denormalized at invite time"},
+    "addressee_email": {"type": "text", "required": true, "description": "Lowercased. The only thing known about the recipient at invite time"},
+    "addressee_user_id": {"type": "text", "description": "Null until accepted"},
+    "addressee_name": {"type": "text", "description": "Filled on accept"},
+    "addressee_avatar_url": {"type": "url", "description": "Filled on accept"},
+    "status": {"type": "single_select", "options": ["pending", "accepted", "declined", "blocked", "cancelled"], "default": "pending"},
+    "invite_message": {"type": "long_text"},
+    "pair_key": {"type": "text", "description": "min(idA,idB)+':'+max(idA,idB) once accepted - guards against duplicate friendships"},
+    "requested_at": {"type": "date_time", "required": true},
+    "responded_at": {"type": "date_time"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "requester_user_id": "1",
+      "requester_name": "Testing User",
+      "requester_email": "test@test.com",
+      "requester_avatar_url": "https://example.com/avatar-1.jpg",
+      "addressee_email": "partner@example.com",
+      "addressee_user_id": "2",
+      "addressee_name": "Accountability Partner",
+      "status": "accepted",
+      "invite_message": "Let's keep each other honest this quarter.",
+      "pair_key": "1:2",
+      "requested_at": "2026-08-01T14:02:00Z",
+      "responded_at": "2026-08-01T18:40:00Z"
+    },
+    {
+      "requester_user_id": "1",
+      "requester_name": "Testing User",
+      "requester_email": "test@test.com",
+      "addressee_email": "notyetjoined@example.com",
+      "status": "pending",
+      "invite_message": "Join me on Habiti?",
+      "requested_at": "2026-08-06T09:15:00Z"
+    }
+  ]
+}

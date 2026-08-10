@@ -1,0 +1,62 @@
+{
+  "table_name": "user_projects",
+  "description": "A user's own projects. NOT the scheduler app's `projects` table (507) - that one belongs to the Claude automation system, lives in a different Baserow database, and has no user column. Import TWENTY-SEVENTH (no dependencies)",
+  "import_order": 27,
+  "dependencies": [],
+  "notes": [
+    "Named user_projects, not projects, so it can never be confused with the scheduler's table of the same name in the other database.",
+    "Users live in Xano, not Baserow, so user_id is TEXT holding String(user.id) - never a link field.",
+    "status carries 'cancelled' and 'on_hold' spelled WITHOUT the trailing comma that the scheduler table's option has. Baserow rejects any value outside a single-select's options, so the app's mapper had to reproduce that typo exactly; a clean table means a clean mapping.",
+    "priority uses 'urgent' - the word the app actually uses. The scheduler table says 'critical', which needed translating in both directions.",
+    "tags is free TEXT (comma separated), not a multiple_select. The scheduler's tags column is limited to bug/feature/improvement/docs, so arbitrary user tags could not be saved at all.",
+    "progress is 0-100 and derived by the client from task completion; stored so a list view can show it without loading every task.",
+    "Sub-collections (tasks, milestones, goals) are separate tables, not link fields, so a project loads without fanning out."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "Project name. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "description": {"type": "long_text"},
+    "status": {"type": "single_select", "options": ["planning", "active", "on_hold", "completed", "cancelled"], "default": "planning"},
+    "priority": {"type": "single_select", "options": ["low", "medium", "high", "urgent"], "default": "medium"},
+    "start_date": {"type": "date"},
+    "due_date": {"type": "date"},
+    "completed_at": {"type": "date_time"},
+    "progress": {"type": "number", "description": "0-100, derived from task completion"},
+    "color": {"type": "text", "description": "Hex, e.g. #3b82f6"},
+    "icon": {"type": "text", "description": "Emoji"},
+    "tags": {"type": "text", "description": "Comma separated. Free text on purpose - a select would reject anything unplanned"},
+    "owner": {"type": "text", "description": "Display name, denormalized"},
+    "archived": {"type": "boolean", "default": false},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Launch the side project",
+      "user_id": "6",
+      "description": "Ship the first public version.",
+      "status": "active",
+      "priority": "high",
+      "start_date": "2026-08-01",
+      "due_date": "2026-09-30",
+      "progress": 40,
+      "color": "#3b82f6",
+      "icon": "🚀",
+      "tags": "personal,side-project",
+      "archived": false
+    },
+    {
+      "title": "Sort out the garage",
+      "user_id": "6",
+      "description": "Two weekends, no more.",
+      "status": "planning",
+      "priority": "low",
+      "progress": 0,
+      "color": "#10b981",
+      "icon": "🏠",
+      "tags": "home",
+      "archived": false
+    }
+  ]
+}

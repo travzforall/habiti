@@ -1,0 +1,56 @@
+{
+  "table_name": "user_skills",
+  "description": "One row per skill a user is developing. A skill is a long-horizon capability track: it stores almost nothing itself and DERIVES its progress from habit entries, completed tasks, completed projects and completed campaigns. Import TWENTY-NINTH (no dependencies)",
+  "import_order": 29,
+  "dependencies": [],
+  "notes": [
+    "Users live in Xano, not Baserow, so user_id is TEXT holding String(user.id) - never a link field. EVERY read filters on it.",
+    "This table deliberately stores NO progress. Practice days, streaks, cumulative volume and tier eligibility are all recomputed from habit entries at read time, so a skill can never disagree with the habit data it describes. The only progress here is `tier` - the highest tier the user has CLAIMED - and the frozen evidence for each claim.",
+    "started_at is load-bearing: every requirement is evaluated FROM this date. Without the clamp, starting a skill would instantly grant several tiers off existing history.",
+    "bindings and claims are long_text JSON blobs rather than columns. They are read and written together, and versioning a blob is cheaper than migrating columns - the same choice as campaigns.locked_rules_json and user_onboarding.",
+    "bindings holds: habitIds (the user's REAL habit row ids), taskRefs, projectRefs, campaignKeys. All four are ids of things that already exist elsewhere - this table owns none of them, and deleting a skill must never delete them.",
+    "campaignKeys is how a skill records being pursued as a campaign. ChallengeTerms is frozen at start on purpose, so it gains no skillId - the relationship lives on this side.",
+    "skill_id references the bundled catalogue in src/app/config/skill-catalogue/, not a table. The catalogue is code so tier thresholds can be reviewed and pinned to a release.",
+    "tier is a plain integer 0-5. 0 means started but nothing claimed yet."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "skill_key": {"type": "text", "required": true, "primary": true, "description": "Client-generated stable key, skl_ prefixed. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "skill_id": {"type": "text", "required": true, "description": "Catalogue slug, e.g. 'strength'"},
+    "status": {"type": "single_select", "options": ["active", "paused", "completed", "abandoned"], "default": "active"},
+    "mode": {"type": "single_select", "options": ["solo", "campaign"], "default": "solo", "description": "The user's stated intent; campaignKeys in bindings is the actual record"},
+    "tier": {"type": "number", "description": "Highest tier CLAIMED, 0-5. Never decreases"},
+    "started_at": {"type": "date", "required": true, "description": "Requirements are evaluated FROM this date"},
+    "completed_at": {"type": "date_time"},
+    "bindings": {"type": "long_text", "description": "JSON: { habitIds, taskRefs, projectRefs, campaignKeys }"},
+    "claims": {"type": "long_text", "description": "JSON: SkillTierClaim[] - frozen evidence per claimed tier"},
+    "notes": {"type": "long_text"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "skill_key": "skl_sample1",
+      "user_id": "6",
+      "skill_id": "strength",
+      "status": "active",
+      "mode": "solo",
+      "tier": 1,
+      "started_at": "2026-08-01",
+      "bindings": "{\"habitIds\":[\"1\",\"2\"],\"taskRefs\":[{\"key\":\"form-check\",\"taskId\":\"11\"}],\"projectRefs\":[],\"campaignKeys\":[]}",
+      "claims": "[{\"tier\":1,\"claimedAt\":\"2026-08-08T09:00:00Z\",\"evidence\":[{\"label\":\"Practice days\",\"have\":7,\"need\":7}]}]"
+    },
+    {
+      "skill_key": "skl_sample2",
+      "user_id": "6",
+      "skill_id": "guitar",
+      "status": "active",
+      "mode": "campaign",
+      "tier": 0,
+      "started_at": "2026-08-05",
+      "bindings": "{\"habitIds\":[\"3\"],\"taskRefs\":[],\"projectRefs\":[],\"campaignKeys\":[\"chl_abc123\"]}",
+      "claims": "[]"
+    }
+  ]
+}

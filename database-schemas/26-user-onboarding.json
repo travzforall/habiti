@@ -1,0 +1,61 @@
+{
+  "table_name": "user_onboarding",
+  "description": "One row per user recording whether they have been through the setup wizard and the interactive app guide, plus the preferences the wizard collected. Import TWENTY-SIXTH (no dependencies)",
+  "import_order": 26,
+  "dependencies": [],
+  "notes": [
+    "ONE ROW PER USER. The client reads by user_id, then PATCHes if found or POSTs if not. Baserow cannot enforce uniqueness, so on a double-POST race OnboardingService takes the highest id and leaves the orphan - a duplicate onboarding row is harmless.",
+    "THERE IS NO 'pending' ROW. status is only ever written as 'skipped' or 'completed'. The ABSENCE of a row is what pending means, and that is what makes the backfill work: every existing user already has no row, so they are all pending with no migration script.",
+    "user_id is plain text holding String(user.id), NOT a link field. Users live in Xano, not Baserow - see 00-import-order.md. Same convention as tables 15-22 and level_records.",
+    "ONLY A GENUINE HTTP 200 MAY CONCLUDE pending. BaserowService.skip() emits an EMPTY RESULT SET rather than throwing when the table id is 0 or the token is missing, and an empty result is byte-identical to 'this user has no row'. OnboardingService therefore tracks a tri-state load ('loaded' vs 'unavailable') and mirrors everything to localStorage. Get this wrong and the wizard reappears on every load, for everyone, forever.",
+    "FORGEABLE. The Baserow API token ships in the client bundle, so any user can flip their own onboarding_completed. That is fine for what this table is - it decides whether to show a wizard. NEVER gate an entitlement, a trial, a paywall or anything paid on these fields.",
+    "preferences / starter_habits / guide_steps_seen / page_tips_seen are JSON in long_text columns rather than Baserow's json type - the same choice level_records made for detail. It round-trips as a plain string through the generic row helpers with no surprises, and versioning a blob is cheaper than migrating columns.",
+    "wizard_version and guide_version exist so a redesigned wizard or tour can be legitimately re-offered to users who completed the old one, without a data migration. Nothing reads them yet."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string"},
+    "status": {"type": "single_select", "options": ["pending", "skipped", "completed"], "required": true, "description": "'pending' is listed for completeness but is never written - absence of a row means pending"},
+    "wizard_version": {"type": "number", "required": true, "default": 1},
+    "preferences": {"type": "long_text", "description": "JSON: {displayName?, focusAreas[], theme, defaultDifficulty}"},
+    "starter_habits": {"type": "long_text", "description": "JSON array of habit-library ids the wizard actually created"},
+    "guide_status": {"type": "single_select", "options": ["not_started", "in_progress", "completed", "skipped"], "default": "not_started"},
+    "guide_version": {"type": "number", "default": 1},
+    "guide_step_index": {"type": "number", "default": 0, "description": "Resume point when guide_status is in_progress"},
+    "guide_steps_seen": {"type": "long_text", "description": "JSON array of TourStep ids already shown"},
+    "page_tips_seen": {"type": "long_text", "description": "JSON array of route keys whose first-visit tip has been shown"},
+    "completed_at": {"type": "date_time", "description": "When the wizard was finished or skipped"},
+    "updated_at": {"type": "date_time", "description": "Touched on every write, including guide progress"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "user_id": "1",
+      "status": "completed",
+      "wizard_version": 1,
+      "preferences": "{\"displayName\":\"Alex\",\"focusAreas\":[\"fitness\",\"mind\"],\"theme\":\"dark\",\"defaultDifficulty\":\"hard\"}",
+      "starter_habits": "[\"back-squat\",\"deadlift\",\"meditate-10\",\"stretch\"]",
+      "guide_status": "completed",
+      "guide_version": 1,
+      "guide_step_index": -1,
+      "guide_steps_seen": "[\"welcome\",\"today-habits\",\"complete-habit\",\"streak-points\",\"add-habit\",\"templates\",\"calendar\",\"analytics\",\"nav-desktop\",\"settings-replay\"]",
+      "page_tips_seen": "[\"/challenges\",\"/friends\"]",
+      "completed_at": "2026-08-09T10:12:00Z",
+      "updated_at": "2026-08-09T10:19:00Z"
+    },
+    {
+      "user_id": "3",
+      "status": "skipped",
+      "wizard_version": 1,
+      "preferences": "{\"focusAreas\":[],\"theme\":\"auto\",\"defaultDifficulty\":\"medium\"}",
+      "starter_habits": "[]",
+      "guide_status": "in_progress",
+      "guide_version": 1,
+      "guide_step_index": 4,
+      "guide_steps_seen": "[\"welcome\",\"today-habits\",\"streak-points\",\"add-habit\"]",
+      "page_tips_seen": "[]",
+      "completed_at": "2026-08-09T11:02:00Z",
+      "updated_at": "2026-08-09T11:04:00Z"
+    }
+  ]
+}

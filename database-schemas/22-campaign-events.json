@@ -1,0 +1,51 @@
+{
+  "table_name": "campaign_events",
+  "description": "Append-only audit trail with a hash chain. Tamper-EVIDENCE, not tamper-resistance. Import TWENTY-SECOND (depends on campaigns)",
+  "import_order": 22,
+  "dependencies": ["campaigns"],
+  "notes": [
+    "READ THIS BEFORE RELYING ON IT: the Baserow API token ships in the client bundle, so every user can write and delete any row in this table. The hash chain makes tampering VISIBLE to an attentive counterparty; it does not PREVENT it.",
+    "Genuine integrity requires routing writes through a server-side proxy that verifies the Xano JWT. Until then, do not enable real cash stakes.",
+    "hash = sha256(prev_hash + '|' + seq + '|' + event_type + '|' + actor_user_id + '|' + payload_json). seq starts at 1 with prev_hash = ''.",
+    "NEVER updated. Corrections are new events, not edits."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "campaign_id": {"type": "link", "link_to": "campaigns", "required": true},
+    "campaign_key": {"type": "text", "required": true},
+    "seq": {"type": "number", "required": true, "description": "1-based, monotonic per campaign"},
+    "event_type": {"type": "single_select", "options": ["created", "invited", "invite_accepted", "invite_declined", "rules_proposed", "rules_accepted", "locked", "unlock_requested", "activated", "report_submitted", "report_confirmed", "report_challenged", "breach_detected", "outcome_declared", "outcome_challenged", "dispute_resolution_proposed", "dispute_resolved", "forfeited", "cancelled", "pledge_locked", "settlement_created", "settlement_reported", "settlement_confirmed", "settlement_waived"], "required": true},
+    "actor_user_id": {"type": "text", "required": true},
+    "actor_name": {"type": "text"},
+    "payload_json": {"type": "long_text"},
+    "prev_hash": {"type": "text", "description": "Empty string for seq 1"},
+    "hash": {"type": "text", "required": true},
+    "created_at": {"type": "date_time", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "campaign_id": "cmp_lz8k2a_x91",
+      "campaign_key": "cmp_lz8k2a_x91",
+      "seq": 1,
+      "event_type": "created",
+      "actor_user_id": "1",
+      "actor_name": "Testing User",
+      "payload_json": "{\"type\":\"shared_goal\",\"title\":\"30 days, no missed workouts\"}",
+      "prev_hash": "",
+      "hash": "3f8a1c6e9b2d5f7a4c1e8b3d6f9a2c5e8b1d4f7a3c6e9b2d5f8a1c4e7b3d6f9a",
+      "created_at": "2026-07-30T12:00:00Z"
+    },
+    {
+      "campaign_id": "cmp_lz8k2a_x91",
+      "campaign_key": "cmp_lz8k2a_x91",
+      "seq": 5,
+      "event_type": "locked",
+      "actor_user_id": "2",
+      "actor_name": "Accountability Partner",
+      "payload_json": "{\"rulesVersion\":2,\"rulesHash\":\"0d1f9c4b7a2e5f8c1b6d3a9e4f7c2b5d8a1e6f3c9b4d7a2e5f8c1b6d3a9e4f7c\"}",
+      "prev_hash": "b7e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2",
+      "hash": "c9f2b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2",
+      "created_at": "2026-07-31T22:10:00Z"
+    }
+  ]
+}

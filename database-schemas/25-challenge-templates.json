@@ -1,0 +1,31 @@
+{
+  "table_name": "challenge_templates",
+  "description": "Optional Baserow mirror of the challenge catalogue. The bundled seed in src/app/config/challenge-catalogue.seed.ts is the source of truth. Import TWENTY-FIFTH (no dependencies)",
+  "import_order": 25,
+  "dependencies": [],
+  "notes": [
+    "THE CODE IS AUTHORITATIVE, NOT THIS TABLE. Level values drive PERMANENT awards, so the catalogue is version-pinned in the app bundle where it can be code-reviewed. This table exists for editing copy and for previewing new challenges, not for changing payouts behind a release.",
+    "tiers_json holds the per-difficulty rules as JSON: {\"easy\":{...},\"medium\":{...},\"hard\":{...}} with levelValue, targetPerPeriod, requiredPassRate, graceMisses and blurb.",
+    "A run FREEZES its tier's levelValue into its own terms at start time, so editing a value here never changes what an in-flight run pays out.",
+    "allows_partner stays false until partnered challenges ship."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "template_id": {"type": "text", "required": true, "description": "Stable slug, e.g. cold-start-7"},
+    "title": {"type": "text", "required": true},
+    "description": {"type": "long_text"},
+    "icon": {"type": "text"},
+    "category": {"type": "single_select", "options": ["fitness", "mind", "discipline", "sobriety", "faith", "craft"], "required": true},
+    "duration_days": {"type": "number", "required": true},
+    "cadence": {"type": "single_select", "options": ["daily", "weekly"], "default": "daily"},
+    "base_level_value": {"type": "number", "required": true, "description": "Fallback when a tier omits its own levelValue"},
+    "tiers_json": {"type": "long_text"},
+    "min_tier": {"type": "single_select", "options": ["free", "plus"], "default": "free"},
+    "allows_partner": {"type": "boolean", "default": false},
+    "sort_index": {"type": "number", "required": true},
+    "active": {"type": "boolean", "default": true},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": []
+}

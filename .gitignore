@@ -40,3 +40,8 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Baserow admin credentials for scripts/create-baserow-table.mjs.
+# Schema changes need a user JWT — the database token in environment.ts can
+# only touch rows. Never commit this.
+.baserow-creds

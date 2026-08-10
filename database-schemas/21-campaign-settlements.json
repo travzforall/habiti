@@ -1,0 +1,47 @@
+{
+  "table_name": "campaign_settlements",
+  "description": "The obligation created when a staked campaign resolves. Self-reported and counterparty-confirmed - Habiti never verifies or processes a payment. Import TWENTY-FIRST (depends on campaign_pledges)",
+  "import_order": 21,
+  "dependencies": ["campaigns", "campaign_pledges"],
+  "notes": [
+    "Flow: due -> self_reported_paid -> counterparty_confirmed. Habiti observes; it does not collect.",
+    "donation_link_url is SNAPSHOTTED onto the row so the agreed destination stays auditable even if the app's configured link changes later.",
+    "creditor_user_id is null when the beneficiary is the charity.",
+    "A campaign in 'disputed' FREEZES settlement - no row may advance while a report challenge is open."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "campaign_id": {"type": "link", "link_to": "campaigns", "required": true},
+    "pledge_id": {"type": "link", "link_to": "campaign_pledges", "required": true},
+    "campaign_key": {"type": "text", "required": true},
+    "debtor_user_id": {"type": "text", "required": true, "description": "Who owes"},
+    "creditor_user_id": {"type": "text", "description": "Null when the beneficiary is the charity"},
+    "amount": {"type": "number"},
+    "currency": {"type": "text", "default": "USD"},
+    "settlement_status": {"type": "single_select", "options": ["due", "self_reported_paid", "counterparty_confirmed", "waived", "overdue", "disputed"], "default": "due"},
+    "donation_link_url": {"type": "url", "description": "Snapshot of the iLuv Foundation / Project Africa link at the time the obligation arose"},
+    "receipt_url": {"type": "url", "description": "Optional proof supplied by the debtor"},
+    "receipt_note": {"type": "long_text"},
+    "self_reported_at": {"type": "date_time"},
+    "confirmed_by_user_id": {"type": "text"},
+    "confirmed_at": {"type": "date_time"},
+    "due_by": {"type": "date"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "campaign_id": "cmp_lz9m4b_q22",
+      "pledge_id": "2",
+      "campaign_key": "cmp_lz9m4b_q22",
+      "debtor_user_id": "2",
+      "amount": 100,
+      "currency": "USD",
+      "settlement_status": "self_reported_paid",
+      "donation_link_url": "https://example.org/iluv-foundation/project-africa",
+      "receipt_note": "Donated 2026-08-05, confirmation #A82K1.",
+      "self_reported_at": "2026-08-05T16:20:00Z",
+      "due_by": "2026-08-12"
+    }
+  ]
+}

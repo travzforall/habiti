@@ -1,0 +1,48 @@
+{
+  "table_name": "campaign_rule_versions",
+  "description": "Append-only negotiation history. This is what makes 'we agreed to X' auditable. Import EIGHTEENTH (depends on campaigns)",
+  "import_order": 18,
+  "dependencies": ["campaigns"],
+  "notes": [
+    "NEVER updated and NEVER deleted. Every proposal writes a new row with version = previous + 1.",
+    "rules_hash is sha256 of the canonicalized (key-sorted) rules_json, so both clients compute the same value.",
+    "The campaign-rules-diff UI renders version N-1 against version N so nobody accepts changed terms blind."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "campaign_id": {"type": "link", "link_to": "campaigns", "required": true},
+    "campaign_key": {"type": "text", "required": true},
+    "version": {"type": "number", "required": true},
+    "rules_json": {"type": "long_text", "required": true},
+    "rules_hash": {"type": "text", "required": true},
+    "proposed_by_user_id": {"type": "text", "required": true},
+    "proposed_by_name": {"type": "text"},
+    "change_summary": {"type": "long_text", "description": "Human-readable note on what changed and why"},
+    "superseded": {"type": "boolean", "default": false},
+    "created_at": {"type": "date_time", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "campaign_id": "cmp_lz8k2a_x91",
+      "campaign_key": "cmp_lz8k2a_x91",
+      "version": 1,
+      "rules_hash": "a4c7e2b9d1f6a3c8e5b2d9f4a7c1e6b3d8f5a2c9e4b7d1f6a3c8e5b2d9f4a7c1",
+      "proposed_by_user_id": "1",
+      "proposed_by_name": "Testing User",
+      "change_summary": "Initial terms: 5 workouts a week, 30 days, daily check-in.",
+      "superseded": true,
+      "created_at": "2026-07-30T12:00:00Z"
+    },
+    {
+      "campaign_id": "cmp_lz8k2a_x91",
+      "campaign_key": "cmp_lz8k2a_x91",
+      "version": 2,
+      "rules_hash": "0d1f9c4b7a2e5f8c1b6d3a9e4f7c2b5d8a1e6f3c9b4d7a2e5f8c1b6d3a9e4f7c",
+      "proposed_by_user_id": "2",
+      "proposed_by_name": "Accountability Partner",
+      "change_summary": "Allow 2 excused sick days; raise grace period to 12h.",
+      "superseded": false,
+      "created_at": "2026-07-31T08:45:00Z"
+    }
+  ]
+}

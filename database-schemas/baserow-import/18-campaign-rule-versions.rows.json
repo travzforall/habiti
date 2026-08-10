@@ -1,0 +1,32 @@
+[
+  {
+    "campaign_key": "cmp_active_05",
+    "version": 1,
+    "rules_json": "{\"kind\":\"shared_goal\",\"version\":1,\"goal\":{\"targetValue\":5},\"failure\":{\"maxMissedPeriods\":0}}",
+    "rules_hash": "f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8d1a4c7f0b3",
+    "proposed_by_user_id": "1",
+    "proposed_by_name": "Testing User",
+    "change_summary": "Initial terms: 5 workouts a week, 30 days, daily check-in.",
+    "superseded": true
+  },
+  {
+    "campaign_key": "cmp_active_05",
+    "version": 2,
+    "rules_json": "{\"kind\":\"shared_goal\",\"version\":1,\"goal\":{\"targetValue\":5},\"failure\":{\"maxMissedPeriods\":2,\"allowExcusedPeriods\":2}}",
+    "rules_hash": "a4c7e2b9d1f6a3c8e5b2d9f4a7c1e6b3d8f5a2c9e4b7d1f6a3c8e5b2d9f4a7c1",
+    "proposed_by_user_id": "2",
+    "proposed_by_name": "Accountability Partner",
+    "change_summary": "Allow 2 excused sick days; raise the grace period to 12h.",
+    "superseded": false
+  },
+  {
+    "campaign_key": "cmp_negotiating_03",
+    "version": 3,
+    "rules_json": "{\"kind\":\"challenge\",\"version\":1,\"cadence\":{\"kind\":\"custom\",\"customDays\":[\"monday\",\"wednesday\",\"friday\"]}}",
+    "rules_hash": "b5e8d1a4c7f0b3e6d9a2c5f8b1e4d7a0c3f6b9e2d5a8c1f4b7e0d3a6c9f2b5e8",
+    "proposed_by_user_id": "2",
+    "proposed_by_name": "Accountability Partner",
+    "change_summary": "Drop to three fixed days a week instead of five.",
+    "superseded": false
+  }
+]

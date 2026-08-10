@@ -1,0 +1,61 @@
+{
+  "table_name": "level_records",
+  "description": "Append-only ledger of every level the user has earned, and why. The user's level is the sum of levels_awarded plus 1 - it is never stored as a standalone counter. Import TWENTY-FOURTH (no dependencies)",
+  "import_order": 24,
+  "dependencies": [],
+  "notes": [
+    "APPEND-ONLY. Rows are never updated and never deleted. A mistaken award is corrected by a compensating 'manual' row, never by an edit.",
+    "LEVELS ONLY GO UP. levels_awarded is always >= 1. The app never writes a negative. This is what makes the history truthful - a record can never explain a level the user no longer has.",
+    "Level is SUMMED from this table, not read from a counter. game_state.level and localStorage are caches that get repaired to match this ledger, never trusted over it.",
+    "ref_id is a plain number, NOT a Baserow link field, on purpose: level records must be writable before the campaigns table (import 16) exists, and a link would hard-couple the import order.",
+    "idempotency_key is the only thing preventing a double award when a completion is submitted twice. The client checks for an existing row with that key before creating. Baserow cannot enforce uniqueness across a race, so this is best-effort.",
+    "TAMPER-EVIDENT, NOT TAMPER-RESISTANT. The Baserow API token ships in the client bundle, so any user can forge rows. level_before/level_after form a chain that makes a gap VISIBLE, nothing more. Never gate money, ranking, or paid entitlements on level until writes go through a server-side proxy that verifies the Xano JWT."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string"},
+    "source": {"type": "single_select", "options": ["challenge", "streak", "achievement", "habit_milestone", "manual", "migration"], "required": true},
+    "levels_awarded": {"type": "number", "required": true, "description": "Always >= 1"},
+    "level_before": {"type": "number", "required": true},
+    "level_after": {"type": "number", "required": true, "description": "level_before + levels_awarded"},
+    "reason": {"type": "text", "required": true, "description": "The sentence rendered in the history popup"},
+    "detail": {"type": "long_text", "description": "Optional second line - rules met, final stats"},
+    "ref_type": {"type": "single_select", "options": ["campaign", "habit", "achievement", "none"], "default": "none"},
+    "ref_key": {"type": "text", "description": "campaign_key / habit id / achievement id - a string, so it survives the campaigns table not existing yet"},
+    "ref_id": {"type": "number", "description": "Numeric Baserow row id once known. Deliberately not a link field"},
+    "icon": {"type": "text", "description": "Emoji copied from the challenge template, shown on the history row"},
+    "idempotency_key": {"type": "text", "required": true, "description": "user_id + ':' + source + ':' + ref_key"},
+    "occurred_at": {"type": "date_time", "required": true, "description": "Sort key"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "user_id": "1",
+      "source": "migration",
+      "levels_awarded": 4,
+      "level_before": 1,
+      "level_after": 5,
+      "reason": "Carried over from points earned before levels became permanent.",
+      "detail": "You were level 5 under the old points system. That level is now yours for good.",
+      "ref_type": "none",
+      "ref_key": "legacy-points",
+      "icon": "🎁",
+      "idempotency_key": "1:migration:legacy-points",
+      "occurred_at": "2026-08-08T09:00:00Z"
+    },
+    {
+      "user_id": "1",
+      "source": "challenge",
+      "levels_awarded": 12,
+      "level_before": 5,
+      "level_after": 17,
+      "reason": "Completed \"7-Day Cold Start\" on Hard",
+      "detail": "7 of 7 days. No misses allowed at this tier.",
+      "ref_type": "campaign",
+      "ref_key": "chl_lz8k2a_x91",
+      "icon": "🥶",
+      "idempotency_key": "1:challenge:chl_lz8k2a_x91",
+      "occurred_at": "2026-08-15T21:10:00Z"
+    }
+  ]
+}

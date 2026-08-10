@@ -13,6 +13,27 @@ docs/
 └── database-schemas/   # Database schema JSON files
 ```
 
+## 📘 Playbooks
+
+- **[REALTIME_FEATURE_PLAYBOOK.md](REALTIME_FEATURE_PLAYBOOK.md)** — how to ask
+  for and build any feature where one user acts and another sees it instantly
+  with a toast. Includes a reusable prompt, the seven-link chain, and the
+  debugging order. Read it before wiring realtime into a new feature.
+
+## ✅ Recently Completed
+
+### New-User Onboarding
+**File:** [tasks/20260809-onboarding-completed.md](tasks/20260809-onboarding-completed.md)
+- **Status:** Completed 2026-08-09
+- **Scope:** Skippable five-step setup wizard, ten-step interactive spotlight
+  guide, per-page first-visit tips
+- **Blocking follow-up:** create Baserow table 26 and set
+  `environment.ts → baserow.tables.userOnboarding` (runs local-only until then)
+- **Also fixed:** game-state load discarding preferences and achievements,
+  templated habits saving with no category, theme toggle not persisting
+
+---
+
 ## 🎯 Active Tasks (In Progress)
 
 ### Analytics Dashboard

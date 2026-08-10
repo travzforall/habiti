@@ -1,0 +1,61 @@
+{
+  "table_name": "campaign_pledges",
+  "description": "A DECLARATION OF INTENT recorded at lock-in. Habiti never holds, escrows, or transfers money. Import TWENTIETH (depends on campaign_participants)",
+  "import_order": 20,
+  "dependencies": ["campaigns", "campaign_participants"],
+  "notes": [
+    "THERE ARE DELIBERATELY NO PAYMENT FIELDS HERE. No card token, no account reference, no balance. Habiti records what two people agreed to; it does not move funds.",
+    "amount/currency describe what the pledger SAID they would give up. Enforcement is social, not technical.",
+    "beneficiary 'iluv_foundation_project_africa' means: on failure the pledger is shown a donation link and donates directly, outside the app.",
+    "Jolly Tech's own profit-share obligation to the iLuv Foundation is a company-level commitment and is NOT modelled here - do not conflate the two.",
+    "pledge_hash is written at lock alongside the campaign's locked_rules_hash so the agreed stake is auditable."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "campaign_id": {"type": "link", "link_to": "campaigns", "required": true},
+    "participant_id": {"type": "link", "link_to": "campaign_participants", "required": true},
+    "campaign_key": {"type": "text", "required": true},
+    "user_id": {"type": "text", "required": true},
+    "pledge_kind": {"type": "single_select", "options": ["charity_donation", "peer_prize", "non_monetary", "none"], "default": "non_monetary"},
+    "amount": {"type": "number", "description": "Declared only. No funds are held"},
+    "currency": {"type": "text", "default": "USD"},
+    "description": {"type": "long_text", "description": "For peer_prize / non_monetary: what was actually put up"},
+    "beneficiary": {"type": "single_select", "options": ["iluv_foundation_project_africa", "counterparty", "other"], "default": "iluv_foundation_project_africa"},
+    "beneficiary_note": {"type": "text"},
+    "on_success": {"type": "single_select", "options": ["returned_to_pledger", "paid_to_counterparty", "released"], "default": "returned_to_pledger"},
+    "on_failure": {"type": "single_select", "options": ["donate_to_charity", "paid_to_counterparty", "forfeited"], "default": "donate_to_charity"},
+    "locked_at": {"type": "date_time"},
+    "pledge_hash": {"type": "text"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "campaign_id": "cmp_lz8k2a_x91",
+      "participant_id": "1",
+      "campaign_key": "cmp_lz8k2a_x91",
+      "user_id": "1",
+      "pledge_kind": "non_monetary",
+      "description": "Loser cooks dinner every Sunday for a month.",
+      "beneficiary": "counterparty",
+      "on_success": "released",
+      "on_failure": "paid_to_counterparty",
+      "locked_at": "2026-07-31T22:10:00Z"
+    },
+    {
+      "campaign_id": "cmp_lz9m4b_q22",
+      "participant_id": "3",
+      "campaign_key": "cmp_lz9m4b_q22",
+      "user_id": "2",
+      "pledge_kind": "charity_donation",
+      "amount": 100,
+      "currency": "USD",
+      "description": "Give up 100 at the start; get it back on success, donate it on failure.",
+      "beneficiary": "iluv_foundation_project_africa",
+      "beneficiary_note": "Project Africa",
+      "on_success": "returned_to_pledger",
+      "on_failure": "donate_to_charity",
+      "locked_at": "2026-06-14T20:00:00Z"
+    }
+  ]
+}
