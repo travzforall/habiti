@@ -33,12 +33,6 @@ export const PAGE_TIPS: Record<string, TourStep> = {
     title: 'Friends',
     body: 'Invite someone by email and you will see each other’s streaks. Accountability works better than willpower for most people.'
   },
-  '/game': {
-    id: '/game',
-    placement: 'center',
-    title: 'Gamification',
-    body: 'Points, levels and achievements, all earned from habits you have actually completed. Nothing here can be bought.'
-  },
   '/tasks': {
     id: '/tasks',
     placement: 'center',

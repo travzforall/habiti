@@ -76,7 +76,6 @@ export class SideNavComponent {
     { route: '/projects', icon: '📋', label: 'Projects' },
     { route: '/calendar', icon: '📅', label: 'Calendar' },
     { route: '/analytics', icon: '📈', label: 'Analytics' },
-    { route: '/game', icon: '🎮', label: 'Gamification' },
     { route: '/templates', icon: '📋', label: 'Templates' }
   ];
 }

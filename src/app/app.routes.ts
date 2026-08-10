@@ -76,10 +76,5 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/settings/settings').then(m => m.SettingsComponent),
     canActivate: [AuthGuard]
   },
-  {
-    path: 'game',
-    loadComponent: () => import('./game/game').then(m => m.GameComponent),
-    canActivate: [AuthGuard]
-  },
   { path: '**', redirectTo: '/dashboard' }
 ];
