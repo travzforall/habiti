@@ -3,7 +3,7 @@ import { Project, Task, Milestone, Goal, ProjectStats } from '../models/project.
 import { UserStorage } from '@habiti/storage';
 import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
-import { SyncBus } from '@habiti/sync';
+import { SyncBus } from './sync-public-api';
 import { ProjectRow, fromProject, toProject } from '../models/task-row.models';
 
 @Injectable({

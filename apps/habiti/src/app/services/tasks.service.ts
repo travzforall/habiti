@@ -3,7 +3,7 @@ import { Task } from '../models/project.model';
 import { UserStorage } from '@habiti/storage';
 import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
-import { SyncBus } from '@habiti/sync';
+import { SyncBus } from './sync-public-api';
 import { TaskRow, fromTask, toTask } from '../models/task-row.models';
 
 @Injectable({

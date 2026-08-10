@@ -3,22 +3,42 @@
   "name": "shared-storage",
   "projectType": "library",
   "sourceRoot": "libs/shared/storage/src",
-  "tags": ["type:util", "scope:shared", "platform:web"],
+  "tags": [
+    "type:util",
+    "scope:shared",
+    "platform:web"
+  ],
   "targets": {
     "typecheck": {
       "executor": "nx:run-commands",
       "cache": true,
-      "inputs": ["default"],
+      "inputs": [
+        "default"
+      ],
       "options": {
         "cwd": "libs/shared/storage",
-        "commands": ["tsc -p tsconfig.lib.json --noEmit"]
+        "commands": [
+          "tsc -p tsconfig.lib.json --noEmit"
+        ]
       }
     },
     "test": {
       "executor": "@angular/build:karma",
       "options": {
         "tsConfig": "libs/shared/storage/tsconfig.spec.json",
-        "polyfills": ["zone.js", "zone.js/testing"]
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "cache": true,
+      "options": {
+        "lintFilePatterns": [
+          "libs/shared/storage/src/**/*.ts"
+        ]
       }
     }
   }

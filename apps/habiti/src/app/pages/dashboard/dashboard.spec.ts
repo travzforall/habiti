@@ -11,7 +11,7 @@ import { HabitsService } from '../../services/habits';
 import { AuthService, User } from '../../services/auth.service';
 import { TasksService } from '../../services/tasks.service';
 import { ToastService } from '../../services/toast.service';
-import { SyncService } from '@habiti/sync';
+import { SyncService } from '../../services/sync-public-api';
 
 // Mock data
 const mockUser: User = {

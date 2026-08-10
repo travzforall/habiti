@@ -39,6 +39,12 @@ jobs:
 
       - run: npm ci
 
+      # enforce-module-boundaries is the only rule at error level, so this step
+      # is really "did anything cross a boundary it should not". It is what makes
+      # every scope:/type:/platform: tag mean something rather than being a note.
+      - name: Module boundaries
+        run: npm run lint
+
       # Both tsconfigs, via a per-project target so this keeps covering every
       # app as more are added. The app build does not compile specs, so a broken
       # spec would otherwise only surface in the test run's noise.

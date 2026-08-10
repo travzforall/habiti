@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SyncService } from '@habiti/sync';
+import { SyncService } from '../../services/sync-public-api';
 
 /**
  * Whether the app is up to date, and how.

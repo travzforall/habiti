@@ -12,9 +12,10 @@
     "build:all": "nx run-many -t build",
     "test:ci": "nx run-many -t test -- --watch=false --browsers=ChromeHeadless",
     "typecheck": "nx run-many -t typecheck",
+    "lint": "nx run-many -t lint",
     "verify:bundle": "node scripts/check-bundle.mjs",
     "verify:assets": "node scripts/check-assets.mjs",
-    "verify": "npm run typecheck && npm run test:ci && npm run build && npm run verify:bundle && npm run verify:assets"
+    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build && npm run verify:bundle && npm run verify:assets"
   },
   "prettier": {
     "printWidth": 100,
@@ -51,12 +52,16 @@
     "@angular/compiler-cli": "^20.2.0",
     "@eslint/js": "~8.57.0",
     "@nx/angular": "21.6.11",
+    "@nx/eslint": "21.6.11",
     "@nx/eslint-plugin": "21.6.11",
     "@nx/workspace": "21.6.11",
     "@schematics/angular": "^20.2.2",
     "@types/jasmine": "~5.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "autoprefixer": "^10.4.21",
     "daisyui": "^5.1.9",
+    "eslint": "~8.57.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

@@ -1,7 +1,7 @@
 import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { SyncBus } from '@habiti/sync';
+import { SyncBus } from './sync-public-api';
 import {
   ClientFrame,
   OutboundEvent,

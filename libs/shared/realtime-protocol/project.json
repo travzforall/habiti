@@ -1,0 +1,23 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "shared-realtime-protocol",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/realtime-protocol/src",
+  "tags": ["type:util", "scope:shared", "platform:agnostic"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "libs/shared/realtime-protocol",
+        "commands": ["tsc -p tsconfig.lib.json --noEmit"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "cache": true,
+      "options": { "lintFilePatterns": ["libs/shared/realtime-protocol/src/**/*.ts"] }
+    }
+  }
+}

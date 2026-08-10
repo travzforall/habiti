@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { BaserowService } from './baserow.service';
 import { AuthService } from './auth.service';
-import { SyncBus } from '@habiti/sync';
+import { SyncBus } from './sync-public-api';
 import { UserStorage } from '@habiti/storage';
 import { Observable, ReplaySubject, catchError, map, of, forkJoin, switchMap } from 'rxjs';
 

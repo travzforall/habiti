@@ -116,6 +116,20 @@
         ],
         "parallel": false
       }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "cache": true,
+      "options": {
+        "lintFilePatterns": [
+          "apps/habiti/src/**/*.ts"
+        ]
+      }
     }
-  }
+  },
+  "tags": [
+    "type:app",
+    "scope:habiti",
+    "platform:web"
+  ]
 }

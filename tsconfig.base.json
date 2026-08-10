@@ -21,10 +21,9 @@
      * target here, move the file, done.
      */
     "paths": {
-      "@habiti/realtime-protocol": ["apps/habiti/src/app/models/realtime.models.ts"],
+      "@habiti/realtime-protocol": ["libs/shared/realtime-protocol/src/index.ts"],
       "@habiti/storage": ["libs/shared/storage/src/index.ts"],
       "@habiti/storage/testing": ["libs/shared/storage/src/testing.ts"],
-      "@habiti/sync": ["apps/habiti/src/app/services/sync-public-api.ts"],
       "@habiti/util": ["libs/shared/util/src/index.ts"]
     }
   }

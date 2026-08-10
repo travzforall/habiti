@@ -1,0 +1,133 @@
+{
+  "root": true,
+  // Nx's generated default is ["**/*"] plus a per-project .eslintrc that
+  // re-enables its own files. There are no per-project configs here, so that
+  // default silently lints NOTHING — every project reports "All files matching
+  // the following patterns are ignored". Exclude build output instead.
+  "ignorePatterns": ["node_modules", "dist", "out-tsc", ".nx", "**/*.d.ts"],
+  "plugins": ["@nx"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        // The only rule at "error", and the reason ESLint is here at all.
+        //
+        // Every tag on every project is decorative without it: this is what
+        // turns "libs/shared must not import a feature" from a note in a README
+        // into something that fails the build.
+        //
+        // Style rules are deliberately absent. Turning on a recommended set
+        // across ~900 existing files produces hundreds of findings unrelated to
+        // the migration and drowns the signal. Add them later, one at a time.
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": [],
+            "depConstraints": [
+              // --- scope: who may depend on whose code -----------------------
+              // Shared may only depend on shared. This is what stops libs/shared
+              // quietly becoming the place every feature ends up living.
+              {
+                "sourceTag": "scope:shared",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+              {
+                "sourceTag": "scope:habiti",
+                "onlyDependOnLibsWithTags": ["scope:habiti", "scope:shared"]
+              },
+              {
+                "sourceTag": "scope:lms",
+                "onlyDependOnLibsWithTags": ["scope:lms", "scope:shared"]
+              },
+              // admin and trainer both present LMS content, so they may reach
+              // lms libraries. Nothing may reach into them.
+              {
+                "sourceTag": "scope:admin",
+                "onlyDependOnLibsWithTags": ["scope:admin", "scope:lms", "scope:shared"]
+              },
+              {
+                "sourceTag": "scope:trainer",
+                "onlyDependOnLibsWithTags": ["scope:trainer", "scope:lms", "scope:shared"]
+              },
+              {
+                "sourceTag": "scope:kiosk",
+                "onlyDependOnLibsWithTags": ["scope:kiosk", "scope:shared"]
+              },
+              {
+                "sourceTag": "scope:api",
+                "onlyDependOnLibsWithTags": ["scope:api", "scope:shared"]
+              },
+              {
+                "sourceTag": "scope:relay",
+                "onlyDependOnLibsWithTags": ["scope:shared"]
+              },
+
+              // --- type: layering -------------------------------------------
+              // A utility cannot reach up into a feature. That inversion is how
+              // a dependency cycle starts.
+              {
+                "sourceTag": "type:app",
+                "onlyDependOnLibsWithTags": [
+                  "type:feature",
+                  "type:ui",
+                  "type:data-access",
+                  "type:util"
+                ]
+              },
+              {
+                "sourceTag": "type:feature",
+                "onlyDependOnLibsWithTags": [
+                  "type:feature",
+                  "type:ui",
+                  "type:data-access",
+                  "type:util"
+                ]
+              },
+              {
+                "sourceTag": "type:ui",
+                "onlyDependOnLibsWithTags": ["type:ui", "type:util"]
+              },
+              {
+                "sourceTag": "type:data-access",
+                "onlyDependOnLibsWithTags": ["type:data-access", "type:util"]
+              },
+              {
+                "sourceTag": "type:util",
+                "onlyDependOnLibsWithTags": ["type:util"]
+              },
+
+              // --- platform: the constraint that will actually fire ----------
+              // Stops apps/api pulling in @angular/core through a carelessly
+              // tagged shared library, and stops a browser library importing
+              // node:crypto. Agnostic code must stay agnostic, or it is not
+              // reusable by the side that cannot run the other's globals.
+              {
+                "sourceTag": "platform:web",
+                "onlyDependOnLibsWithTags": ["platform:web", "platform:agnostic"]
+              },
+              {
+                "sourceTag": "platform:node",
+                "onlyDependOnLibsWithTags": ["platform:node", "platform:agnostic"]
+              },
+              {
+                "sourceTag": "platform:agnostic",
+                "onlyDependOnLibsWithTags": ["platform:agnostic"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      // Parser only, no rule set. `plugin:@nx/typescript` was tried and pulls
+      // in a style pack (no-inferrable-types and friends) that flags hundreds
+      // of pre-existing lines across the app — noise that buries the one rule
+      // this config exists for. ESLint still needs a TS-aware parser to read
+      // the imports that enforce-module-boundaries inspects.
+      "files": ["*.ts", "*.tsx"],
+      "parser": "@typescript-eslint/parser",
+      "rules": {}
+    }
+  ]
+}

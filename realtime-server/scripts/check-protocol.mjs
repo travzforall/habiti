@@ -28,7 +28,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const files = {
   app: process.env.APP_PROTOCOL_PATH
     ? resolve(process.cwd(), process.env.APP_PROTOCOL_PATH)
-    : resolve(here, '../../apps/habiti/src/app/models/realtime.models.ts'),
+    : resolve(here, '../../libs/shared/realtime-protocol/src/lib/realtime.models.ts'),
   relay: resolve(here, '../src/protocol.ts')
 };
 
