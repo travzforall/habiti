@@ -24,7 +24,7 @@
       "@habiti/realtime-protocol": ["apps/habiti/src/app/models/realtime.models.ts"],
       "@habiti/storage": ["apps/habiti/src/app/services/user-storage.ts"],
       "@habiti/sync": ["apps/habiti/src/app/services/sync-public-api.ts"],
-      "@habiti/util": ["apps/habiti/src/app/utils/index.ts"]
+      "@habiti/util": ["libs/shared/util/src/index.ts"]
     }
   }
 }

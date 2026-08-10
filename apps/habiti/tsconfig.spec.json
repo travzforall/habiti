@@ -4,11 +4,20 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/spec",
-    "types": [
-      "jasmine"
-    ]
+    "types": ["jasmine"]
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  /**
+   * This app's specs only. A library's specs run under that library's own test
+   * target, not here.
+   *
+   * Reaching into libs/ from this project does not work, and fails quietly:
+   * Karma discovers specs from the builder's `include` globs, which are
+   * resolved relative to the project root and will not follow `../../`. An
+   * extracted library whose specs are not run somewhere simply stops being
+   * tested, and the only symptom is a total that is smaller than yesterday's.
+   *
+   * So every library gets a `test` target. The workspace total is what matters:
+   * `npm run test:ci` fans out with run-many and must still add up to 640.
+   */
+  "include": ["src/**/*.ts"]
 }
