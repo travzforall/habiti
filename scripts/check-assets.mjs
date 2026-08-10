@@ -19,10 +19,20 @@
  * restructures break build configuration, not application logic, which is what
  * makes a file-existence check worth its two dozen lines during a migration.
  *
- * Usage: node scripts/check-assets.mjs [--dir dist/habiti/browser]
+ * IT ALSO CHECKS THAT THE STYLESHEET IS NOT TINY, which sounds arbitrary and is
+ * not. Moving the app to apps/habiti left Tailwind's `content` glob pointing at
+ * the old ./src, so it matched no files and emitted a stylesheet with no
+ * utility classes: 70.16 kB became 4.64 kB, the build stayed green, all 640
+ * tests passed, and every page would have rendered unstyled.
+ *
+ * The bundle-size gate cannot catch that, because the bundle got SMALLER — a
+ * budget reads a catastrophic regression as a 66 kB improvement. A floor is the
+ * only cheap check that points the right way.
+ *
+ * Usage: node scripts/check-assets.mjs [--dir dist/habiti/browser] [--min-css-kb 40]
  */
 
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const args = new Map();
@@ -30,6 +40,7 @@ for (let i = 2; i < process.argv.length; i += 2) {
   args.set(process.argv[i].replace(/^--/, ''), process.argv[i + 1]);
 }
 const dir = args.get('dir') ?? 'dist/habiti/browser';
+const minCssKb = Number(args.get('min-css-kb') ?? 40);
 
 /** [label, path relative to dir, why it matters when absent] */
 const REQUIRED = [
@@ -62,6 +73,32 @@ if (scripts.length === 0) {
   console.error('    MISS  no .js files at all — the build emitted nothing');
 } else {
   console.log(`    ok    ${scripts.length} script files`);
+}
+
+/**
+ * The stylesheet must not be suspiciously small.
+ *
+ * A Tailwind `content` glob that matches nothing still produces a valid,
+ * tiny stylesheet — no error, no warning, just an unstyled app. Since that
+ * makes the bundle smaller, the size budget cannot see it.
+ */
+const stylesheets = readdirSync(dir).filter(name => name.endsWith('.css'));
+if (stylesheets.length === 0) {
+  failed = true;
+  console.error('    MISS  no .css files — the stylesheet was not emitted');
+} else {
+  const largestKb =
+    Math.max(...stylesheets.map(name => statSync(join(dir, name)).size)) / 1000;
+  if (largestKb < minCssKb) {
+    failed = true;
+    console.error(
+      `    THIN  largest stylesheet is ${largestKb.toFixed(1)} kB, under the ` +
+        `${minCssKb} kB floor — Tailwind almost certainly purged everything, ` +
+        `which means its content glob no longer matches the source`
+    );
+  } else {
+    console.log(`    ok    stylesheet ${largestKb.toFixed(1)} kB (floor ${minCssKb} kB)`);
+  }
 }
 
 console.log('');

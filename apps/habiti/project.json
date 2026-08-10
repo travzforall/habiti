@@ -1,24 +1,24 @@
 {
-  "$schema": "node_modules/nx/schemas/project-schema.json",
   "name": "habiti",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
+  "sourceRoot": "apps/habiti/src",
+  "prefix": "app",
   "generators": {
     "@schematics/angular:component": {
       "style": "scss"
     }
   },
-  "sourceRoot": "src",
-  "prefix": "app",
   "targets": {
     "build": {
       "executor": "@angular/build:application",
       "options": {
         "outputPath": "dist/habiti",
-        "browser": "src/main.ts",
+        "browser": "apps/habiti/src/main.ts",
         "polyfills": [
           "zone.js"
         ],
-        "tsConfig": "tsconfig.app.json",
+        "tsConfig": "apps/habiti/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "allowedCommonJsDependencies": [
           "@rive-app/canvas"
@@ -33,10 +33,10 @@
             "input": "node_modules/@rive-app/canvas",
             "output": "rive"
           },
-          "src/_redirects"
+          "apps/habiti/src/_redirects"
         ],
         "styles": [
-          "src/styles.scss"
+          "apps/habiti/src/styles.scss"
         ]
       },
       "configurations": {
@@ -88,7 +88,7 @@
           "zone.js",
           "zone.js/testing"
         ],
-        "tsConfig": "tsconfig.spec.json",
+        "tsConfig": "apps/habiti/tsconfig.spec.json",
         "inlineStyleLanguage": "scss",
         "assets": [
           {
@@ -97,8 +97,24 @@
           }
         ],
         "styles": [
-          "src/styles.scss"
+          "apps/habiti/src/styles.scss"
         ]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production"
+      ],
+      "options": {
+        "cwd": "apps/habiti",
+        "commands": [
+          "tsc -p tsconfig.app.json --noEmit",
+          "tsc -p tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
       }
     }
   }

@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+
+    /**
+     * Aliases for the modules that become libraries first.
+     *
+     * These still point INSIDE apps/habiti, because the code has not been
+     * extracted yet — only relocated. That is the whole point of introducing
+     * them before the move: the app moved from src/ to apps/habiti/src/ and
+     * every importer of these four modules needed no edit at all, because none
+     * of them names a path. This block absorbed the change on its own.
+     *
+     * Extracting each into libs/ is the same kind of edit again: change the
+     * target here, move the file, done.
+     */
+    "paths": {
+      "@habiti/realtime-protocol": ["apps/habiti/src/app/models/realtime.models.ts"],
+      "@habiti/storage": ["apps/habiti/src/app/services/user-storage.ts"],
+      "@habiti/sync": ["apps/habiti/src/app/services/sync-public-api.ts"],
+      "@habiti/util": ["apps/habiti/src/app/utils/index.ts"]
+    }
+  }
+}

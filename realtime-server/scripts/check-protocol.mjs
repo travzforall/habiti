@@ -8,7 +8,17 @@
  * added on one side but not the other would be silently dropped by
  * isPublishFrame at runtime, with no error anywhere.
  *
+ * THIS SCRIPT IS TEMPORARY. Extracting the protocol into a real library that
+ * both sides import deletes the duplication and this file with it. Until then
+ * it is the only thing keeping the two copies honest.
+ *
+ * The app path is overridable because it is a hardcoded reach across the repo:
+ * it broke the moment the app moved from src/ to apps/habiti/src/. It failed
+ * loudly, which is the one thing this file must always do — a version that
+ * shrugged and passed would leave the contract unguarded and say nothing.
+ *
  * Run: node scripts/check-protocol.mjs
+ *      APP_PROTOCOL_PATH=../elsewhere/realtime.models.ts node scripts/check-protocol.mjs
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +26,9 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const files = {
-  app: resolve(here, '../../src/app/models/realtime.models.ts'),
+  app: process.env.APP_PROTOCOL_PATH
+    ? resolve(process.cwd(), process.env.APP_PROTOCOL_PATH)
+    : resolve(here, '../../apps/habiti/src/app/models/realtime.models.ts'),
   relay: resolve(here, '../src/protocol.ts')
 };
 

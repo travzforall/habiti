@@ -6,9 +6,20 @@
 # different majors — fine until the day something in the shared protocol used
 # syntax one of them did not have.
 #
-# publish must stay in step with `outputPath` in angular.json. Angular's default
-# output path is derived from the project name, so leaving it implicit means a
-# rename silently breaks the deploy. It is set explicitly there for that reason.
+# publish must stay in step with `outputPath` in apps/habiti/project.json.
+# Angular's default output path is derived from the project name, so leaving it
+# implicit means a rename silently breaks the deploy. It is set explicitly there
+# for that reason, and it is dist/habiti — NOT dist/apps/habiti — because the
+# project.json says so rather than because of where the project sits on disk.
+#
+# The base directory stays the repo ROOT even though the app now lives in
+# apps/habiti. Setting base to the app directory changes the build's working
+# directory, and Nx must run from the workspace root to resolve the project
+# graph at all. This is the setting to leave alone when adding the other apps;
+# each of them gets its own Netlify site with its own build command, not its own
+# base directory.
+# `nx build` with no configuration uses defaultConfiguration, which project.json
+# sets to production.
 [build]
   publish = "dist/habiti/browser"
   command = "npm run build"

@@ -1,15 +1,19 @@
-# The pre-Nx baseline.
+# The gates after the unit tests are the point of this file.
 #
-# This workflow exists to produce a RECORDED GREEN RUN — a test count and an
-# initial-bundle figure — to diff the post-migration run against. It gets
-# replaced by `nx affected` once the workspace is converted; that is expected,
-# and does not make it wasted work.
-#
-# The three gates after the unit tests are the point. A directory restructure
-# breaks build CONFIGURATION, not application logic, so Karma stays green while
-# Tailwind purges classes that moved into a library, a catalogue re-enters the
+# A directory restructure breaks build CONFIGURATION, not application logic, so
+# Karma stays green while Tailwind purges every class, a catalogue re-enters the
 # initial bundle, or _redirects stops being copied and every deep link 404s.
-# None of that is unit-testable, and all of it ships silently.
+# None of that is unit-testable and all of it ships silently.
+#
+# That is not hypothetical here. Moving the app into apps/habiti left Tailwind's
+# content glob pointing at the old ./src: the stylesheet went from 70 kB to
+# 4.6 kB, the build passed, all 640 tests passed, and every page would have
+# rendered unstyled. verify:assets now has a stylesheet floor because of it —
+# the size budget could not catch it, since the bundle got SMALLER.
+#
+# Still using run-many rather than `nx affected`: with one project they are the
+# same thing, and affected needs a base ref (nrwl/nx-set-shas) that is only
+# worth wiring up once there are several projects to skip.
 name: CI
 
 on:
@@ -35,8 +39,9 @@ jobs:
 
       - run: npm ci
 
-      # Both tsconfigs: the app build does not compile specs, so a broken spec
-      # would otherwise only surface in the test run's noise.
+      # Both tsconfigs, via a per-project target so this keeps covering every
+      # app as more are added. The app build does not compile specs, so a broken
+      # spec would otherwise only surface in the test run's noise.
       - name: Typecheck
         run: npm run typecheck
 
@@ -45,8 +50,9 @@ jobs:
       - name: Unit tests
         run: npm run test:ci
 
+      # project.json sets defaultConfiguration to production.
       - name: Production build
-        run: npm run build -- --configuration production
+        run: npm run build
 
       - name: Initial bundle budget
         run: npm run verify:bundle
@@ -75,8 +81,10 @@ jobs:
         run: npm run typecheck
 
       # The relay duplicates the app's protocol block and this is the only thing
-      # keeping the two in step. It reads the app file by relative path, so it
-      # is also the first thing the Nx move will break — deliberately loudly.
+      # keeping the two in step. It reads the app file by relative path, and the
+      # move to apps/habiti did break it — loudly, with a "cannot read" failure,
+      # which is the one behaviour this script must never lose. Extracting the
+      # protocol into a shared library deletes both the duplication and this step.
       - name: Protocol contract matches the app
         run: npm run check:protocol
 
