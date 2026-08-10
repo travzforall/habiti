@@ -1,0 +1,84 @@
+# The pre-Nx baseline.
+#
+# This workflow exists to produce a RECORDED GREEN RUN — a test count and an
+# initial-bundle figure — to diff the post-migration run against. It gets
+# replaced by `nx affected` once the workspace is converted; that is expected,
+# and does not make it wasted work.
+#
+# The three gates after the unit tests are the point. A directory restructure
+# breaks build CONFIGURATION, not application logic, so Karma stays green while
+# Tailwind purges classes that moved into a library, a catalogue re-enters the
+# initial bundle, or _redirects stops being copied and every deep link 404s.
+# None of that is unit-testable, and all of it ships silently.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App — typecheck, test, build, budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Both tsconfigs: the app build does not compile specs, so a broken spec
+      # would otherwise only surface in the test run's noise.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # ChromeHeadless with no --no-sandbox: the ubuntu runner is not root, so
+      # the sandbox works. A container-based runner would need the flag.
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build -- --configuration production
+
+      - name: Initial bundle budget
+        run: npm run verify:bundle
+
+      - name: Publish directory is deployable
+        run: npm run verify:assets
+
+  relay:
+    name: Relay — typecheck, protocol, test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: realtime-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: realtime-server/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # The relay duplicates the app's protocol block and this is the only thing
+      # keeping the two in step. It reads the app file by relative path, so it
+      # is also the first thing the Nx move will break — deliberately loudly.
+      - name: Protocol contract matches the app
+        run: npm run check:protocol
+
+      - name: Tests
+        run: npm test
