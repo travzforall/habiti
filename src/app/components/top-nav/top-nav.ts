@@ -1,70 +1,55 @@
-import { Component, inject, OnInit, HostListener, ViewChild } from '@angular/core';
+import { Component, inject, HostListener, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { HabitsService } from '../../services/habits';
+import { AuthService } from '../../services/auth.service';
+import { ThemeChoice, ThemeService } from '../../services/theme.service';
 import { NightlyPlannerComponent } from '../nightly-planner/nightly-planner';
+import { StatusAvatarComponent } from '../status-avatar/status-avatar.component';
+import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
+import { LiveIndicatorComponent } from '../live-indicator/live-indicator.component';
 
 @Component({
   selector: 'app-top-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule, NightlyPlannerComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    NightlyPlannerComponent,
+    StatusAvatarComponent,
+    NotificationBellComponent,
+    LiveIndicatorComponent
+  ],
   templateUrl: './top-nav.html',
   styleUrl: './top-nav.scss'
 })
-export class TopNavComponent implements OnInit {
+export class TopNavComponent {
   private habitsService = inject(HabitsService);
-  
+  private authService = inject(AuthService);
+  private themeService = inject(ThemeService);
+
   @ViewChild(NightlyPlannerComponent) nightlyPlanner!: NightlyPlannerComponent;
-  
+
   protected readonly gameState = this.habitsService.gameState;
-  protected readonly habits = this.habitsService.habits;
+  /** AuthService exposes a BehaviorSubject, so bridge it to a signal for the template. */
+  protected readonly currentUser = toSignal(this.authService.currentUser, { initialValue: null });
   protected showThemeDropdown = false;
   protected showProfileDropdown = false;
-
-  ngOnInit(): void {
-    // Initialize theme on component load
-    const savedTheme = localStorage.getItem('habiti-theme') || 'auto';
-    this.applyTheme(savedTheme as 'light' | 'dark' | 'auto');
-  }
-
 
   getOverallProgress(): number {
     return this.habitsService.getOverallProgress();
   }
 
-  getLevelProgress(): number {
-    const gameState = this.gameState();
-    const currentLevelPoints = gameState.totalPoints % 100;
-    return (currentLevelPoints / 100) * 100;
-  }
+  // getLevelProgress() / getPointsForNextLevel() removed: they hardcoded a
+  // third copy of the old points-per-level math, which no longer determines
+  // level at all. The LVL badge renders gameState().level directly.
 
-  getPointsForNextLevel(): number {
-    const gameState = this.gameState();
-    return 100 - (gameState.totalPoints % 100);
-  }
-
-  toggleTheme(): void {
-    const currentTheme = this.gameState().theme;
-    const newTheme = currentTheme === 'dark' ? 'light' : currentTheme === 'light' ? 'auto' : 'dark';
-    
-    this.habitsService.gameState.update(state => ({
-      ...state,
-      theme: newTheme
-    }));
-    
-    this.applyTheme(newTheme);
-  }
-
-  private applyTheme(theme: 'light' | 'dark' | 'auto'): void {
-    const htmlElement = document.documentElement;
-    
-    if (theme === 'auto') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      htmlElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else {
-      htmlElement.setAttribute('data-theme', theme);
-    }
-  }
+  // applyTheme() and toggleTheme() removed. The first was a duplicate of
+  // root.ts's copy; the second was unreachable (nothing in the template called
+  // it) and wrote GameState.theme without touching localStorage, so the choice
+  // never survived a reload. ThemeService owns all of this now, and the shell
+  // applies the stored theme at boot.
 
   exportData(): void {
     this.habitsService.exportData();
@@ -75,18 +60,12 @@ export class TopNavComponent implements OnInit {
     this.closeDropdowns();
   }
 
-  setTheme(theme: 'light' | 'dark' | 'auto'): void {
-    localStorage.setItem('habiti-theme', theme);
-    this.applyTheme(theme);
-    
-    this.habitsService.gameState.update(state => ({
-      ...state,
-      theme: theme
-    }));
+  setTheme(theme: ThemeChoice): void {
+    this.themeService.set(theme);
   }
 
   protected getUserInitial(): string {
-    return 'U';
+    return (this.currentUser()?.name || '').charAt(0).toUpperCase() || 'U';
   }
 
   protected toggleThemeDropdown(): void {
@@ -102,6 +81,16 @@ export class TopNavComponent implements OnInit {
   protected closeDropdowns(): void {
     this.showThemeDropdown = false;
     this.showProfileDropdown = false;
+  }
+
+  /**
+   * AuthService clears local state and routes to /login. SyncService is watching
+   * currentUser, so it resets the data services and drops the relay connection
+   * on its own — nothing to coordinate here.
+   */
+  protected logout(): void {
+    this.closeDropdowns();
+    this.authService.logout();
   }
 
   @HostListener('document:click', ['$event'])

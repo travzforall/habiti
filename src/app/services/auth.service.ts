@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, map, throwError, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { isAdult } from '../utils/age.util';
 
 export interface User {
   id: number;
@@ -15,6 +16,10 @@ export interface User {
   profile_picture?: {
     url: string;
   };
+  /** Habiti plan. Absent is treated as 'free'. */
+  subscription_tier?: 'free' | 'plus';
+  /** Paid members pick their daily content category; free members get scripture. */
+  daily_content_category?: string;
   // Legacy fields for compatibility
   firstName?: string;
   lastName?: string;
@@ -76,7 +81,11 @@ export class AuthService {
       password: userData.password,
       first_name: userData.firstName,
       last_name: userData.lastName,
-      username: userData.username
+      username: userData.username,
+      // Habiti is 18+. The DOB is stored so the check can be re-verified
+      // server-side; the age itself is never displayed.
+      date_of_birth: userData.dateOfBirth,
+      is_adult: isAdult(userData.dateOfBirth)
     };
 
     const url = `${this.xanoApiUrl}${this.xanoEndpoints.auth.register}`;
@@ -183,26 +192,29 @@ export class AuthService {
     );
   }
   
+  /**
+   * Signs out locally FIRST, then tells the server as a courtesy.
+   *
+   * The previous order put the cleanup in `complete`, which RxJS never calls
+   * after an error — so an expired token made the logout request 401 and the
+   * user stayed signed in, unable to get out of a session that no longer
+   * worked. Local sign-out must not depend on a network call succeeding.
+   */
   logout(): void {
     const token = this.getToken();
-    
-    if (token) {
-      const url = `${this.xanoApiUrl}${this.xanoEndpoints.auth.logout}`;
-      
-      this.http.post(url, {}, { headers: this.getHeaders(token) }).subscribe({
-        next: () => {},
-        error: (error) => console.warn('Logout API call failed:', error),
-        complete: () => {
-          this.clearAuth();
-          this.currentUserSubject.next(null);
-          this.router.navigate(['/login']);
-        }
-      });
-    } else {
-      this.clearAuth();
-      this.currentUserSubject.next(null);
-      this.router.navigate(['/login']);
-    }
+
+    this.clearAuth();
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/login']);
+
+    if (!token) return;
+
+    const url = `${this.xanoApiUrl}${this.xanoEndpoints.auth.logout}`;
+    this.http.post(url, {}, { headers: this.getHeaders(token) }).subscribe({
+      next: () => {},
+      // Already signed out locally; a failure here changes nothing for the user.
+      error: error => console.warn('Logout API call failed:', error)
+    });
   }
   
   updateProfile(userData: Partial<User>): Observable<User> {

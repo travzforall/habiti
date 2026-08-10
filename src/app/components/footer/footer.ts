@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HabitsService } from '../../services/habits';
+import { ThemeChoice, ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-footer',
@@ -12,7 +13,8 @@ import { HabitsService } from '../../services/habits';
 })
 export class FooterComponent {
   private habitsService = inject(HabitsService);
-  
+  private themeService = inject(ThemeService);
+
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
   
@@ -35,20 +37,8 @@ export class FooterComponent {
     this.habitsService.exportData();
   }
 
-  setTheme(theme: 'light' | 'dark' | 'auto'): void {
-    localStorage.setItem('habiti-theme', theme);
-    this.applyTheme(theme);
-  }
-
-  private applyTheme(theme: 'light' | 'dark' | 'auto'): void {
-    const htmlElement = document.documentElement;
-    
-    if (theme === 'auto') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      htmlElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else {
-      htmlElement.setAttribute('data-theme', theme);
-    }
+  setTheme(theme: ThemeChoice): void {
+    this.themeService.set(theme);
   }
 
   getMotivationalQuote(): string {

@@ -1,11 +1,83 @@
-<div class="min-h-screen flex flex-col">
+<!--
+  The application shell. This is the component main.ts bootstraps, so anything
+  that must exist on every route belongs HERE.
+
+  There used to be a second, richer shell (app.html) holding the sidebar, the
+  bottom nav and the global toast host — but nothing bootstrapped it, so none
+  of it rendered. Toasts could never appear no matter what raised them. One
+  shell now, and it is this one.
+-->
+<app-toast></app-toast>
+
+<!--
+  The onboarding wizard and the tour overlay live HERE, as siblings of the
+  toast host and outside the shell below, for the same reason the glass panel
+  is a sibling of the router outlet (see the note further down): anything with
+  `backdrop-filter` in its ancestry becomes a containing block for
+  `position: fixed`, and both of these are fixed.
+
+  The wizard is @defer'd, and that is load-bearing rather than tidiness. It
+  pulls in the whole habit library (five category files plus their guidance
+  text) to build the starter-habit step, which added ~137 kB to the INITIAL
+  bundle when it was eager — paid by every user on every visit, to render
+  nothing for all but the handful being onboarded. Deferred, that cost moves
+  into a chunk fetched only when the wizard is actually needed.
+
+  The tour overlay is deferred on the same principle. TourService stays eager —
+  it is what holds the state and decides when a tour runs — but the overlay is
+  only paint, so its chunk is fetched the first time a guide actually starts.
+-->
+@defer (when wizardNeeded()) {
+  <app-onboarding-wizard></app-onboarding-wizard>
+}
+@defer (when tourActive()) {
+  <app-tour-overlay></app-tour-overlay>
+}
+
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
   <app-top-nav></app-top-nav>
-  <main class="flex-1 pt-32 pb-8 px-4">
-    <div class="max-w-6xl mx-auto">
-      <router-outlet></router-outlet>
-    </div>
-  </main>
-  <footer class="mt-auto">
-    <!-- Footer content will go here -->
-  </footer>
+
+  <!-- pt clears the fixed top bar, which is taller below lg (mobile stats row). -->
+  <div class="flex pt-28 lg:pt-20 pb-24 lg:pb-8">
+    <app-side-nav></app-side-nav>
+
+    <main class="flex-1 min-w-0 px-2 lg:px-3">
+      <!--
+        The glass panel is a SIBLING of the content, not its parent.
+
+        `backdrop-filter` makes an element a containing block for `position:
+        fixed` descendants — so while this wrapped the router outlet, every
+        full-screen modal in the app (template picker, level history, challenge,
+        task and project dialogs) positioned against this card and scrolled with
+        the page instead of staying put in the viewport.
+
+        Keeping the blur on a layer behind the content preserves the look and
+        gives modals the viewport back. Do not re-nest the content inside it.
+        Note there is deliberately no `isolate`/`z-index` here: a stacking
+        context would trap a modal's z-index below the top bar.
+      -->
+      <div class="relative">
+        <div
+          aria-hidden="true"
+          class="absolute inset-0 bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50"
+        ></div>
+        <div class="relative p-4 lg:p-6">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <app-bottom-nav></app-bottom-nav>
+
+  <!-- Decorative blobs -->
+  <div
+    class="fixed -z-10 top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"
+  ></div>
+  <div
+    class="fixed -z-10 top-40 right-10 w-72 h-72 bg-slate-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"
+  ></div>
+  <div
+    class="fixed -z-10 bottom-20 left-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"
+  ></div>
 </div>

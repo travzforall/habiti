@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HabitsService } from '../../services/habits';
+import { FriendsService } from '../../services/friends.service';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -12,11 +13,38 @@ import { HabitsService } from '../../services/habits';
 })
 export class BottomNavComponent {
   private habitsService = inject(HabitsService);
+  private friendsService = inject(FriendsService);
   private router = inject(Router);
-  
+
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
+  /** Surfaced on the More button, since Friends now lives inside it. */
+  protected readonly incomingFriendRequests = this.friendsService.incomingCount;
   protected showQuickAdd = false;
+  protected showMore = false;
+
+  /** Everything the five slots cannot hold. Settings included — it has no other route below lg. */
+  protected readonly moreItems = [
+    { route: '/challenges', icon: '\u{1F3C6}', label: 'Challenges' },
+    { route: '/skills', icon: '\u{1F9ED}', label: 'Skills' },
+    { route: '/friends', icon: '\u{1F465}', label: 'Friends' },
+    { route: '/analytics', icon: '\u{1F4C8}', label: 'Stats' },
+    { route: '/calendar', icon: '\u{1F4C5}', label: 'Calendar' },
+    { route: '/projects', icon: '\u{1F4CB}', label: 'Projects' },
+    { route: '/game', icon: '\u{1F3AE}', label: 'Gamification' },
+    { route: '/templates', icon: '\u{1F4DD}', label: 'Templates' },
+    { route: '/settings', icon: '\u{2699}\u{FE0F}', label: 'Settings' }
+  ];
+
+  protected toggleMore(): void {
+    this.showMore = !this.showMore;
+    // Two sheets open at once would overlap; the quick-add sits right beside it.
+    this.showQuickAdd = false;
+  }
+
+  protected closeMore(): void {
+    this.showMore = false;
+  }
 
   quickAddHabit(): void {
     // This will be handled by the habits page
@@ -68,9 +96,20 @@ export class BottomNavComponent {
 
   toggleQuickAdd(): void {
     this.showQuickAdd = !this.showQuickAdd;
+    this.showMore = false;
   }
 
   isActive(route: string): boolean {
     return this.router.url === route;
+  }
+
+  /** A tap anywhere outside the bar closes whichever sheet is open. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.showMore && !this.showQuickAdd) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('app-bottom-nav')) return;
+    this.showMore = false;
+    this.showQuickAdd = false;
   }
 }

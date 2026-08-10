@@ -1,109 +1,78 @@
-<!-- Modern Glass Navigation with Silver/Blue Theme -->
+<!--
+  Top bar: identity and status only.
+
+  It deliberately carries NO route links. Every one of them is already in the
+  desktop sidebar (`hidden lg:block`) and the mobile bottom nav (`lg:hidden`),
+  and duplicating nine links here overflowed the bar on a normal laptop — the
+  profile menu, notification bell and theme switcher were pushed off-screen
+  entirely, which is a far worse loss than a shortcut you can reach two other
+  ways.
+-->
 <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-lg">
-  <div class="max-w-7xl mx-auto px-4 lg:px-6">
-    <div class="flex items-center justify-between h-16">
-      
-      <!-- Logo & Brand -->
-      <div class="flex items-center">
-        <a routerLink="/dashboard" class="flex items-center space-x-3 group">
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
-            <span class="text-white text-xl">✓</span>
+  <div class="max-w-[1800px] mx-auto px-4 lg:px-6">
+    <div class="flex items-center justify-between h-16 gap-4">
+
+      <!-- Brand -->
+      <a routerLink="/dashboard" class="flex items-center gap-3 group min-w-0">
+        <div class="w-10 h-10 shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
+          <span class="text-white text-xl">✓</span>
+        </div>
+        <div class="hidden sm:block min-w-0">
+          <div class="text-xl font-bold bg-gradient-to-r from-slate-700 to-blue-600 bg-clip-text text-transparent leading-tight">
+            Habiti
           </div>
-          <div class="hidden sm:block">
-            <div class="text-xl font-bold bg-gradient-to-r from-slate-700 to-blue-600 bg-clip-text text-transparent">
-              Habiti
-            </div>
-            <div class="text-xs text-slate-500">Track • Build • Achieve</div>
-          </div>
-        </a>
-      </div>
+          <div class="text-xs text-slate-500 truncate">Track • Build • Achieve</div>
+        </div>
+      </a>
 
-      <!-- Desktop Navigation (Hidden on mobile) -->
-      <nav class="hidden lg:flex items-center space-x-1">
-        <a routerLink="/dashboard" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Dashboard
-        </a>
-        <a routerLink="/habits" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent relative">
-          Habits
-          @if (habits().length > 0) {
-            <span class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-md">
-              {{ habits().length }}
-            </span>
-          }
-        </a>
-        <a routerLink="/projects" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Projects
-        </a>
-        <a routerLink="/tasks" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Tasks
-        </a>
-        <a routerLink="/calendar" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Calendar
-        </a>
-        <a routerLink="/analytics" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Analytics
-        </a>
-        <a routerLink="/game" 
-           routerLinkActive="bg-blue-50 text-blue-600 border-blue-200"
-           class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-all duration-200 font-medium text-sm border border-transparent">
-          Gamification
-        </a>
-      </nav>
+      <!-- Status & actions. shrink-0 so this cluster is never the thing that clips. -->
+      <div class="flex items-center gap-2 shrink-0">
 
-      <!-- Right Section with Stats & Actions -->
-      <div class="flex items-center space-x-4">
-        <!-- Nightly Planner Button -->
-        <button (click)="openNightlyPlanner()" 
-                class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium">
-          <span class="text-lg">🌙</span>
-          <span class="hidden md:inline">Nightly Planning</span>
-        </button>
-
-        <!-- Stats Pills (Desktop Only) -->
-        <div class="hidden lg:flex items-center space-x-3">
-          <!-- Level Badge -->
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full flex items-center space-x-2 shadow-md">
+        <!-- Stats. First to go when space is tight; all three are on the dashboard. -->
+        <!-- data-tour: app guide step 4. Note this cluster is xl:-gated (1280px),
+             not lg:, which is why that step carries a media-scoped selector and
+             falls back to the profile button below. -->
+        <div data-tour="nav-stats" class="hidden xl:flex items-center gap-2">
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full shadow-md">
             <span class="text-xs font-bold">LVL {{ gameState().level }}</span>
           </div>
-          
-          <!-- Streak Badge -->
           @if (gameState().dailyStreak > 0) {
-            <div class="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1.5 rounded-full flex items-center space-x-1 shadow-md">
+            <div class="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md">
               <span>🔥</span>
               <span class="text-xs font-bold">{{ gameState().dailyStreak }}</span>
             </div>
           }
-          
-          <!-- Points Badge -->
-          <div class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full flex items-center space-x-1 border border-slate-200">
+          <div class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full flex items-center gap-1 border border-slate-200">
             <span>⚡</span>
             <span class="text-xs font-bold">{{ gameState().totalPoints }}</span>
           </div>
         </div>
 
-        <!-- Theme Switcher -->
-        <div class="relative">
-          <button (click)="toggleThemeDropdown()" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors">
+        <!-- Nightly planner: label collapses to the icon on narrower screens. -->
+        <button (click)="openNightlyPlanner()"
+                title="Nightly Planning"
+                class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium shrink-0">
+          <span class="text-lg leading-none">🌙</span>
+          <span class="hidden 2xl:inline whitespace-nowrap">Nightly Planning</span>
+        </button>
+
+        <app-live-indicator></app-live-indicator>
+
+        <app-notification-bell></app-notification-bell>
+
+        <!-- Theme -->
+        <div class="relative shrink-0">
+          <button (click)="toggleThemeDropdown()"
+                  title="Theme"
+                  class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors">
             <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
               </path>
             </svg>
           </button>
           @if (showThemeDropdown) {
-            <div class="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-40 z-50">
+            <div class="absolute right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-40 z-50">
               <button (click)="setTheme('light'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">☀️ Light</button>
               <button (click)="setTheme('dark'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">🌙 Dark</button>
               <button (click)="setTheme('auto'); closeDropdowns()" class="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors">🔄 Auto</button>
@@ -111,16 +80,41 @@
           }
         </div>
 
-        <!-- Profile/Menu Button -->
-        <div class="relative">
-          <button (click)="toggleProfileDropdown()" class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md hover:scale-105 transition-transform">
-            {{ getUserInitial() }}
+        <!-- Profile. The only route to Sign out, so it must survive every width. -->
+        <div class="relative shrink-0">
+          <!-- data-tour: the below-1280px fallback for app guide step 4. -->
+          <button (click)="toggleProfileDropdown()"
+                  data-tour="nav-profile"
+                  [attr.aria-expanded]="showProfileDropdown"
+                  aria-haspopup="menu"
+                  [title]="currentUser()?.email || 'Account'"
+                  class="flex items-center gap-1 rounded-full pr-1 hover:bg-slate-100 transition-colors">
+            <app-status-avatar
+              size="sm"
+              [photoUrl]="currentUser()?.profile_picture?.url"
+              [name]="currentUser()?.name || ''">
+            </app-status-avatar>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
           </button>
           @if (showProfileDropdown) {
-            <div class="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-56 z-50">
+            <div role="menu" class="absolute right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-60 z-50">
+              <!-- Who am I. Essential when two accounts are open side by side. -->
               <div class="px-4 py-2 border-b border-slate-100">
-                <span class="text-xs text-slate-500 uppercase tracking-wider">Quick Actions</span>
+                <div class="text-sm font-semibold text-slate-700 truncate">
+                  {{ currentUser()?.name || 'Signed in' }}
+                </div>
+                <div class="text-xs text-slate-500 truncate">{{ currentUser()?.email }}</div>
               </div>
+
+              <!-- Stats live here once the pills drop off at narrow widths. -->
+              <div class="xl:hidden px-4 py-2 flex items-center gap-3 border-b border-slate-100 text-xs text-slate-600">
+                <span class="font-bold text-blue-600">LVL {{ gameState().level }}</span>
+                <span>🔥 {{ gameState().dailyStreak }}</span>
+                <span>⚡ {{ gameState().totalPoints }}</span>
+              </div>
+
               <a routerLink="/habits" (click)="closeDropdowns()" class="flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors">
                 <span class="mr-2">➕</span> Add Habit
               </a>
@@ -134,13 +128,17 @@
               <a routerLink="/settings" (click)="closeDropdowns()" class="flex items-center px-4 py-2 text-sm hover:bg-blue-50 transition-colors">
                 <span class="mr-2">⚙️</span> Settings
               </a>
+              <div class="border-t border-slate-100 my-1"></div>
+              <button (click)="logout()" class="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+                <span class="mr-2">🚪</span> Sign out
+              </button>
             </div>
           }
         </div>
       </div>
     </div>
 
-    <!-- Mobile Stats Bar -->
+    <!-- Mobile stats bar -->
     <div class="lg:hidden border-t border-slate-100 py-2">
       <div class="flex items-center justify-around text-xs">
         <div class="flex items-center space-x-1">
@@ -162,6 +160,5 @@
     </div>
   </div>
 
-  <!-- Nightly Planner Component -->
   <app-nightly-planner></app-nightly-planner>
 </nav>

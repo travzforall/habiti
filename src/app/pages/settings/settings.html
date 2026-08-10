@@ -6,6 +6,102 @@
   
   <!-- Settings sections -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!--
+      Getting started.
+
+      data-tour="replay-guide" is the app guide's final step, which is a nice
+      closing beat: the tour ends by showing you where to find it again.
+
+      Unlike the Appearance and Notification controls further down, everything
+      in this card is actually wired up.
+    -->
+    <div data-tour="replay-guide" class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-1 flex items-center gap-2">
+        <span>🧭</span> Getting started
+      </h2>
+      <p class="text-sm text-base-content/60 mb-4">
+        The walkthrough and the first-run setup, any time you want them.
+      </p>
+
+      <div class="space-y-2">
+        @if (canResumeGuide()) {
+          <button
+            type="button"
+            (click)="resumeGuide()"
+            class="w-full text-left px-4 py-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors"
+          >
+            <span class="block font-semibold text-sm text-blue-800">Resume the guide</span>
+            <span class="block text-xs text-blue-600 mt-0.5">
+              You stopped at step {{ guideResumeStep() }} of {{ guideTotalSteps }}.
+            </span>
+          </button>
+        }
+
+        <button
+          type="button"
+          (click)="replayGuide()"
+          class="w-full text-left px-4 py-3 rounded-xl border border-base-300 hover:bg-base-200 transition-colors"
+        >
+          <span class="block font-semibold text-sm">
+            {{ guideStatus() === 'completed' ? 'Replay the app guide' : 'Take the app guide' }}
+          </span>
+          <span class="block text-xs text-base-content/60 mt-0.5">
+            A ten-stop walkthrough. About ninety seconds.
+          </span>
+        </button>
+
+        <button
+          type="button"
+          (click)="rerunSetup()"
+          class="w-full text-left px-4 py-3 rounded-xl border border-base-300 hover:bg-base-200 transition-colors"
+        >
+          <span class="block font-semibold text-sm">Run setup again</span>
+          <span class="block text-xs text-base-content/60 mt-0.5">
+            Revisit your focus areas, theme and difficulty. Your habits are left alone.
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Challenge Difficulty -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-1 flex items-center gap-2">
+        <span>🏆</span> Challenge difficulty
+      </h2>
+      <p class="text-sm text-base-content/60 mb-4">
+        Pre-selected when you start a challenge. You can still change it per challenge.
+      </p>
+      <div class="space-y-2" role="radiogroup" aria-label="Default challenge difficulty">
+        @for (difficulty of difficulties; track difficulty) {
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="defaultDifficulty() === difficulty"
+            class="w-full text-left p-3 rounded-xl border-2 transition-colors"
+            [class]="
+              defaultDifficulty() === difficulty
+                ? 'border-primary bg-primary/10'
+                : 'border-base-300 hover:border-base-content/30'
+            "
+            (click)="setDifficulty(difficulty)"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold">
+                {{ difficultyMeta[difficulty].icon }} {{ difficultyMeta[difficulty].label }}
+              </span>
+              <span class="text-xs text-base-content/60">
+                {{ difficultyMeta[difficulty].requiredPassRate * 100 | number: '1.0-0' }}% ·
+                {{ difficultyMeta[difficulty].graceMisses }} misses allowed
+              </span>
+            </div>
+            <p class="text-xs text-base-content/60 mt-1">
+              {{ difficultyMeta[difficulty].description }} — harder tiers are worth more levels.
+            </p>
+          </button>
+        }
+      </div>
+    </div>
+
     <!-- Appearance Settings -->
     <div class="bg-base-100 p-6 rounded-lg shadow-md">
       <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">

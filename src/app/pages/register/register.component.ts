@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { MINIMUM_AGE, isAdult, latestAdultBirthDate, parseDateOnly } from '../../utils/age.util';
 
 @Component({
   selector: 'app-register',
@@ -17,11 +18,16 @@ export class RegisterComponent {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    username: ''
+    username: '',
+    dateOfBirth: ''
   };
-  
+
   errors: any = {};
   isLoading = false;
+
+  /** Bound to the date input's `max`, so the picker cannot offer an under-18 date. */
+  readonly maxBirthDate = latestAdultBirthDate();
+  readonly minimumAge = MINIMUM_AGE;
   
   constructor(
     private authService: AuthService,
@@ -60,7 +66,17 @@ export class RegisterComponent {
     } else if (this.formData.username.length < 3) {
       this.errors.username = 'Username must be at least 3 characters';
     }
-    
+
+    // Habiti is 18+. The date is checked here rather than trusting the input's
+    // `max`, which a user can bypass by typing.
+    if (!this.formData.dateOfBirth) {
+      this.errors.dateOfBirth = 'Date of birth is required';
+    } else if (!parseDateOnly(this.formData.dateOfBirth)) {
+      this.errors.dateOfBirth = 'Enter a valid date';
+    } else if (!isAdult(this.formData.dateOfBirth)) {
+      this.errors.dateOfBirth = `You must be at least ${MINIMUM_AGE} to use Habiti`;
+    }
+
     return Object.keys(this.errors).length === 0;
   }
   
