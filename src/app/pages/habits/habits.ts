@@ -1,14 +1,22 @@
-import { Component, inject, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, computed, inject, signal, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HabitsService } from '../../services/habits';
 import type { Habit, HabitCategory, HabitSubcategory } from '../../services/habits';
+import { TemplatePickerComponent } from '../../components/template-picker/template-picker.component';
+import { HabitLogComponent } from '../../components/habit-log/habit-log.component';
+import { TrackingSpec, formatTrackedValue, specForHabit } from '../../config/habit-library';
+import {
+  HABIT_TEMPLATE_PACKS,
+  HabitTemplatePack,
+  isAlreadyAdded
+} from '../../config/habit-template-packs';
 
 @Component({
   selector: 'app-habits',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TemplatePickerComponent, HabitLogComponent],
   templateUrl: './habits.html',
   styleUrl: './habits.scss'
 })
@@ -19,6 +27,37 @@ export class HabitsComponent {
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
   protected readonly categories = this.habitsService.categories;
+
+  protected readonly templatePacks = HABIT_TEMPLATE_PACKS;
+  protected readonly selectedPack = signal<HabitTemplatePack | null>(null);
+
+  /**
+   * The five standard steps, PLUS whatever this habit is actually worth.
+   *
+   * The list was hardcoded to 5/10/15/20/25, so a habit worth 18 matched no
+   * option and the select rendered blank — it then silently reported no value
+   * at all. Templates and challenges use points outside those steps on purpose.
+   */
+  protected pointOptions(points: number): number[] {
+    const values = new Set([5, 10, 15, 20, 25]);
+    if (points > 0) values.add(points);
+    return [...values].sort((a, b) => a - b);
+  }
+
+  protected pointLabel(points: number): string {
+    const stars = Math.max(1, Math.min(5, Math.round(points / 5)));
+    return `${'⭐'.repeat(stars)} ${points} pts`;
+  }
+
+  protected openTemplate(pack: HabitTemplatePack): void {
+    this.selectedPack.set(pack);
+  }
+
+  /** Shows at a glance whether a pack still has anything to offer. */
+  protected remainingTemplateCount(pack: HabitTemplatePack): number {
+    const existing = this.habits();
+    return pack.habits.filter(habit => !isAlreadyAdded(habit.name, existing)).length;
+  }
 
   @ViewChild('editModal') editModal!: ElementRef<HTMLDialogElement>;
   @ViewChild('editForm') editForm: any;
@@ -189,8 +228,47 @@ export class HabitsComponent {
     return this.habitsService.getCompletionRate(habitId);
   }
 
+  /**
+   * Checking off a habit.
+   *
+   * Habits that measure something open the log dialog first; a plain yes/no
+   * habit still toggles in one tap. Un-checking never asks for a number —
+   * you are removing the entry, not describing it.
+   */
   markHabitComplete(habitId: string): void {
-    this.habitsService.toggleHabit(habitId);
+    const habit = this.habits().find(h => h.id === habitId);
+    const spec = habit ? specForHabit(habit) : { kind: 'simple' as const };
+
+    if (!habit || spec.kind === 'simple' || this.isHabitCompletedToday(habitId)) {
+      this.habitsService.toggleHabit(habitId);
+      return;
+    }
+
+    this.loggingHabit.set(habit);
+    this.loggingSpec.set(spec);
+  }
+
+  protected readonly loggingHabit = signal<Habit | null>(null);
+  protected readonly loggingSpec = signal<TrackingSpec>({ kind: 'simple' });
+
+  protected readonly loggingCurrent = computed(() => {
+    const habit = this.loggingHabit();
+    if (!habit) return undefined;
+    return this.habitsService.getEntryForDate(habit.id, new Date())?.value;
+  });
+
+  protected onLogged(value: number | undefined): void {
+    const habit = this.loggingHabit();
+    this.loggingHabit.set(null);
+    if (!habit) return;
+    this.habitsService.completeHabitWithValue(habit.id, value);
+  }
+
+  /** Today's logged value, for the row summary. */
+  protected loggedToday(habit: Habit): string | null {
+    const entry = this.habitsService.getEntryForDate(habit.id, new Date());
+    if (entry?.value === undefined) return null;
+    return formatTrackedValue(specForHabit(habit), entry.value);
   }
 
   isHabitCompletedToday(habitId: string): boolean {

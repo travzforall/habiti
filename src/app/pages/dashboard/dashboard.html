@@ -1,623 +1,876 @@
+<!-- Toast host is mounted globally in app.html -->
+
+<!--
+  Level history lives outside the dashboard container on purpose: the gradient
+  user card and the glass wrapper both create clipping/stacking contexts that
+  would trap a dialog rendered inside them.
+-->
+<app-level-history #levelHistory></app-level-history>
+
 <!-- Enhanced Dashboard with Silver/Blue Theme -->
-<div class="space-y-8 px-4 py-6 max-w-none w-full">
-  <!-- User Details Card -->
-  @if (currentUser) {
-    <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-6 text-white shadow-xl">
+<div class="dashboard-container space-y-8 px-4 py-6 max-w-none w-full">
+
+  <!--
+    The Online / Last sync / Refresh strip was removed at the top of the page.
+    Sync still runs on its own — SyncService polls and RealtimeService pushes —
+    so the row reported on machinery the user does not drive. The live dot in
+    the top bar still shows connection state if it drops.
+  -->
+
+  <!-- Loading State: Skeleton Loaders -->
+  @if (dashboardState().isLoading) {
+    <!-- User Card Skeleton -->
+    <div class="bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 rounded-xl p-6 animate-pulse">
       <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
-        <!-- Profile Picture -->
-        <div class="flex-shrink-0">
-          @if (currentUser.profile_picture?.url) {
-            <img [src]="currentUser.profile_picture?.url" 
-                 [alt]="currentUser.name"
-                 class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white/20 shadow-lg object-cover">
-          } @else {
-            <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white/20 shadow-lg bg-white/20 flex items-center justify-center">
-              <span class="text-3xl md:text-4xl">{{ (currentUser.name || '')?.charAt(0)?.toUpperCase() || '?' }}</span>
-            </div>
-          }
+        <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+        <div class="flex-1 space-y-3">
+          <div class="h-8 bg-slate-300 dark:bg-slate-600 rounded w-48"></div>
+          <div class="h-4 bg-slate-300 dark:bg-slate-600 rounded w-64"></div>
+          <div class="h-4 bg-slate-300 dark:bg-slate-600 rounded w-56"></div>
         </div>
-        
-        <!-- User Information -->
-        <div class="flex-1 space-y-2">
-          <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <h2 class="text-2xl md:text-3xl font-bold">{{ currentUser.name }}</h2>
-            @if (currentUser.date_of_birth) {
-              <span class="text-white/80 text-sm md:text-base">
-                {{ calculateAge(currentUser.date_of_birth) }} years old
-              </span>
-            }
-          </div>
-          
-          <div class="flex flex-wrap items-center gap-4 text-white/90">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-              </svg>
-              <span class="text-sm">{{ currentUser.email }}</span>
+        <div class="flex md:flex-col gap-4">
+          <div class="w-16 h-16 bg-slate-300 dark:bg-slate-600 rounded-lg"></div>
+          <div class="w-16 h-16 bg-slate-300 dark:bg-slate-600 rounded-lg"></div>
+          <div class="w-16 h-16 bg-slate-300 dark:bg-slate-600 rounded-lg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid Skeleton -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="bg-white/70 dark:bg-slate-800/70 rounded-xl p-6 animate-pulse">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20"></div>
+              <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-16"></div>
             </div>
-            
-            @if (currentUser.location) {
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Habits Grid Skeleton -->
+    <div class="bg-white/70 dark:bg-slate-800/70 rounded-xl p-6 animate-pulse">
+      <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-40 mb-6"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-8 h-8 bg-slate-200 dark:bg-slate-600 rounded"></div>
+              <div class="w-6 h-6 bg-slate-200 dark:bg-slate-600 rounded-full"></div>
+            </div>
+            <div class="h-4 bg-slate-200 dark:bg-slate-600 rounded w-32 mb-2"></div>
+            <div class="h-3 bg-slate-200 dark:bg-slate-600 rounded w-24"></div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <!-- Profile + Today's Tasks: side by side and equal height on large screens -->
+    <div class="flex flex-col lg:flex-row gap-6 items-stretch">
+
+    <!-- User Details Card -->
+    @if (currentUser()) {
+      <div class="user-card flex-1 min-w-0 w-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 rounded-xl p-6 text-white shadow-xl animate-fade-in">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+          <!-- Profile Picture — animates according to the user's current status -->
+          <div class="flex-shrink-0">
+            <app-status-avatar
+              size="lg"
+              [interactive]="true"
+              [photoUrl]="currentUser()?.profile_picture?.url"
+              [name]="currentUser()?.name || ''">
+            </app-status-avatar>
+          </div>
+
+          <!-- User Information -->
+          <div class="flex-1 space-y-2">
+            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+              <h2 class="text-2xl md:text-3xl font-bold">{{ currentUser()?.name }}</h2>
+              <!--
+                Age is not displayed. Habiti only needs to know the user is 18+,
+                not how old they are — see AgeVerificationService.
+              -->
+            </div>
+
+            <div class="flex flex-wrap items-center gap-4 text-white/90">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                 </svg>
-                <span class="text-sm">{{ currentUser.location }}</span>
+                <span class="text-sm">{{ currentUser()?.email }}</span>
+              </div>
+
+              @if (currentUser()?.location) {
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span class="text-sm">{{ currentUser()?.location }}</span>
+                </div>
+              }
+
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-sm">Member since {{ formatDate(currentUser()!.created_at) }}</span>
+              </div>
+            </div>
+
+            @if (currentUser()?.bio) {
+              <div class="mt-3 p-3 bg-white/10 rounded-lg">
+                <p class="text-white/90 text-sm md:text-base italic">{{ currentUser()?.bio }}</p>
               </div>
             }
-            
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              <span class="text-sm">Member since {{ formatDate(currentUser.created_at) }}</span>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="flex md:flex-col gap-4 md:gap-2 text-center">
+            <button type="button"
+                    class="bg-white/20 rounded-lg p-3 backdrop-blur-sm hover:bg-white/30 transition-colors text-center focus:outline-none focus:ring-2 focus:ring-white/60"
+                    (click)="levelHistory.open()"
+                    [attr.aria-label]="'Level ' + gameState().level + '. View level history.'">
+              <div class="text-2xl font-bold">{{ gameState().level }}</div>
+              <div class="text-xs text-white/80">Level <span aria-hidden="true">ⓘ</span></div>
+            </button>
+            <div class="bg-white/20 rounded-lg p-3 backdrop-blur-sm hover:bg-white/30 transition-colors">
+              <div class="text-2xl font-bold">{{ gameState().totalPoints }}</div>
+              <div class="text-xs text-white/80">Points</div>
+            </div>
+            <div class="bg-white/20 rounded-lg p-3 backdrop-blur-sm hover:bg-white/30 transition-colors">
+              <div class="text-2xl font-bold">{{ gameState().dailyStreak }}</div>
+              <div class="text-xs text-white/80">Streak</div>
             </div>
           </div>
-          
-          @if (currentUser.bio) {
-            <div class="mt-3 p-3 bg-white/10 rounded-lg">
-              <p class="text-white/90 text-sm md:text-base italic">{{ currentUser.bio }}</p>
-            </div>
-          }
         </div>
-        
-        <!-- Quick Stats -->
-        <div class="flex md:flex-col gap-4 md:gap-2 text-center">
-          <div class="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-            <div class="text-2xl font-bold">{{ gameState().level }}</div>
-            <div class="text-xs text-white/80">Level</div>
-          </div>
-          <div class="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-            <div class="text-2xl font-bold">{{ gameState().totalPoints }}</div>
-            <div class="text-xs text-white/80">Points</div>
-          </div>
-          <div class="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-            <div class="text-2xl font-bold">{{ gameState().dailyStreak }}</div>
-            <div class="text-xs text-white/80">Streak</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Personalized Greeting -->
-      <div class="mt-4 pt-4 border-t border-white/20">
-        <p class="text-lg">{{ getTimeBasedGreeting() }} Ready to build great habits today?</p>
-      </div>
-    </div>
-  }
 
-  <!-- Today's Tasks Section -->
-  @if (todaysTasks().length > 0 || overdueTasks().length > 0) {
-    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-            <span class="text-white text-lg">📝</span>
-          </div>
-          <div>
-            <h3 class="text-xl font-bold text-slate-800">Today's Tasks</h3>
-            <p class="text-sm text-slate-600">Tasks due today and overdue items</p>
-          </div>
-        </div>
-        
-        <a routerLink="/tasks" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium">
-          View All Tasks
-        </a>
+        <!-- Daily inspiration, what's done today, and (free plans) the ad slot -->
+        <app-daily-inspiration></app-daily-inspiration>
       </div>
-      
-      <!-- Overdue Tasks -->
-      @if (overdueTasks().length > 0) {
-        <div class="mb-6">
-          <h4 class="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Overdue ({{ overdueTasks().length }})
-          </h4>
-          <div class="space-y-2">
-            @for (task of overdueTasks(); track task.id) {
-              <div class="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200 hover:bg-red-100 transition-colors">
-                <button (click)="toggleTask(task.id)"
-                        class="w-5 h-5 rounded border-2 border-red-400 flex items-center justify-center transition-all mt-0.5 hover:border-red-500">
-                  @if (task.completed) {
-                    <svg class="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                  }
-                </button>
-                
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium text-slate-800"
-                       [class.line-through]="task.completed"
-                       [class.text-slate-500]="task.completed">
-                    {{ task.title }}
-                  </div>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                      {{ task.priority | titlecase }}
-                    </span>
-                    <span class="text-xs text-red-600">
-                      Due {{ formatTaskDate(task.dueDate) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      }
-      
-      <!-- Today's Tasks -->
-      @if (todaysTasks().length > 0) {
-        <div>
-          <h4 class="text-sm font-semibold text-orange-600 mb-3 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            Due Today ({{ todaysTasks().length }})
-          </h4>
-          <div class="space-y-2">
-            @for (task of todaysTasks(); track task.id) {
-              <div class="flex items-start gap-3 p-3 rounded-lg bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors">
-                <button (click)="toggleTask(task.id)"
-                        class="w-5 h-5 rounded border-2 border-orange-400 flex items-center justify-center transition-all mt-0.5 hover:border-orange-500">
-                  @if (task.completed) {
-                    <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                  }
-                </button>
-                
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium text-slate-800"
-                       [class.line-through]="task.completed"
-                       [class.text-slate-500]="task.completed">
-                    {{ task.title }}
-                  </div>
-                  @if (task.description) {
-                    <p class="text-sm text-slate-600 mt-1">{{ task.description }}</p>
-                  }
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="px-2 py-1 rounded-full text-xs font-medium"
-                          [style.background-color]="getPriorityColor(task.priority) + '20'"
-                          [style.color]="getPriorityColor(task.priority)">
-                      {{ task.priority | titlecase }}
-                    </span>
-                    @if (task.estimatedHours) {
-                      <span class="text-xs text-slate-500">{{ task.estimatedHours }}h</span>
-                    }
-                    @for (tag of task.tags; track tag) {
-                      <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                        #{{ tag }}
-                      </span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-  }
+    }
 
-  <!-- Projects Overview Section - Temporarily Removed for Testing -->
-
-  <!-- Today's Habits Section with Sim Character and Mood -->
-  <div class="flex flex-col lg:flex-row gap-6">
-    <!-- Left Side - Today's Habits -->
-    <div class="flex-1">
-      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg">
+    <!-- Today's Tasks Section -->
+    @if (todaysTasks().length > 0 || overdueTasks().length > 0) {
+      <div class="flex-1 min-w-0 w-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg animate-fade-in">
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <span class="text-white text-lg">📅</span>
+            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <span class="text-white text-lg">📝</span>
             </div>
             <div>
-              <h3 class="text-xl font-bold text-slate-800">Today's Habits</h3>
-              <p class="text-sm text-slate-600">Track your daily progress</p>
+              <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Today's Tasks</h3>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Tasks due today and overdue items</p>
             </div>
           </div>
-          <a routerLink="/habits" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
-            View All
+
+          <a routerLink="/tasks" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium">
+            View All Tasks
           </a>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          @if (habits().length > 0) {
-            @for (habit of habits(); track habit.id) {
-              <div class="group p-4 rounded-lg bg-slate-50/50 hover:bg-slate-100/80 transition-all duration-200 border border-slate-100 cursor-pointer"
-                   (click)="toggleHabitToday(habit.id, $event)">
-                <!-- Header with icon and completion button -->
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
-                    <span class="text-xs px-1.5 py-0.5 rounded-full"
-                          [class.bg-green-100]="habit.type === 'good'"
-                          [class.text-green-700]="habit.type === 'good'"
-                          [class.bg-red-100]="habit.type === 'bad'"
-                          [class.text-red-700]="habit.type === 'bad'">
-                      {{ habit.type }}
-                    </span>
-                  </div>
-                  <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all pointer-events-none"
-                       [class.bg-green-500]="isHabitCompletedToday(habit.id)"
-                       [class.border-green-500]="isHabitCompletedToday(habit.id)"
-                       [class.border-slate-300]="!isHabitCompletedToday(habit.id)"
-                       [class.hover:border-green-400]="!isHabitCompletedToday(habit.id)">
-                    @if (isHabitCompletedToday(habit.id)) {
-                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+        <!-- Overdue Tasks -->
+        @if (overdueTasks().length > 0) {
+          <div class="mb-6">
+            <h4 class="text-sm font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Overdue ({{ overdueTasks().length }})
+            </h4>
+            <div class="space-y-2">
+              @for (task of overdueTasks(); track task.id) {
+                <div class="task-item flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+                  <button (click)="toggleTask(task.id)"
+                          class="w-5 h-5 rounded border-2 border-red-400 flex items-center justify-center transition-all mt-0.5 hover:border-red-500 focus:ring-2 focus:ring-red-300"
+                          [attr.aria-label]="task.completed ? 'Mark task incomplete' : 'Mark task complete'">
+                    @if (task.completed) {
+                      <svg class="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                       </svg>
                     }
+                  </button>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-slate-800 dark:text-slate-200"
+                         [class.line-through]="task.completed"
+                         [class.text-slate-500]="task.completed">
+                      {{ task.title }}
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200">
+                        {{ task.priority | titlecase }}
+                      </span>
+                      <span class="text-xs text-red-600 dark:text-red-400">
+                        Due {{ formatTaskDate(task.dueDate) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                
-                <!-- Habit name -->
-                <h4 class="text-sm font-medium text-slate-800 mb-2 leading-tight"
-                    [class.line-through]="isHabitCompletedToday(habit.id) && habit.type === 'bad'"
-                    [class.text-green-700]="isHabitCompletedToday(habit.id) && habit.type === 'good'">
-                  {{ habit.name }}
-                </h4>
-                
-                <!-- Stats row -->
-                <div class="flex items-center justify-between text-xs text-slate-500">
-                  <div class="flex items-center gap-2">
-                    <span>{{ habit.streak }} day streak</span>
-                    @switch (habit.difficulty) {
-                      @case ('easy') { <span>💚</span> }
-                      @case ('medium') { <span>🟡</span> }
-                      @case ('hard') { <span>🔴</span> }
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Today's Tasks -->
+        @if (todaysTasks().length > 0) {
+          <div>
+            <h4 class="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-3 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Due Today ({{ todaysTasks().length }})
+            </h4>
+            <div class="space-y-2">
+              @for (task of todaysTasks(); track task.id) {
+                <div class="task-item flex items-start gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors">
+                  <button (click)="toggleTask(task.id)"
+                          class="w-5 h-5 rounded border-2 border-orange-400 flex items-center justify-center transition-all mt-0.5 hover:border-orange-500 focus:ring-2 focus:ring-orange-300"
+                          [attr.aria-label]="task.completed ? 'Mark task incomplete' : 'Mark task complete'">
+                    @if (task.completed) {
+                      <svg class="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     }
-                  </div>
-                  <div class="text-right">
-                    <div class="text-xs font-bold text-slate-700">+{{ habit.points }} pts</div>
+                  </button>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-slate-800 dark:text-slate-200"
+                         [class.line-through]="task.completed"
+                         [class.text-slate-500]="task.completed">
+                      {{ task.title }}
+                    </div>
+                    @if (task.description) {
+                      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ task.description }}</p>
+                    }
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium"
+                            [style.background-color]="getPriorityColor(task.priority) + '20'"
+                            [style.color]="getPriorityColor(task.priority)">
+                        {{ task.priority | titlecase }}
+                      </span>
+                      @if (task.estimatedHours) {
+                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ task.estimatedHours }}h</span>
+                      }
+                      @for (tag of task.tags; track tag) {
+                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full text-xs">
+                          #{{ tag }}
+                        </span>
+                      }
+                    </div>
                   </div>
                 </div>
-                
-                <!-- Category -->
-                <div class="mt-2 text-xs text-slate-400">
-                  {{ habit.category || 'uncategorized' }}
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    </div>
+
+    <!-- Today's Habits Section -->
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Left Side - Today's Habits -->
+      <div class="flex-1">
+        <!-- data-tour: app guide step 2. See src/app/config/app-tour.steps.ts. -->
+        <div data-tour="today-habits" class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg animate-fade-in">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <span class="text-white text-lg">📅</span>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Today's Habits</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Track your daily progress</p>
+              </div>
+            </div>
+            <a routerLink="/habits" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+              View All
+            </a>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @if (filteredHabits().length > 0) {
+              @for (habit of filteredHabits(); track habit.id; let i = $index) {
+                <!-- data-tour on the FIRST card only: app guide step 3 points
+                     at one habit, and a selector matching every card would
+                     spotlight whichever happened to be first in the DOM. -->
+                <div class="habit-card group p-4 rounded-lg bg-slate-50/50 dark:bg-slate-700/50 hover:bg-slate-100/80 dark:hover:bg-slate-700/80 transition-all duration-200 border border-slate-100 dark:border-slate-600 cursor-pointer"
+                     [attr.data-tour]="i === 0 ? 'habit-card' : null"
+                     [class.ring-2]="isHabitSelected(i)"
+                     [class.ring-blue-500]="isHabitSelected(i)"
+                     (click)="toggleHabitToday(habit.id, $event)"
+                     [attr.tabindex]="0"
+                     (keydown.enter)="toggleHabitToday(habit.id)"
+                     (keydown.space)="toggleHabitToday(habit.id, $event)"
+                     role="button"
+                     [attr.aria-pressed]="isHabitCompletedToday(habit.id)"
+                     [attr.aria-label]="habit.name + (isHabitCompletedToday(habit.id) ? ' - completed' : ' - not completed')">
+                  <!-- Header with icon and completion button -->
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                      <span class="text-xs px-1.5 py-0.5 rounded-full"
+                            [class.bg-green-100]="habit.type === 'good'"
+                            [class.text-green-700]="habit.type === 'good'"
+                            [class.dark:bg-green-800]="habit.type === 'good'"
+                            [class.dark:text-green-200]="habit.type === 'good'"
+                            [class.bg-red-100]="habit.type === 'bad'"
+                            [class.text-red-700]="habit.type === 'bad'"
+                            [class.dark:bg-red-800]="habit.type === 'bad'"
+                            [class.dark:text-red-200]="habit.type === 'bad'">
+                        {{ habit.type }}
+                      </span>
+                    </div>
+                    <div class="habit-checkbox w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all pointer-events-none"
+                         [class.bg-green-500]="isHabitCompletedToday(habit.id)"
+                         [class.border-green-500]="isHabitCompletedToday(habit.id)"
+                         [class.border-slate-300]="!isHabitCompletedToday(habit.id)"
+                         [class.dark:border-slate-500]="!isHabitCompletedToday(habit.id)"
+                         [class.scale-110]="isHabitCompletedToday(habit.id)">
+                      @if (isHabitCompletedToday(habit.id)) {
+                        <svg class="w-4 h-4 text-white animate-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Habit name -->
+                  <h4 class="text-sm font-medium text-slate-800 dark:text-slate-200 mb-2 leading-tight"
+                      [class.line-through]="isHabitCompletedToday(habit.id) && habit.type === 'bad'"
+                      [class.text-green-700]="isHabitCompletedToday(habit.id) && habit.type === 'good'"
+                      [class.dark:text-green-400]="isHabitCompletedToday(habit.id) && habit.type === 'good'">
+                    {{ habit.name }}
+                  </h4>
+
+                  <!-- Stats row -->
+                  <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center gap-2">
+                      <span>{{ habit.streak }} day streak</span>
+                      @switch (habit.difficulty) {
+                        @case ('easy') { <span>💚</span> }
+                        @case ('medium') { <span>🟡</span> }
+                        @case ('hard') { <span>🔴</span> }
+                      }
+                    </div>
+                    <div class="text-right">
+                      <div class="text-xs font-bold text-slate-700 dark:text-slate-300">+{{ habit.points }} pts</div>
+                    </div>
+                  </div>
+
+                  <!-- Category -->
+                  <div class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                    {{ habit.category || 'uncategorized' }}
+                  </div>
                 </div>
+              }
+            } @else if (hasActiveFilters()) {
+              <!-- Filters hid everything. Distinct from having no habits at all,
+                   or the user goes looking for a bug that isn't there. -->
+              <div class="col-span-full text-center py-12">
+                <div class="text-4xl mb-3">🔍</div>
+                <h4 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">
+                  No habits match these filters
+                </h4>
+                <p class="text-slate-600 dark:text-slate-400 mb-4 text-sm">
+                  You have {{ habits().length }} habit(s) — they're just filtered out.
+                </p>
+                <button type="button"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        (click)="clearFilters()">
+                  Clear filters
+                </button>
+              </div>
+            } @else {
+              <!-- Empty State with Illustration -->
+              <div class="col-span-full text-center py-12">
+                <div class="empty-state-illustration w-32 h-32 mx-auto mb-6 relative">
+                  <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full animate-pulse"></div>
+                  <div class="absolute inset-4 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center">
+                    <span class="text-5xl">✨</span>
+                  </div>
+                </div>
+                <h4 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">No habits yet</h4>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 max-w-sm mx-auto">
+                  Start building better habits today. Create your first habit and begin your journey to self-improvement.
+                </p>
+                <a routerLink="/habits" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                  <span>✨</span>
+                  <span class="font-medium">Create First Habit</span>
+                </a>
               </div>
             }
-          } @else {
-            <div class="text-center py-12">
-              <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-                <span class="text-2xl">✨</span>
-              </div>
-              <h4 class="text-lg font-medium text-slate-800 mb-2">No habits yet</h4>
-              <p class="text-slate-600 mb-4">Create your first habit to start tracking your progress</p>
-              <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                <span>✨</span>
-                Create First Habit
-              </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Side - Filters -->
+      <div class="flex-shrink-0 self-start lg:w-64 w-full">
+        <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-medium text-slate-700 dark:text-slate-300">Filter habits</h4>
+            @if (hasActiveFilters()) {
+              <button type="button"
+                      class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      (click)="clearFilters()">
+                Clear
+              </button>
+            }
+          </div>
+
+          <div class="space-y-3">
+            <!-- Type -->
+            <div>
+              <label class="block text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Type</label>
+              <select class="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                      [ngModel]="filterType()"
+                      (ngModelChange)="filterType.set($event)">
+                <option value="all">All habits</option>
+                <option value="good">✅ Good habits</option>
+                <option value="bad">🚫 Breaking</option>
+              </select>
             </div>
-          }
+
+            <!-- Category -->
+            @if (availableCategories().length > 0) {
+              <div>
+                <label class="block text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Category</label>
+                <select class="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                        [ngModel]="filterCategory()"
+                        (ngModelChange)="filterCategory.set($event)">
+                  <option value="all">Any category</option>
+                  @for (cat of availableCategories(); track cat) {
+                    <option [value]="cat">{{ getCategoryIcon(cat) }} {{ cat | titlecase }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Challenge: only habits tied to a running challenge -->
+            @if (activeChallenges().length > 0) {
+              <div>
+                <label class="block text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Challenge</label>
+                <select class="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                        [ngModel]="filterChallenge()"
+                        (ngModelChange)="filterChallenge.set($event)">
+                  <option value="all">Any challenge</option>
+                  @for (run of activeChallenges(); track run.id) {
+                    <option [value]="run.id">{{ run.icon }} {{ run.title }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Friend: challenges you share with someone -->
+            @if (challengePartners().length > 0) {
+              <div>
+                <label class="block text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Doing it with</label>
+                <select class="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                        [ngModel]="filterPartner()"
+                        (ngModelChange)="filterPartner.set($event)">
+                  <option value="all">Anyone</option>
+                  @for (partner of challengePartners(); track partner.userId) {
+                    <option [value]="partner.userId">👥 {{ partner.name }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Status -->
+            <div>
+              <label class="block text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Today</label>
+              <select class="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                      [ngModel]="filterStatus()"
+                      (ngModelChange)="filterStatus.set($event)">
+                <option value="all">Done and not done</option>
+                <option value="pending">Not done yet</option>
+                <option value="done">Already done</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60">
+            Showing {{ filteredHabits().length }} of {{ habits().length }} habits
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- Right Side - Mood Component -->
-    <div class="flex-shrink-0 self-start">
-      <!-- HabitSim component temporarily removed -->
-    </div>
-  </div>
-
-  <!-- Weekly Habit Tracking Table -->
-  <div class="bg-white/70 backdrop-blur-xl rounded-xl border border-slate-200/50 shadow-lg overflow-hidden">
-    <!-- Week Navigation Header -->
-    <div class="p-4 border-b border-slate-200/50 flex items-center justify-between">
-      <button (click)="goToPreviousWeek()" 
-              type="button"
-              class="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-      </button>
-      
-      @if (currentWeekOffset() !== 0) {
-        <button (click)="goToCurrentWeek()" 
-                class="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors">
-          This Week
+    <!-- Weekly Habit Tracking Table -->
+    <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-lg overflow-hidden animate-fade-in">
+      <!-- Week Navigation Header -->
+      <div class="p-4 border-b border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between">
+        <button (click)="goToPreviousWeek()"
+                type="button"
+                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                aria-label="Previous week">
+          <svg class="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
         </button>
-      } @else {
-        <span class="text-sm text-slate-500">This Week</span>
-      }
-      
-      <button (click)="goToNextWeek()" 
-              type="button"
-              class="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </button>
-    </div>
 
-    @if (habits().length > 0) {
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <!-- Table Header -->
-          <thead class="bg-slate-50/50">
-            <tr>
-              <th class="text-left p-4 font-medium text-slate-700 border-b border-slate-200/50">
-                <!-- Empty header for habit column -->
-              </th>
-              @for (day of weeklySchedule(); track day.date) {
-                <th class="text-center p-3 font-medium text-slate-700 border-b border-slate-200/50 min-w-[120px]"
-                    [class.bg-blue-50]="day.isToday"
-                    [class.text-blue-700]="day.isToday">
-                  <div class="text-sm font-bold">{{ day.dayName }} {{ day.dayNumber }}</div>
+        @if (currentWeekOffset() !== 0) {
+          <button (click)="goToCurrentWeek()"
+                  class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors">
+            This Week
+          </button>
+        } @else {
+          <span class="text-sm text-slate-500 dark:text-slate-400">This Week</span>
+        }
+
+        <button (click)="goToNextWeek()"
+                type="button"
+                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                aria-label="Next week">
+          <svg class="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+
+      @if (habits().length > 0) {
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <!-- Table Header -->
+            <thead class="bg-slate-50/50 dark:bg-slate-900/50">
+              <tr>
+                <th class="text-left p-4 font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200/50 dark:border-slate-700/50">
+                  Habit
                 </th>
-              }
-              <th class="text-center p-4 font-medium text-slate-700 border-b border-slate-200/50">
-                <!-- Empty header for total column -->
-              </th>
-            </tr>
-          </thead>
-
-          <!-- Table Body -->
-          <tbody>
-            @for (habit of habits(); track habit.id) {
-              <tr class="border-b border-slate-100 hover:bg-slate-50/30 transition-colors">
-                <!-- Habit Name Column -->
-                <td class="p-4">
-                  <div class="flex items-center gap-3">
-                    <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
-                    <div class="min-w-0">
-                      <div class="font-medium text-slate-800 truncate">{{ habit.name }}</div>
-                      <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span class="px-2 py-1 rounded-full"
-                              [class.bg-green-100]="habit.type === 'good'"
-                              [class.text-green-700]="habit.type === 'good'"
-                              [class.bg-red-100]="habit.type === 'bad'"
-                              [class.text-red-700]="habit.type === 'bad'">
-                          {{ habit.type }}
-                        </span>
-                        <span>{{ habit.points }} pts</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Daily Status Columns -->
                 @for (day of weeklySchedule(); track day.date) {
-                  <td class="p-4 text-center"
-                      [class.bg-blue-50]="day.isToday && !isHabitCompletedOnDate(habit.id, day.fullDate)"
-                      [class.bg-green-50]="isHabitCompletedOnDate(habit.id, day.fullDate)">
-                    <div class="flex flex-col items-center gap-1">
-                      <!-- Status Button -->
-                      <button (click)="toggleHabitForDate(habit.id, day.fullDate)"
-                              class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110"
-                              [class.bg-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
-                              [class.border-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
-                              [class.text-white]="isHabitCompletedOnDate(habit.id, day.fullDate)"
-                              [class.border-slate-300]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
-                              [class.hover:border-green-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)">
-                        @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                        } @else {
-                          <span class="text-slate-400 text-xs">○</span>
-                        }
-                      </button>
+                  <th class="text-center p-3 font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200/50 dark:border-slate-700/50 min-w-[100px]"
+                      [class.bg-blue-50]="day.isToday"
+                      [class.dark:bg-blue-900/30]="day.isToday"
+                      [class.text-blue-700]="day.isToday"
+                      [class.dark:text-blue-300]="day.isToday">
+                    <div class="text-xs font-medium">{{ day.dayName }}</div>
+                    <div class="text-sm font-bold">{{ day.dayNumber }}</div>
+                  </th>
+                }
+                <th class="text-center p-4 font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200/50 dark:border-slate-700/50">
+                  Total
+                </th>
+              </tr>
+            </thead>
 
-                      <!-- Points Display -->
-                      <div class="text-xs font-medium"
-                           [class.text-green-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'good'"
-                           [class.text-red-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'bad'"
-                           [class.text-slate-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)">
-                        @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
-                          @if (habit.type === 'good') {
-                            +{{ habit.points }}
-                          } @else {
-                            -{{ habit.points }}
-                          }
-                        } @else {
-                          0
-                        }
+            <!-- Table Body - Grouped by Category -->
+            <tbody>
+              @for (categoryGroup of habitsByCategory(); track categoryGroup[0]) {
+                <!-- Category Header Row -->
+                <tr class="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50">
+                  <td [attr.colspan]="9" class="p-3">
+                    <div class="flex items-center gap-3">
+                      <span class="text-xl">{{ getCategoryIcon(categoryGroup[0]) }}</span>
+                      <span class="font-bold text-slate-700 dark:text-slate-200 capitalize">{{ getCategoryDisplayName(categoryGroup[0]) }}</span>
+                      <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+                        {{ categoryGroup[1].length }} {{ categoryGroup[1].length === 1 ? 'habit' : 'habits' }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Habits in this category -->
+                @for (habit of categoryGroup[1]; track habit.id) {
+                  <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50/30 dark:hover:bg-slate-700/30 transition-colors">
+                    <!-- Habit Name Column -->
+                    <td class="p-4 pl-8">
+                      <div class="flex items-center gap-3">
+                        <span class="text-lg">{{ habit.icon || getHabitTypeIcon(habit.type) }}</span>
+                        <div class="min-w-0">
+                          <div class="font-medium text-slate-800 dark:text-slate-200 truncate">{{ habit.name }}</div>
+                          <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <span class="px-2 py-0.5 rounded-full"
+                                  [class.bg-green-100]="habit.type === 'good'"
+                                  [class.text-green-700]="habit.type === 'good'"
+                                  [class.dark:bg-green-800]="habit.type === 'good'"
+                                  [class.dark:text-green-200]="habit.type === 'good'"
+                                  [class.bg-red-100]="habit.type === 'bad'"
+                                  [class.text-red-700]="habit.type === 'bad'"
+                                  [class.dark:bg-red-800]="habit.type === 'bad'"
+                                  [class.dark:text-red-200]="habit.type === 'bad'">
+                              {{ habit.type }}
+                            </span>
+                            <span>{{ habit.points }} pts</span>
+                          </div>
+                        </div>
                       </div>
+                    </td>
+
+                    <!-- Daily Status Columns -->
+                    @for (day of weeklySchedule(); track day.date) {
+                      <td class="p-3 text-center"
+                          [class.bg-blue-50]="day.isToday && !isHabitCompletedOnDate(habit.id, day.fullDate)"
+                          [class.dark:bg-blue-900/20]="day.isToday && !isHabitCompletedOnDate(habit.id, day.fullDate)"
+                          [class.bg-green-50]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                          [class.dark:bg-green-900/20]="isHabitCompletedOnDate(habit.id, day.fullDate)">
+                        <div class="flex flex-col items-center gap-1">
+                          <!-- Status Button -->
+                          <button (click)="toggleHabitForDate(habit.id, day.fullDate)"
+                                  class="weekly-toggle w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 focus:ring-2 focus:ring-blue-300"
+                                  [class.bg-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [class.border-green-500]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [class.text-white]="isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [class.border-slate-300]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [class.dark:border-slate-600]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [class.hover:border-green-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
+                                  [attr.aria-label]="habit.name + ' on ' + day.dayName">
+                            @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            } @else {
+                              <span class="text-slate-400 dark:text-slate-500 text-xs">○</span>
+                            }
+                          </button>
+
+                          <!-- Points Display -->
+                          <div class="text-xs font-medium"
+                               [class.text-green-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'good'"
+                               [class.dark:text-green-400]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'good'"
+                               [class.text-red-600]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'bad'"
+                               [class.dark:text-red-400]="isHabitCompletedOnDate(habit.id, day.fullDate) && habit.type === 'bad'"
+                               [class.text-slate-400]="!isHabitCompletedOnDate(habit.id, day.fullDate)"
+                               [class.dark:text-slate-500]="!isHabitCompletedOnDate(habit.id, day.fullDate)">
+                            @if (isHabitCompletedOnDate(habit.id, day.fullDate)) {
+                              @if (habit.type === 'good') {
+                                +{{ habit.points }}
+                              } @else {
+                                -{{ habit.points }}
+                              }
+                            } @else {
+                              0
+                            }
+                          </div>
+                        </div>
+                      </td>
+                    }
+
+                    <!-- Total Points Column -->
+                    <td class="p-4 text-center">
+                      <div class="flex flex-col items-center gap-1">
+                        <div class="text-sm font-bold"
+                             [class.text-green-600]="getHabitWeeklyPoints(habit.id) > 0"
+                             [class.dark:text-green-400]="getHabitWeeklyPoints(habit.id) > 0"
+                             [class.text-red-600]="getHabitWeeklyPoints(habit.id) < 0"
+                             [class.dark:text-red-400]="getHabitWeeklyPoints(habit.id) < 0"
+                             [class.text-slate-500]="getHabitWeeklyPoints(habit.id) === 0"
+                             [class.dark:text-slate-400]="getHabitWeeklyPoints(habit.id) === 0">
+                          {{ getHabitWeeklyPoints(habit.id) > 0 ? '+' : '' }}{{ getHabitWeeklyPoints(habit.id) }}
+                        </div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                          {{ getHabitWeeklyCompletions(habit.id) }}/7
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+
+              <!-- Weekly Totals Row -->
+              <tr class="bg-slate-50/80 dark:bg-slate-900/50 font-medium border-t-2 border-slate-200 dark:border-slate-700">
+                <td class="p-4 font-bold text-slate-800 dark:text-slate-200">
+                  Daily Totals
+                </td>
+                @for (day of weeklySchedule(); track day.date) {
+                  <td class="p-3 text-center"
+                      [class.bg-blue-100]="day.isToday"
+                      [class.dark:bg-blue-900/40]="day.isToday">
+                    <div class="flex flex-col items-center gap-1">
+                      <div class="text-sm font-bold"
+                           [class.text-green-600]="getDailyTotalPoints(day.fullDate) > 0"
+                           [class.dark:text-green-400]="getDailyTotalPoints(day.fullDate) > 0"
+                           [class.text-red-600]="getDailyTotalPoints(day.fullDate) < 0"
+                           [class.dark:text-red-400]="getDailyTotalPoints(day.fullDate) < 0"
+                           [class.text-slate-500]="getDailyTotalPoints(day.fullDate) === 0"
+                           [class.dark:text-slate-400]="getDailyTotalPoints(day.fullDate) === 0">
+                        {{ getDailyTotalPoints(day.fullDate) > 0 ? '+' : '' }}{{ getDailyTotalPoints(day.fullDate) }}
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400">pts</div>
                     </div>
                   </td>
                 }
-
-                <!-- Total Points Column -->
                 <td class="p-4 text-center">
                   <div class="flex flex-col items-center gap-1">
-                    <div class="text-sm font-bold"
-                         [class.text-green-600]="getHabitWeeklyPoints(habit.id) > 0"
-                         [class.text-red-600]="getHabitWeeklyPoints(habit.id) < 0"
-                         [class.text-slate-500]="getHabitWeeklyPoints(habit.id) === 0">
-                      {{ getHabitWeeklyPoints(habit.id) > 0 ? '+' : '' }}{{ getHabitWeeklyPoints(habit.id) }}
+                    <div class="text-lg font-bold"
+                         [class.text-green-600]="getWeeklyTotalPoints() > 0"
+                         [class.dark:text-green-400]="getWeeklyTotalPoints() > 0"
+                         [class.text-red-600]="getWeeklyTotalPoints() < 0"
+                         [class.dark:text-red-400]="getWeeklyTotalPoints() < 0"
+                         [class.text-slate-500]="getWeeklyTotalPoints() === 0"
+                         [class.dark:text-slate-400]="getWeeklyTotalPoints() === 0">
+                      {{ getWeeklyTotalPoints() > 0 ? '+' : '' }}{{ getWeeklyTotalPoints() }}
                     </div>
-                    <div class="text-xs text-slate-500">
-                      {{ getHabitWeeklyCompletions(habit.id) }}/7
-                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">total</div>
                   </div>
                 </td>
               </tr>
-            }
-
-            <!-- Weekly Totals Row -->
-            <tr class="bg-slate-50/80 font-medium border-t-2 border-slate-200">
-              <td class="p-4 font-bold text-slate-800">
-                <!-- Empty cell for totals row -->
-              </td>
-              @for (day of weeklySchedule(); track day.date) {
-                <td class="p-4 text-center"
-                    [class.bg-blue-100]="day.isToday">
-                  <div class="flex flex-col items-center gap-1">
-                    <div class="text-sm font-bold"
-                         [class.text-green-600]="getDailyTotalPoints(day.fullDate) > 0"
-                         [class.text-red-600]="getDailyTotalPoints(day.fullDate) < 0"
-                         [class.text-slate-500]="getDailyTotalPoints(day.fullDate) === 0">
-                      {{ getDailyTotalPoints(day.fullDate) > 0 ? '+' : '' }}{{ getDailyTotalPoints(day.fullDate) }}
-                    </div>
-                    <div class="text-xs text-slate-500">pts</div>
-                  </div>
-                </td>
-              }
-              <td class="p-4 text-center">
-                <div class="flex flex-col items-center gap-1">
-                  <div class="text-lg font-bold"
-                       [class.text-green-600]="getWeeklyTotalPoints() > 0"
-                       [class.text-red-600]="getWeeklyTotalPoints() < 0"
-                       [class.text-slate-500]="getWeeklyTotalPoints() === 0">
-                    {{ getWeeklyTotalPoints() > 0 ? '+' : '' }}{{ getWeeklyTotalPoints() }}
-                  </div>
-                  <div class="text-xs text-slate-500">total</div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    } @else {
-      <div class="p-8 text-center">
-        <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-          <span class="text-2xl">📋</span>
+            </tbody>
+          </table>
         </div>
-        <h4 class="text-lg font-medium text-slate-800 mb-2">No habits to track</h4>
-        <p class="text-slate-600 mb-4">Create some habits to see your weekly progress table</p>
-        <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-          <span>✨</span>
-          Create First Habit
-        </a>
-      </div>
-    }
-  </div>
-
-  <!-- Enhanced Stats Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <!-- Total Points Card -->
-    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-          <span class="text-white text-xl">⚡</span>
+      } @else {
+        <!-- Empty State for Weekly Table -->
+        <div class="p-12 text-center">
+          <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 rounded-full flex items-center justify-center">
+            <span class="text-3xl">📋</span>
+          </div>
+          <h4 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">No habits to track</h4>
+          <p class="text-slate-600 dark:text-slate-400 mb-6">Create some habits to see your weekly progress table</p>
+          <a routerLink="/habits" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <span>✨</span>
+            Create First Habit
+          </a>
         </div>
-        <div class="flex-1">
-          <p class="text-sm font-medium text-slate-600">Total Points</p>
-          <p class="text-2xl font-bold text-slate-800">{{ gameState().totalPoints }}</p>
-          <p class="text-xs text-slate-500">{{ getPointsForNextLevel() }} to level {{ gameState().level + 1 }}</p>
-        </div>
-      </div>
-      <!-- Progress bar for next level -->
-      <div class="mt-4">
-        <div class="w-full bg-slate-200 rounded-full h-2">
-          <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-500"
-               [style.width.%]="getLevelProgress()"></div>
-        </div>
-      </div>
+      }
     </div>
 
-    <!-- Current Streak Card -->
-    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-          <span class="text-white text-xl">🔥</span>
+    <!-- Enhanced Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Total Points Card -->
+      <div class="stats-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 group animate-fade-in">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span class="text-white text-xl">⚡</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Total Points</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ gameState().totalPoints }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ getPointsToNextMilestone() }} to your next 100</p>
+          </div>
         </div>
-        <div class="flex-1">
-          <p class="text-sm font-medium text-slate-600">Current Streak</p>
-          <p class="text-2xl font-bold text-slate-800">{{ gameState().dailyStreak }}</p>
-          <p class="text-xs text-slate-500">{{ getStreakDescription(gameState().dailyStreak) }}</p>
+        <!-- Progress bar for next level -->
+        <div class="mt-4">
+          <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+            <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-500"
+                 [style.width.%]="getMilestoneProgress()"></div>
+          </div>
         </div>
       </div>
-      <!-- Streak milestone indicator -->
-      <div class="mt-4 flex items-center gap-2">
-        <span class="text-lg">{{ getStreakIcon(gameState().dailyStreak) }}</span>
-        <span class="text-sm text-slate-600">{{ getNextStreakMilestone(gameState().dailyStreak) }}</span>
-      </div>
-    </div>
 
-    <!-- Active Habits Card -->
-    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-          <span class="text-white text-xl">🎯</span>
+      <!-- Current Streak Card -->
+      <div class="stats-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 group animate-fade-in">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span class="text-white text-xl">🔥</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Current Streak</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ gameState().dailyStreak }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ getStreakDescription(gameState().dailyStreak) }}</p>
+          </div>
         </div>
-        <div class="flex-1">
-          <p class="text-sm font-medium text-slate-600">Active Habits</p>
-          <p class="text-2xl font-bold text-slate-800">{{ habits().length }}</p>
-          <p class="text-xs text-slate-500">{{ getGoodHabitsCount() }} building • {{ getBadHabitsCount() }} breaking</p>
-        </div>
-      </div>
-      <!-- Habit type breakdown -->
-      <div class="mt-4 flex gap-2">
-        <div class="flex-1 bg-green-100 rounded-lg p-2 text-center">
-          <p class="text-xs text-green-700 font-medium">Good</p>
-          <p class="text-sm font-bold text-green-800">{{ getGoodHabitsCount() }}</p>
-        </div>
-        <div class="flex-1 bg-red-100 rounded-lg p-2 text-center">
-          <p class="text-xs text-red-700 font-medium">Bad</p>
-          <p class="text-sm font-bold text-red-800">{{ getBadHabitsCount() }}</p>
+        <!-- Streak milestone indicator -->
+        <div class="mt-4 flex items-center gap-2">
+          <span class="text-lg">{{ getStreakIcon(gameState().dailyStreak) }}</span>
+          <span class="text-sm text-slate-600 dark:text-slate-400">{{ getNextStreakMilestone(gameState().dailyStreak) }}</span>
         </div>
       </div>
-    </div>
 
-    <!-- Overall Progress Card -->
-    <div class="bg-white/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-          <span class="text-white text-xl">📈</span>
+      <!-- Active Habits Card -->
+      <div class="stats-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 group animate-fade-in">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span class="text-white text-xl">🎯</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Active Habits</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ habits().length }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ goodHabitsCount() }} building • {{ badHabitsCount() }} breaking</p>
+          </div>
         </div>
-        <div class="flex-1">
-          <p class="text-sm font-medium text-slate-600">Today's Progress</p>
-          <p class="text-2xl font-bold text-slate-800">{{ getOverallProgress() }}%</p>
-          <p class="text-xs text-slate-500">{{ getCompletedHabitsToday() }}/{{ habits().length }} completed</p>
+        <!-- Habit type breakdown -->
+        <div class="mt-4 flex gap-2">
+          <div class="flex-1 bg-green-100 dark:bg-green-800/50 rounded-lg p-2 text-center">
+            <p class="text-xs text-green-700 dark:text-green-300 font-medium">Good</p>
+            <p class="text-sm font-bold text-green-800 dark:text-green-200">{{ goodHabitsCount() }}</p>
+          </div>
+          <div class="flex-1 bg-red-100 dark:bg-red-800/50 rounded-lg p-2 text-center">
+            <p class="text-xs text-red-700 dark:text-red-300 font-medium">Bad</p>
+            <p class="text-sm font-bold text-red-800 dark:text-red-200">{{ badHabitsCount() }}</p>
+          </div>
         </div>
       </div>
-      <!-- Circular progress indicator -->
-      <div class="mt-4 flex items-center justify-center">
-        <div class="relative w-12 h-12">
-          <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-            <path class="text-slate-200" stroke="currentColor" stroke-width="3" fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-            <path class="text-green-500" stroke="currentColor" stroke-width="3" fill="none"
-                  [attr.stroke-dasharray]="getOverallProgress() + ', 100'"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-          </svg>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <span class="text-xs font-bold text-slate-700">{{ getOverallProgress() }}%</span>
+
+      <!-- Overall Progress Card -->
+      <div class="stats-card bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300 group animate-fade-in">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+            <span class="text-white text-xl">📈</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Today's Progress</p>
+            <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ getOverallProgress() }}%</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ completedHabitsToday() }}/{{ habits().length }} completed</p>
+          </div>
+        </div>
+        <!-- Circular progress indicator -->
+        <div class="mt-4 flex items-center justify-center">
+          <div class="relative w-12 h-12">
+            <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-200 dark:text-slate-700" stroke="currentColor" stroke-width="3" fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path class="text-green-500" stroke="currentColor" stroke-width="3" fill="none"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="getOverallProgress() + ', 100'"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ getOverallProgress() }}%</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
+    <!--
+      Skills strip, deferred.
 
-  <!-- Quick Actions -->
-  <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl p-6 border border-slate-200/50">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <a routerLink="/habits" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">✨</span>
-        <span class="text-sm font-medium text-slate-800">Add Habit</span>
-      </a>
-      
-      <a routerLink="/tasks" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">📝</span>
-        <span class="text-sm font-medium text-slate-800">Tasks</span>
-      </a>
-      
-      <a routerLink="/projects" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">📋</span>
-        <span class="text-sm font-medium text-slate-800">Projects</span>
-      </a>
-      
-      <a routerLink="/analytics" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">📈</span>
-        <span class="text-sm font-medium text-slate-800">Analytics</span>
-      </a>
-      
-      <a routerLink="/calendar" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">📅</span>
-        <span class="text-sm font-medium text-slate-800">Calendar</span>
-      </a>
-      
-      <a routerLink="/game" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all">
-        <span class="text-2xl">🏆</span>
-        <span class="text-sm font-medium text-slate-800">Game</span>
-      </a>
+      The dashboard is eager, and the strip needs the skill catalogue to resolve
+      names and ladders — importing it here would put ~120 kB into the initial
+      bundle for every user, including those with no skills.
+    -->
+    @defer (when hasSkills()) {
+      <app-skill-strip></app-skill-strip>
+    }
+
+    <!-- Quick Actions -->
+    <div class="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50 animate-fade-in">
+      <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <a routerLink="/habits" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">✨</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Add Habit</span>
+        </a>
+
+        <a routerLink="/tasks" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">📝</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Tasks</span>
+        </a>
+
+        <a routerLink="/projects" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">📋</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Projects</span>
+        </a>
+
+        <a routerLink="/analytics" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">📈</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Analytics</span>
+        </a>
+
+        <a routerLink="/calendar" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">📅</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Calendar</span>
+        </a>
+
+        <a routerLink="/game" class="quick-action flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+          <span class="text-2xl">🏆</span>
+          <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Game</span>
+        </a>
+      </div>
     </div>
-  </div>
+  }
 </div>
-

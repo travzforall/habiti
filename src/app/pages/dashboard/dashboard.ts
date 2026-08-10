@@ -1,13 +1,40 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { Subject, interval, fromEvent } from 'rxjs';
+import { takeUntil, debounceTime, filter } from 'rxjs/operators';
+
 import { HabitsService } from '../../services/habits';
-// import { HabitSimComponent } from '../../components/habit-sim/habit-sim';
 import { AuthService, User } from '../../services/auth.service';
 import { TasksService } from '../../services/tasks.service';
-// import { ProjectsService } from '../../services/projects.service';
-import { Observable } from 'rxjs';
+import { ToastService } from '../../services/toast.service';
+import { StatusAvatarComponent } from '../../components/status-avatar/status-avatar.component';
+import { DailyInspirationComponent } from '../../components/daily-inspiration/daily-inspiration.component';
+import { LevelHistoryComponent } from '../../components/level-history/level-history.component';
+import { calculateAge, parseDateOnly } from '../../utils/age.util';
+import { ChallengeService } from '../../services/challenge.service';
+import { SkillsService } from '../../services/skills.service';
+import { SkillStripComponent } from '../../components/skill-strip/skill-strip.component';
+import { SyncService } from '../../services/sync.service';
+import {
+  CATEGORY_COLORS,
+  CATEGORY_ICONS,
+  PRIORITY_COLORS,
+  DAY_NAMES,
+  DAY_NAMES_SHORT,
+  MONTH_NAMES,
+  DASHBOARD_CONFIG,
+  KEYBOARD_SHORTCUTS,
+  getCategoryColor,
+  getCategoryIcon,
+  getPriorityColor,
+  isSameDay,
+  getStartOfWeek,
+  getWeekDates
+} from '../../config/dashboard.config';
 
+// Interfaces
 interface WeeklyData {
   date: string;
   dayName: string;
@@ -23,146 +50,533 @@ interface WeeklySchedule {
   fullDate: Date;
 }
 
+interface DashboardState {
+  isLoading: boolean;
+  isRefreshing: boolean;
+  isOnline: boolean;
+  lastSyncTime: Date | null;
+  syncError: string | null;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    StatusAvatarComponent,
+    DailyInspirationComponent,
+    LevelHistoryComponent,
+    SkillStripComponent
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class DashboardComponent implements OnInit {
-  private habitsService = inject(HabitsService);
-  private authService = inject(AuthService);
-  private tasksService = inject(TasksService);
-  // private projectsService = inject(ProjectsService);
-  protected router = inject(Router);
-  
+export class DashboardComponent implements OnInit, OnDestroy {
+  // Services
+  private readonly habitsService = inject(HabitsService);
+  private readonly authService = inject(AuthService);
+  private readonly tasksService = inject(TasksService);
+  private readonly toastService = inject(ToastService);
+  protected readonly router = inject(Router);
+
+  // Destroy subject for cleanup
+  private readonly destroy$ = new Subject<void>();
+
+  // Toggle debounce subject
+  private readonly toggleSubject$ = new Subject<{ habitId: string; date: Date }>();
+
+  // Dashboard state
+  protected readonly dashboardState = signal<DashboardState>({
+    isLoading: true,
+    isRefreshing: false,
+    isOnline: navigator.onLine,
+    lastSyncTime: null,
+    syncError: null
+  });
+
+  // Service signals
   protected readonly habits = this.habitsService.habits;
+
+  // ---------------------------------------------------------------------------
+  // Filters
+  //
+  // Replaced the keyboard-shortcuts card, which was a reference sheet nobody
+  // needed twice. The shortcuts still work — they are just not documented in a
+  // permanent panel.
+  // ---------------------------------------------------------------------------
+
+  private challengeService = inject(ChallengeService);
+  private skillsService = inject(SkillsService);
+
+  /**
+   * Drives the @defer around the strip, so the skill catalogue is only fetched
+   * for someone who actually has a skill. The dashboard is loaded eagerly.
+   */
+  protected readonly hasSkills = computed(() => this.skillsService.activeTracks().length > 0);
+  protected readonly sync = inject(SyncService);
+
+  protected readonly filterType = signal<'all' | 'good' | 'bad'>('all');
+  protected readonly filterCategory = signal<string>('all');
+  protected readonly filterChallenge = signal<string>('all');
+  protected readonly filterPartner = signal<string>('all');
+  protected readonly filterStatus = signal<'all' | 'pending' | 'done'>('all');
+
+  protected readonly activeChallenges = this.challengeService.activeRuns;
+
+  /** Categories actually in use — an empty dropdown helps nobody. */
+  protected readonly availableCategories = computed(() =>
+    [...new Set(this.habits().map(h => h.category).filter((c): c is string => !!c))].sort()
+  );
+
+  /** People you share a running challenge with. */
+  protected readonly challengePartners = computed(() => {
+    const seen = new Map<string, { userId: string; name: string }>();
+    for (const run of this.activeChallenges()) {
+      for (const p of run.participants ?? []) {
+        if (p.isOwner || p.inviteStatus !== 'accepted') continue;
+        if (!seen.has(p.userId)) seen.set(p.userId, { userId: p.userId, name: p.name });
+      }
+    }
+    return [...seen.values()];
+  });
+
+  protected readonly hasActiveFilters = computed(
+    () =>
+      this.filterType() !== 'all' ||
+      this.filterCategory() !== 'all' ||
+      this.filterChallenge() !== 'all' ||
+      this.filterPartner() !== 'all' ||
+      this.filterStatus() !== 'all'
+  );
+
+  /** The habit list every filtered view reads. */
+  protected readonly filteredHabits = computed(() => {
+    const type = this.filterType();
+    const category = this.filterCategory();
+    const challengeId = this.filterChallenge();
+    const partnerId = this.filterPartner();
+    const status = this.filterStatus();
+
+    // Challenge and partner both narrow to a set of habit ids.
+    let habitIds: Set<string> | null = null;
+
+    if (challengeId !== 'all') {
+      const run = this.activeChallenges().find(r => r.id === challengeId);
+      habitIds = new Set(run?.terms.habitIds ?? []);
+    }
+
+    if (partnerId !== 'all') {
+      const ids = new Set<string>();
+      for (const run of this.activeChallenges()) {
+        const shared = (run.participants ?? []).some(
+          p => p.userId === partnerId && p.inviteStatus === 'accepted'
+        );
+        if (shared) (run.terms.habitIds ?? []).forEach(id => ids.add(id));
+      }
+      habitIds = habitIds ? new Set([...habitIds].filter(id => ids.has(id))) : ids;
+    }
+
+    return this.habits().filter(habit => {
+      if (type !== 'all' && habit.type !== type) return false;
+      if (category !== 'all' && habit.category !== category) return false;
+      if (habitIds && !habitIds.has(habit.id)) return false;
+
+      if (status !== 'all') {
+        const done = this.habitsService.isHabitCompletedToday(habit.id);
+        if (status === 'done' && !done) return false;
+        if (status === 'pending' && done) return false;
+      }
+
+      return true;
+    });
+  });
+
+  protected clearFilters(): void {
+    this.filterType.set('all');
+    this.filterCategory.set('all');
+    this.filterChallenge.set('all');
+    this.filterPartner.set('all');
+    this.filterStatus.set('all');
+  }
+
+  protected readonly habitEntries = this.habitsService.habitEntries;
   protected readonly gameState = this.habitsService.gameState;
   protected readonly todaysTasks = this.tasksService.todaysTasks;
   protected readonly overdueTasks = this.tasksService.overdueTasks;
-  // protected readonly projects = this.projectsService.projects;
-  protected currentUser$: Observable<User | null> = this.authService.currentUser;
-  protected currentUser: User | null = null;
-  
+
+  // User state
+  protected readonly currentUser = signal<User | null>(null);
+
   // Week navigation
-  protected currentWeekOffset = signal(0);
-  
-  // Computed weekly schedule
+  protected readonly currentWeekOffset = signal(0);
+
+  // Keyboard navigation
+  protected readonly selectedHabitIndex = signal(-1);
+
+  // Computed: Weekly schedule
   protected readonly weeklySchedule = computed(() => {
     const offset = this.currentWeekOffset();
-    
-    const schedule: WeeklySchedule[] = [];
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    // Calculate the start of the week (Sunday) with offset
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - currentDay + (offset * 7));
-    
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      
-      const isToday = offset === 0 && this.isSameDay(date, today);
-      
-      schedule.push({
-        date: date.toISOString(),
-        dayName: dayNames[i],
-        dayNumber: date.getDate(),
-        month: monthNames[date.getMonth()],
-        isToday,
-        fullDate: date
+    const startOfWeek = getStartOfWeek(today, offset);
+    const weekDates = getWeekDates(startOfWeek);
+
+    return weekDates.map((date, index) => ({
+      date: date.toISOString(),
+      dayName: DAY_NAMES[index],
+      dayNumber: date.getDate(),
+      month: MONTH_NAMES[date.getMonth()],
+      isToday: offset === 0 && isSameDay(date, today),
+      fullDate: date
+    }));
+  });
+
+  // Helper to check completion from entries map
+  private isCompletedOnDate(entries: Map<string, any>, habitId: string, date: Date): boolean {
+    const dateString = this.formatDateKey(date);
+    const key = `${habitId}-${dateString}`;
+    return entries.get(key)?.status === 'completed';
+  }
+
+  // Format date for entry key lookup
+  private formatDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Computed: Weekly data (memoized)
+  protected readonly weeklyData = computed(() => {
+    const data: WeeklyData[] = [];
+    const today = new Date();
+    const habitsList = this.habits();
+    // Access habitEntries signal directly within computed for proper reactivity
+    const entries = this.habitEntries();
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+
+      const totalHabits = habitsList.length;
+      let completedHabits = 0;
+
+      if (totalHabits > 0) {
+        completedHabits = habitsList.filter(habit =>
+          this.isCompletedOnDate(entries, habit.id, date)
+        ).length;
+      }
+
+      const completion = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
+
+      data.push({
+        date: date.toLocaleDateString(),
+        dayName: DAY_NAMES_SHORT[date.getDay()],
+        completion
       });
     }
-    
-    return schedule;
+
+    return data;
   });
-  
-  // Category colors matching calendar component
-  private categoryColors: { [key: string]: string } = {
-    'health': '#10b981',
-    'productivity': '#3b82f6',
-    'learning': '#8b5cf6',
-    'social': '#ec4899',
-    'mindfulness': '#6366f1',
-    'creativity': '#f97316',
-    'finance': '#eab308',
-    'other': '#6b7280'
-  };
 
-  // Category icons
-  private categoryIcons: { [key: string]: string } = {
-    'health': '💪',
-    'productivity': '⚡',
-    'learning': '📚',
-    'social': '👥',
-    'mindfulness': '🧘',
-    'creativity': '🎨',
-    'finance': '💰',
-    'other': '📌'
-  };
+  // Computed: Daily points cache (memoized)
+  protected readonly dailyPointsCache = computed(() => {
+    const cache = new Map<string, number>();
+    const schedule = this.weeklySchedule();
+    const habitsList = this.habits();
+    // Access habitEntries signal directly within computed for proper reactivity
+    const entries = this.habitEntries();
 
-  ngOnInit(): void {
-    // Subscribe to current user
-    this.currentUser$ = this.authService.currentUser;
-    this.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      // If we have a user but no full data, fetch it
-      if (user && !user.bio && !user.profile_picture) {
-        this.authService.getCurrentUser().subscribe({
-          next: (fullUser) => {
-            this.currentUser = fullUser;
-          },
-          error: (error) => {
-            console.error('Error fetching user data:', error);
+    schedule.forEach(day => {
+      let totalPoints = 0;
+      habitsList.forEach(habit => {
+        // Ensure points is a number (may come as string from database)
+        const habitPoints = Number(habit.points) || 10;
+        if (this.isCompletedOnDate(entries, habit.id, day.fullDate)) {
+          if (habit.type === 'good') {
+            totalPoints += habitPoints;
+          } else {
+            totalPoints -= habitPoints;
           }
-        });
-      }
+        }
+      });
+      cache.set(day.date, totalPoints);
     });
 
-    // Create sample tasks if none exist
+    return cache;
+  });
+
+  // Computed: Habit weekly points cache (memoized)
+  protected readonly habitWeeklyPointsCache = computed(() => {
+    const cache = new Map<string, { points: number; completions: number }>();
+    const schedule = this.weeklySchedule();
+    const habitsList = this.habits();
+    // Access habitEntries signal directly within computed for proper reactivity
+    const entries = this.habitEntries();
+
+    habitsList.forEach(habit => {
+      let totalPoints = 0;
+      let completions = 0;
+      // Ensure points is a number (may come as string from database)
+      const habitPoints = Number(habit.points) || 10;
+
+      schedule.forEach(day => {
+        if (this.isCompletedOnDate(entries, habit.id, day.fullDate)) {
+          completions++;
+          if (habit.type === 'good') {
+            totalPoints += habitPoints;
+          } else {
+            totalPoints -= habitPoints;
+          }
+        }
+      });
+
+      cache.set(habit.id, { points: totalPoints, completions });
+    });
+
+    return cache;
+  });
+
+  // Computed: Weekly total points
+  protected readonly weeklyTotalPoints = computed(() => {
+    const cache = this.dailyPointsCache();
+    let total = 0;
+    cache.forEach(points => total += points);
+    return total;
+  });
+
+  // Computed: Good/Bad habits count
+  protected readonly goodHabitsCount = computed(() =>
+    this.habits().filter(h => h.type === 'good').length
+  );
+
+  protected readonly badHabitsCount = computed(() =>
+    this.habits().filter(h => h.type === 'bad').length
+  );
+
+  // Computed: Completed habits today
+  protected readonly completedHabitsToday = computed(() => {
+    const today = new Date();
+    // Access habitEntries signal directly within computed for proper reactivity
+    const entries = this.habitEntries();
+    return this.habits().filter(habit =>
+      this.isCompletedOnDate(entries, habit.id, today)
+    ).length;
+  });
+
+  // Computed: Unique categories
+  protected readonly uniqueCategories = computed(() => {
+    const categories = new Set(this.habits().map(h => h.category || 'other'));
+    return Array.from(categories);
+  });
+
+  // Computed: Habits grouped by category for weekly table
+  protected readonly habitsByCategory = computed(() => {
+    const habitsList = this.habits();
+    const grouped = new Map<string, typeof habitsList>();
+
+    // Group habits by category
+    habitsList.forEach(habit => {
+      const category = habit.category || 'other';
+      if (!grouped.has(category)) {
+        grouped.set(category, []);
+      }
+      grouped.get(category)!.push(habit);
+    });
+
+    // Convert to array and sort categories alphabetically (but 'other' last)
+    const sortedCategories = Array.from(grouped.entries()).sort((a, b) => {
+      if (a[0] === 'other') return 1;
+      if (b[0] === 'other') return -1;
+      return a[0].localeCompare(b[0]);
+    });
+
+    return sortedCategories;
+  });
+
+  ngOnInit(): void {
+    this.initializeComponent();
+    this.setupToggleDebounce();
+    this.loadUserData();
+    this.createSampleTasksIfNeeded();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initializeComponent(): void {
+    // Simulate initial loading
+    setTimeout(() => {
+      this.dashboardState.update(state => ({
+        ...state,
+        isLoading: false,
+        lastSyncTime: new Date()
+      }));
+    }, 500);
+  }
+
+  private setupToggleDebounce(): void {
+    this.toggleSubject$.pipe(
+      debounceTime(DASHBOARD_CONFIG.toggleDebounceTime),
+      takeUntil(this.destroy$)
+    ).subscribe(({ habitId, date }) => {
+      try {
+        this.habitsService.toggleHabitForDate(habitId, date);
+        this.toastService.success('Habit updated', 'Your progress has been saved');
+      } catch (error) {
+        console.error('Error toggling habit:', error);
+        this.toastService.error('Update failed', 'Could not save your progress. Please try again.');
+      }
+    });
+  }
+
+  // setupAutoRefresh() removed — SyncService owns cadence app-wide.
+
+  // setupOnlineStatusListener() removed — SyncService owns online/offline,
+  // deduped so a flaky connection does not toast repeatedly.
+
+  private loadUserData(): void {
+    this.authService.currentUser.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (user) => {
+        this.currentUser.set(user);
+        if (user && !user.bio && !user.profile_picture) {
+          this.fetchFullUserData();
+        }
+      },
+      error: (error) => {
+        console.error('Error loading user data:', error);
+        this.toastService.error('Error', 'Could not load user profile');
+      }
+    });
+  }
+
+  private fetchFullUserData(): void {
+    this.authService.getCurrentUser().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (fullUser) => {
+        this.currentUser.set(fullUser);
+      },
+      error: (error) => {
+        console.error('Error fetching full user data:', error);
+      }
+    });
+  }
+
+  private createSampleTasksIfNeeded(): void {
     if (this.tasksService.standaloneTasks().length === 0) {
       this.tasksService.createSampleTasks();
     }
   }
 
-  // Format date for display
+  // Keyboard navigation
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardNavigation(event: KeyboardEvent): void {
+    // Ignore if user is typing in an input
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    const habitsList = this.habits();
+
+    switch (event.key) {
+      case KEYBOARD_SHORTCUTS.nextHabit:
+        event.preventDefault();
+        this.selectedHabitIndex.update(i =>
+          Math.min(i + 1, habitsList.length - 1)
+        );
+        break;
+
+      case KEYBOARD_SHORTCUTS.prevHabit:
+        event.preventDefault();
+        this.selectedHabitIndex.update(i => Math.max(i - 1, 0));
+        break;
+
+      case KEYBOARD_SHORTCUTS.toggleHabit:
+        event.preventDefault();
+        const index = this.selectedHabitIndex();
+        if (index >= 0 && index < habitsList.length) {
+          this.toggleHabitToday(habitsList[index].id);
+        }
+        break;
+
+      case KEYBOARD_SHORTCUTS.refresh:
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.refreshDashboard();
+        }
+        break;
+
+      case KEYBOARD_SHORTCUTS.goToHabits:
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.router.navigate(['/habits']);
+        }
+        break;
+
+      case KEYBOARD_SHORTCUTS.goToTasks:
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.router.navigate(['/tasks']);
+        }
+        break;
+
+      case KEYBOARD_SHORTCUTS.goToAnalytics:
+        if (!event.ctrlKey && !event.metaKey) {
+          event.preventDefault();
+          this.router.navigate(['/analytics']);
+        }
+        break;
+    }
+  }
+
+  // Public methods
+  /**
+   * A real refresh.
+   *
+   * This used to be a setTimeout that called no service and then toasted
+   * "Dashboard data has been updated" — a lie, fired every 5 minutes by an
+   * interval that also lived here. Cadence belongs to SyncService; a
+   * per-component timer means N timers as the user navigates.
+   *
+   * No success toast: a manual refresh that visibly updates the page does not
+   * need one.
+   */
+  refreshDashboard(): void {
+    void this.sync.syncNow('manual');
+  }
+
+  // Date formatting
   formatDate(dateInput: string | number): string {
     if (!dateInput) return '';
-    
-    // Handle timestamp (number in milliseconds)
-    const date = typeof dateInput === 'number' 
-      ? new Date(dateInput) 
-      : new Date(dateInput);
-    
-    if (isNaN(date.getTime())) return '';
-    
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+
+    // `new Date('2024-01-15')` parses date-only strings as UTC midnight, which
+    // renders as the 14th anywhere west of Greenwich. parseDateOnly reads them
+    // as local dates instead. Timestamps are unambiguous and pass through.
+    const date = typeof dateInput === 'number' ? new Date(dateInput) : parseDateOnly(dateInput);
+
+    if (!date || isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   }
 
-  // Calculate age from date of birth
+  /**
+   * Retained for the spec and for any future need. Habiti does not display an
+   * age anywhere — the only thing it cares about is the 18+ check at signup.
+   */
   calculateAge(dateOfBirth: string): number | null {
-    if (!dateOfBirth) return null;
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
+    return calculateAge(dateOfBirth);
   }
 
-  // Time-based greeting
   getTimeBasedGreeting(): string {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning!';
@@ -170,87 +584,74 @@ export class DashboardComponent implements OnInit {
     return 'Good evening!';
   }
 
-  // Enhanced stats methods
+  // Stats methods
   getOverallProgress(): number {
     return this.habitsService.getOverallProgress();
   }
 
-  getPointsForNextLevel(): number {
+  // Renamed from getPointsForNextLevel/getLevelProgress: points stopped
+  // driving level, so "to next level" was no longer true. These describe
+  // progress toward the next 100-point milestone and nothing more.
+  getPointsToNextMilestone(): number {
     const gameState = this.gameState();
-    return 100 - (gameState.totalPoints % 100);
+    return (
+      DASHBOARD_CONFIG.pointsPerMilestone -
+      (gameState.totalPoints % DASHBOARD_CONFIG.pointsPerMilestone)
+    );
   }
 
-  getLevelProgress(): number {
+  getMilestoneProgress(): number {
     const gameState = this.gameState();
-    const currentLevelPoints = gameState.totalPoints % 100;
-    return currentLevelPoints;
+    return gameState.totalPoints % DASHBOARD_CONFIG.pointsPerMilestone;
   }
 
   getStreakDescription(streak: number): string {
-    if (streak >= 30) return 'Amazing streak!';
-    if (streak >= 14) return 'On fire!';
-    if (streak >= 7) return 'Great momentum!';
-    if (streak >= 3) return 'Building habits!';
+    const { streakMilestones } = DASHBOARD_CONFIG;
+    if (streak >= streakMilestones.monthly) return 'Amazing streak!';
+    if (streak >= streakMilestones.twoWeeks) return 'On fire!';
+    if (streak >= streakMilestones.weekly) return 'Great momentum!';
+    if (streak >= streakMilestones.first) return 'Building habits!';
     return 'Getting started';
   }
 
   getNextStreakMilestone(streak: number): string {
-    if (streak < 3) return `${3 - streak} days to first milestone`;
-    if (streak < 7) return `${7 - streak} days to weekly streak`;
-    if (streak < 14) return `${14 - streak} days to two weeks`;
-    if (streak < 30) return `${30 - streak} days to monthly streak`;
+    const { streakMilestones } = DASHBOARD_CONFIG;
+    if (streak < streakMilestones.first) return `${streakMilestones.first - streak} days to first milestone`;
+    if (streak < streakMilestones.weekly) return `${streakMilestones.weekly - streak} days to weekly streak`;
+    if (streak < streakMilestones.twoWeeks) return `${streakMilestones.twoWeeks - streak} days to two weeks`;
+    if (streak < streakMilestones.monthly) return `${streakMilestones.monthly - streak} days to monthly streak`;
     return 'Legendary streak achieved!';
   }
 
   getStreakIcon(streak: number): string {
-    if (streak >= 30) return '🏆';
-    if (streak >= 14) return '🔥';
-    if (streak >= 7) return '⚡';
-    if (streak >= 3) return '🌟';
+    const { streakMilestones } = DASHBOARD_CONFIG;
+    if (streak >= streakMilestones.monthly) return '🏆';
+    if (streak >= streakMilestones.twoWeeks) return '🔥';
+    if (streak >= streakMilestones.weekly) return '⚡';
+    if (streak >= streakMilestones.first) return '🌟';
     return '📅';
   }
 
-  getGoodHabitsCount(): number {
-    return this.habits().filter(h => h.type === 'good').length;
-  }
-
-  getBadHabitsCount(): number {
-    return this.habits().filter(h => h.type === 'bad').length;
-  }
-
-  getCompletedHabitsToday(): number {
-    const today = new Date();
-    return this.habits().filter(habit => 
-      this.habitsService.isHabitCompletedOnDate(habit.id, today)
-    ).length;
-  }
-
-  // Habit interaction methods
+  // Habit methods
   isHabitCompletedToday(habitId: string): boolean {
     return this.habitsService.isHabitCompletedOnDate(habitId, new Date());
   }
-
-  private lastToggleTime: { [key: string]: number } = {};
 
   toggleHabitToday(habitId: string, event?: Event): void {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
-    
-    // Debounce rapid clicks on the same habit
-    const now = Date.now();
-    if (this.lastToggleTime[habitId] && now - this.lastToggleTime[habitId] < 300) {
-      return;
-    }
-    this.lastToggleTime[habitId] = now;
-    
-    console.log('Toggling habit today:', habitId); // Debug log
-    
-    // Use setTimeout to avoid change detection issues
-    setTimeout(() => {
-      this.habitsService.toggleHabitForDate(habitId, new Date());
-    }, 0);
+
+    this.toggleSubject$.next({ habitId, date: new Date() });
+  }
+
+  isHabitCompletedOnDate(habitId: string, date: Date): boolean {
+    return this.habitsService.isHabitCompletedOnDate(habitId, date);
+  }
+
+  toggleHabitForDate(habitId: string, date: Date): void {
+    this.toggleSubject$.next({ habitId, date });
   }
 
   getCompletionRate(habitId: string): number {
@@ -263,69 +664,41 @@ export class DashboardComponent implements OnInit {
 
   // Weekly statistics
   getWeeklyCompletionRate(): number {
-    const weeklyData = this.getWeeklyData();
-    const totalCompletion = weeklyData.reduce((sum, day) => sum + day.completion, 0);
-    return Math.round(totalCompletion / weeklyData.length);
+    const data = this.weeklyData();
+    const totalCompletion = data.reduce((sum, day) => sum + day.completion, 0);
+    return Math.round(totalCompletion / data.length);
   }
 
   getPerfectDaysThisWeek(): number {
-    return this.getWeeklyData().filter(day => day.completion === 100).length;
+    return this.weeklyData().filter(day => day.completion === 100).length;
   }
 
   getPointsThisWeek(): number {
-    // Calculate points earned in the last 7 days
     let totalPoints = 0;
     const today = new Date();
-    
+    const habitsList = this.habits();
+    const entries = this.habitEntries();
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      
-      this.habits().forEach(habit => {
-        if (this.habitsService.isHabitCompletedOnDate(habit.id, date)) {
-          totalPoints += habit.points || 10;
+
+      habitsList.forEach(habit => {
+        // Ensure points is a number (may come as string from database)
+        const habitPoints = Number(habit.points) || 10;
+        if (this.isCompletedOnDate(entries, habit.id, date)) {
+          totalPoints += habitPoints;
         }
       });
     }
-    
+
     return totalPoints;
   }
 
-  getWeeklyData(): WeeklyData[] {
-    const data: WeeklyData[] = [];
-    const today = new Date();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      
-      const totalHabits = this.habits().length;
-      let completedHabits = 0;
-      
-      if (totalHabits > 0) {
-        completedHabits = this.habits().filter(habit => 
-          this.habitsService.isHabitCompletedOnDate(habit.id, date)
-        ).length;
-      }
-      
-      const completion = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
-      
-      data.push({
-        date: date.toLocaleDateString(),
-        dayName: dayNames[date.getDay()],
-        completion
-      });
-    }
-    
-    return data;
-  }
-
-  // Category methods
-  getUniqueCategories(): string[] {
-    const categories = new Set(this.habits().map(h => h.category || 'other'));
-    return Array.from(categories);
-  }
+  // Category methods - using config functions
+  getCategoryColor = getCategoryColor;
+  getCategoryIcon = getCategoryIcon;
+  getPriorityColor = getPriorityColor;
 
   getHabitsByCategory(category: string) {
     return this.habits().filter(h => (h.category || 'other') === category);
@@ -334,12 +707,12 @@ export class DashboardComponent implements OnInit {
   getCategoryProgress(category: string): number {
     const habitsInCategory = this.getHabitsByCategory(category);
     if (habitsInCategory.length === 0) return 0;
-    
+
     const today = new Date();
-    const completedHabits = habitsInCategory.filter(habit => 
+    const completedHabits = habitsInCategory.filter(habit =>
       this.habitsService.isHabitCompletedOnDate(habit.id, today)
     ).length;
-    
+
     return Math.round((completedHabits / habitsInCategory.length) * 100);
   }
 
@@ -347,16 +720,7 @@ export class DashboardComponent implements OnInit {
     return category.charAt(0).toUpperCase() + category.slice(1);
   }
 
-  getCategoryColor(category: string): string {
-    return this.categoryColors[category] || this.categoryColors['other'];
-  }
-
-  getCategoryIcon(category: string): string {
-    return this.categoryIcons[category] || this.categoryIcons['other'];
-  }
-
   filterByCategory(category: string): void {
-    // Navigate to habits page with category filter
     this.router.navigate(['/habits'], { queryParams: { category } });
   }
 
@@ -364,89 +728,53 @@ export class DashboardComponent implements OnInit {
     return type === 'good' ? '✅' : '🚫';
   }
 
-
-  isHabitCompletedOnDate(habitId: string, date: Date): boolean {
-    return this.habitsService.isHabitCompletedOnDate(habitId, date);
-  }
-
-  toggleHabitForDate(habitId: string, date: Date): void {
-    this.habitsService.toggleHabitForDate(habitId, date);
-  }
-
-  // Weekly table calculation methods
+  // Memoized weekly table methods
   getHabitWeeklyPoints(habitId: string): number {
-    const habit = this.habits().find(h => h.id === habitId);
-    if (!habit) return 0;
-
-    let totalPoints = 0;
-    const schedule = this.weeklySchedule();
-    
-    schedule.forEach(day => {
-      if (this.isHabitCompletedOnDate(habitId, day.fullDate)) {
-        if (habit.type === 'good') {
-          totalPoints += habit.points || 10;
-        } else {
-          totalPoints -= habit.points || 10;
-        }
-      }
-    });
-    
-    return totalPoints;
+    return this.habitWeeklyPointsCache().get(habitId)?.points ?? 0;
   }
 
   getHabitWeeklyCompletions(habitId: string): number {
-    const schedule = this.weeklySchedule();
-    return schedule.filter(day => 
-      this.isHabitCompletedOnDate(habitId, day.fullDate)
-    ).length;
+    return this.habitWeeklyPointsCache().get(habitId)?.completions ?? 0;
   }
 
   getDailyTotalPoints(date: Date): number {
+    // Find matching date in cache
+    const schedule = this.weeklySchedule();
+    const matchingDay = schedule.find(d => isSameDay(d.fullDate, date));
+    if (matchingDay) {
+      return this.dailyPointsCache().get(matchingDay.date) ?? 0;
+    }
+
+    // Fallback: calculate directly
     let totalPoints = 0;
-    
+    const entries = this.habitEntries();
     this.habits().forEach(habit => {
-      if (this.isHabitCompletedOnDate(habit.id, date)) {
+      // Ensure points is a number (may come as string from database)
+      const habitPoints = Number(habit.points) || 10;
+      if (this.isCompletedOnDate(entries, habit.id, date)) {
         if (habit.type === 'good') {
-          totalPoints += habit.points || 10;
+          totalPoints += habitPoints;
         } else {
-          totalPoints -= habit.points || 10;
+          totalPoints -= habitPoints;
         }
       }
     });
-    
     return totalPoints;
   }
 
   getWeeklyTotalPoints(): number {
-    let totalPoints = 0;
-    const schedule = this.weeklySchedule();
-    
-    schedule.forEach(day => {
-      totalPoints += this.getDailyTotalPoints(day.fullDate);
-    });
-    
-    return totalPoints;
-  }
-
-  private isSameDay(date1: Date, date2: Date): boolean {
-    return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
+    return this.weeklyTotalPoints();
   }
 
   // Task management methods
   toggleTask(taskId: string): void {
-    this.tasksService.toggleTask(taskId);
-  }
-
-  getPriorityColor(priority: string): string {
-    const colors = {
-      low: '#10b981',
-      medium: '#f59e0b',
-      high: '#ef4444',
-      urgent: '#dc2626'
-    };
-    return colors[priority as keyof typeof colors] || '#6b7280';
+    try {
+      this.tasksService.toggleTask(taskId);
+      this.toastService.success('Task updated');
+    } catch (error) {
+      console.error('Error toggling task:', error);
+      this.toastService.error('Error', 'Could not update task');
+    }
   }
 
   isTaskOverdue(dueDate: Date | undefined): boolean {
@@ -470,75 +798,24 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Project methods for dashboard - Temporarily disabled
-  /*
-  getProjectTodaysTasks(projectId: string) {
-    const project = this.projects().find(p => p.id === projectId);
-    if (!project) return [];
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    return project.tasks.filter(task => {
-      if (!task.dueDate) return false;
-      const taskDate = new Date(task.dueDate);
-      taskDate.setHours(0, 0, 0, 0);
-      return taskDate >= today && taskDate < tomorrow;
-    });
-  }
-
-  /*
-  getProjectProgress(projectId: string): number {
-    const project = this.projects().find(p => p.id === projectId);
-    if (!project || project.tasks.length === 0) return 0;
-    
-    const completedTasks = project.tasks.filter(task => task.completed).length;
-    return Math.round((completedTasks / project.tasks.length) * 100);
-  }
-
-  getProjectColor(projectId: string): string {
-    const project = this.projects().find(p => p.id === projectId);
-    if (!project) return '#6b7280';
-    
-    const colors = [
-      '#3b82f6', // blue
-      '#10b981', // green
-      '#f59e0b', // amber
-      '#ec4899', // pink
-      '#8b5cf6', // purple
-      '#ef4444', // red
-      '#06b6d4', // cyan
-      '#84cc16'  // lime
-    ];
-    
-    // Use project ID to consistently assign a color
-    const index = project.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-    return colors[index];
-  }
-
-  navigateToProject(projectId: string): void {
-    this.router.navigate(['/projects'], { queryParams: { project: projectId } });
-  }
-  */
-
   // Week navigation methods
   goToPreviousWeek(): void {
-    console.log('Previous week clicked! Current offset:', this.currentWeekOffset());
     this.currentWeekOffset.update(offset => offset - 1);
-    console.log('New offset:', this.currentWeekOffset());
   }
 
   goToNextWeek(): void {
-    console.log('Next week clicked! Current offset:', this.currentWeekOffset());
     this.currentWeekOffset.update(offset => offset + 1);
-    console.log('New offset:', this.currentWeekOffset());
   }
 
   goToCurrentWeek(): void {
-    console.log('Current week clicked!');
     this.currentWeekOffset.set(0);
-    console.log('Reset to offset:', this.currentWeekOffset());
   }
+
+  // Helper for tracking habit selection
+  isHabitSelected(index: number): boolean {
+    return this.selectedHabitIndex() === index;
+  }
+
+  // getLastSyncTimeFormatted() removed along with the status strip it fed.
+  // `sync` itself stays: refreshDashboard() still backs the keyboard shortcut.
 }

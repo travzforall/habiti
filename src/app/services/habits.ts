@@ -1,6 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { BaserowService } from './baserow.service';
-import { Observable, map, of, forkJoin } from 'rxjs';
+import { AuthService } from './auth.service';
+import { SyncBus } from './sync-bus';
+import { UserStorage } from './user-storage';
+import { Observable, ReplaySubject, catchError, map, of, forkJoin, switchMap } from 'rxjs';
 
 export interface WorkoutExercise {
   name: string;
@@ -42,6 +45,8 @@ export interface HabitEntry {
   habitId: string;
   date: string;
   status: string;
+  /** What the habit measures. See TrackingSpec — units come from the habit. */
+  value?: number;
   notes?: string;
   mood?: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
   timeSpent?: number;
@@ -132,6 +137,39 @@ export interface SMTPConfig {
   password: string;
   fromEmail: string;
   toEmail: string;
+}
+
+/**
+ * Local category slug <-> the category NAME in Baserow table 517.
+ *
+ * habits.category_id is a link_row, so writing it needs the category's ROW id —
+ * which differs per environment and must not be hardcoded (the old sync path
+ * hardcoded select-option ids like 2100 and would break the moment someone
+ * edited the field). Matching on name is stable across environments and is
+ * resolved once, lazily, then cached.
+ *
+ * Used in BOTH directions: Baserow returns the category as a lookup showing the
+ * name, so reading maps it back to the slug the UI groups by.
+ */
+export const CATEGORY_SLUG_TO_NAME: Record<string, string> = {
+  health: 'Health & Fitness',
+  productivity: 'Productivity',
+  learning: 'Learning',
+  mindfulness: 'Mindfulness',
+  social: 'Social',
+  creative: 'Creativity',
+  finance: 'Finance',
+  other: 'Other'
+};
+
+const CATEGORY_NAME_TO_SLUG: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_SLUG_TO_NAME).map(([slug, name]) => [name.toLowerCase(), slug])
+);
+
+/** Baserow's category name back to the slug the habits page groups by. */
+export function categorySlugFromName(name: string | undefined | null): string | undefined {
+  if (!name) return undefined;
+  return CATEGORY_NAME_TO_SLUG[name.trim().toLowerCase()] ?? name;
 }
 
 export interface HabitTemplate {
@@ -239,7 +277,7 @@ export class HabitsService {
   
   // Core data
   habits = signal<Habit[]>([]);
-  habitEntries = new Map<string, HabitEntry>();
+  habitEntries = signal<Map<string, HabitEntry>>(new Map());
   nightlyPlans = signal<NightlyPlan[]>([]);
   gameState = signal<GameState>({
     totalPoints: 0,
@@ -253,7 +291,23 @@ export class HabitsService {
     soundEnabled: true
   });
 
-  constructor(private baserowService: BaserowService) {
+  /**
+   * True once habits have been fetched, from Baserow or from the localStorage
+   * fallback.
+   *
+   * `habits().length === 0` is the app's first-run signal, but on its own it
+   * cannot tell "this user has no habits" from "the fetch has not come back
+   * yet". Anything that branches on emptiness — the onboarding wizard deciding
+   * whether to offer starter habits — has to wait for this first.
+   */
+  readonly dataLoaded = signal(false);
+
+  constructor(
+    private baserowService: BaserowService,
+    private authService: AuthService,
+    private syncBus: SyncBus,
+    private userStorage: UserStorage
+  ) {
     // Initialize by loading data from Baserow (ONLY data source)
     this.loadDataFromDatabase();
     // DISABLED: Not using localStorage - only Baserow database
@@ -275,7 +329,11 @@ export class HabitsService {
   achievements: Achievement[] = [
     { id: 'first-habit', name: 'Getting Started', description: 'Create your first habit', icon: '🌱', requirement: (_, habits) => habits.length >= 1 },
     { id: 'streak-7', name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: '🔥', requirement: (gameState) => gameState.longestStreak >= 7 },
-    { id: 'level-5', name: 'Level Up!', description: 'Reach level 5', icon: '⭐', requirement: (gameState) => gameState.level >= 5 },
+    // Retuned from 5 to 10: levels now come from challenges, and a single easy
+    // challenge clears 5, which made this fire immediately and mean nothing.
+    // The id stays 'level-5' on purpose — it is persisted in user_achievements
+    // and renaming it would orphan every existing unlock.
+    { id: 'level-5', name: 'Level Up!', description: 'Reach level 10', icon: '⭐', requirement: (gameState) => gameState.level >= 10 },
     { id: 'points-100', name: 'Century Club', description: 'Earn 100 points', icon: '💯', requirement: (gameState) => gameState.totalPoints >= 100 },
     { id: 'habit-master', name: 'Habit Master', description: 'Have 10 active habits', icon: '👑', requirement: (_, habits) => habits.length >= 10 }
   ];
@@ -527,7 +585,12 @@ export class HabitsService {
 
   // Utility Methods
   formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Use local date components to avoid timezone issues
+    // toISOString() converts to UTC which can shift the date
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   getTodayDateString(): string {
@@ -548,14 +611,14 @@ export class HabitsService {
 
     currentHabits.forEach(habit => {
       let newId = habit.id;
-      
+
       // If ID is already seen, generate a new one
       if (seenIds.has(habit.id)) {
         newId = this.generateUniqueId();
         idMapping[habit.id] = newId;
         console.log(`Fixing duplicate ID: ${habit.id} -> ${newId} for habit: ${habit.name}`);
       }
-      
+
       seenIds.add(newId);
       updatedHabits.push({ ...habit, id: newId });
     });
@@ -563,14 +626,14 @@ export class HabitsService {
     // Update habit entries with new IDs
     if (Object.keys(idMapping).length > 0) {
       const newEntries = new Map<string, HabitEntry>();
-      this.habitEntries.forEach((entry, key) => {
+      this.habitEntries().forEach((entry, key) => {
         const [habitId, date] = key.split('-');
         const newHabitId = idMapping[habitId] || habitId;
         const newKey = `${newHabitId}-${date}`;
         newEntries.set(newKey, { ...entry, habitId: newHabitId });
       });
-      this.habitEntries = newEntries;
-      
+      this.habitEntries.set(newEntries);
+
       this.habits.set(updatedHabits);
       this.saveData();
       console.log('Fixed duplicate habit IDs');
@@ -578,7 +641,44 @@ export class HabitsService {
   }
 
   addHabit(habit: Partial<Habit>): void {
-    const newHabit: Habit = {
+    this.addHabits([habit]);
+  }
+
+  /**
+   * Adds one or more habits, locally first and then to Baserow.
+   *
+   * Creation used to write localStorage ONLY — syncHabitToDatabase() existed
+   * with zero callers, exactly as syncEntryToDatabase() did. A habit added on
+   * one device was invisible on every other and gone with the site data.
+   * Applying a template pack would have created ten of those at once.
+   *
+   * Local-first so the list repaints instantly; a failed write leaves the habit
+   * on screen rather than yanking it away, and the next sync reconciles.
+   */
+  addHabits(drafts: Partial<Habit>[]): Observable<Habit[]> {
+    const done = new ReplaySubject<Habit[]>(1);
+
+    if (drafts.length === 0) {
+      done.next([]);
+      done.complete();
+      return done.asObservable();
+    }
+
+    const created = drafts.map(habit => this.toNewHabit(habit));
+
+    this.habits.update(habits => [...habits, ...created]);
+    this.saveData();
+    // Emits only once persistence settles, carrying the FINAL ids. A caller
+    // that binds these to a challenge must not capture the temporary local id —
+    // it is replaced by Baserow's row id moments later, and the binding would
+    // silently point at nothing.
+    this.persistNewHabits(created, done);
+
+    return done.asObservable();
+  }
+
+  private toNewHabit(habit: Partial<Habit>): Habit {
+    return {
       id: this.generateUniqueId(),
       name: habit.name || '',
       type: habit.type || 'good',
@@ -589,6 +689,8 @@ export class HabitsService {
       goal: habit.goal || 30,
       reward: habit.reward || '',
       category: habit.category || 'other',
+      trackingUnit: habit.trackingUnit,
+      targetValue: habit.targetValue,
       icon: habit.icon || '✅',
       description: habit.description || '',
       isActive: true,
@@ -596,9 +698,115 @@ export class HabitsService {
       frequency: 'daily',
       targetDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     };
+  }
 
-    this.habits.update(habits => [...habits, newHabit]);
-    this.saveData();
+  /** Cached slug -> Baserow category row id. Resolved once per session. */
+  private categoryIdCache: Map<string, number> | null = null;
+
+  private categoryRowIds(): Observable<Map<string, number>> {
+    if (this.categoryIdCache) return of(this.categoryIdCache);
+
+    return this.baserowService.getHabitCategories().pipe(
+      map((response: any) => {
+        const byName = new Map<string, number>();
+        for (const row of response?.results ?? []) {
+          if (row?.name) byName.set(String(row.name).trim().toLowerCase(), row.id);
+        }
+
+        const bySlug = new Map<string, number>();
+        for (const [slug, name] of Object.entries(CATEGORY_SLUG_TO_NAME)) {
+          const id = byName.get(name.toLowerCase());
+          if (id) bySlug.set(slug, id);
+        }
+
+        this.categoryIdCache = bySlug;
+        return bySlug;
+      }),
+      catchError(() => {
+        // Categories unavailable: still save the habits, uncategorised.
+        console.warn('HabitsService: could not resolve habit categories.');
+        return of(new Map<string, number>());
+      })
+    );
+  }
+
+  /**
+   * One batch request rather than N creates — adding a pack of ten habits
+   * should not be ten round trips.
+   *
+   * Single-selects are sent as their VALUE ('good', 'medium'), not the option
+   * id. The old sync path hardcoded numeric ids like 2100, which break silently
+   * the day someone edits that field's options in Baserow.
+   */
+  private persistNewHabits(habits: Habit[], done?: ReplaySubject<Habit[]>): void {
+    const settle = (final: Habit[]) => {
+      done?.next(final);
+      done?.complete();
+    };
+
+    const userId = this.currentUserId();
+    if (!userId) {
+      settle(habits);
+      return;
+    }
+
+    this.categoryRowIds()
+      .pipe(
+        switchMap(categoryIds => {
+          const rows = habits.map(habit => {
+            const categoryRowId = habit.category ? categoryIds.get(habit.category) : undefined;
+            return {
+              name: habit.name,
+              type: habit.type,
+              difficulty: habit.difficulty,
+              points: habit.points,
+              goal: habit.goal,
+              reward: habit.reward ?? '',
+              description: habit.description ?? '',
+              icon: habit.icon,
+              frequency: 'daily',
+              is_active: true,
+              streak: 0,
+              best_streak: 0,
+              user_id: userId,
+              // link_row: an array of row ids. Omitted rather than sent empty
+              // when unresolvable, so the habit still saves — it just lands
+              // under Uncategorized instead of failing the whole batch.
+              ...(categoryRowId ? { category_id: [categoryRowId] } : {})
+            };
+          });
+
+          return this.baserowService.batchCreateRows<{ id: number }>(
+            this.baserowService.tables.habits,
+            rows
+          );
+        })
+      )
+      .subscribe({
+        next: response => {
+          // Adopt Baserow's row ids: entries link to a habit by id, so a local
+          // id that never reaches the server would orphan every check-in.
+          const ids = (response?.items ?? []).map(item => item.id);
+          let final = habits;
+
+          if (ids.length === habits.length) {
+            const remap = new Map(habits.map((habit, i) => [habit.id, String(ids[i])]));
+            this.habits.update(list =>
+              list.map(h => (remap.has(h.id) ? { ...h, id: remap.get(h.id)! } : h))
+            );
+            this.saveData();
+            final = habits.map((habit, i) => ({ ...habit, id: String(ids[i]) }));
+          }
+
+          this.syncBus.touched('habits');
+          settle(final);
+        },
+        error: err => {
+          console.warn('HabitsService: habits not persisted.', err);
+          // The habits are on screen either way; the caller should still hear.
+          settle(habits);
+        }
+      });
   }
 
   removeHabit(habitId: string): void {
@@ -606,28 +814,147 @@ export class HabitsService {
     this.saveData();
   }
 
-  updateEntry(habitId: string, date: string, status: string): void {
+  /**
+   * Records a habit-day.
+   *
+   * `value` is what the habit actually measures — the time you woke, the
+   * glasses you drank, the weight on the bar. A tick alone hides whether the
+   * habit is getting better or quietly sliding: you can hold a 30-day streak
+   * while your wake time drifts by two hours.
+   */
+  /**
+   * Changes the target for one of the user's habits.
+   *
+   * Only the number is editable — the KIND of measurement (a clock time, a
+   * weight, a count) is a property of the habit itself, but "before 07:00" is
+   * a personal choice and a bad universal default.
+   */
+  setHabitTarget(habitId: string, target: number | undefined): void {
+    this.habits.update(list =>
+      list.map(h => (h.id === habitId ? { ...h, targetValue: target } : h))
+    );
+    this.saveData();
+
+    const numericId = Number(habitId);
+    if (!Number.isFinite(numericId)) return;
+
+    this.baserowService
+      .updateHabit(numericId, { target_value: target ?? null })
+      .subscribe({
+        next: () => this.syncBus.touched('habits'),
+        error: err => console.warn('HabitsService: target not persisted.', err)
+      });
+  }
+
+  /** Marks a habit done on a PAST day, with its value. Used to backfill. */
+  completeHabitOnDate(habitId: string, date: Date, value: number | undefined): void {
+    this.updateEntry(habitId, this.formatDate(date), 'completed', value);
+  }
+
+  /** Today's (or any day's) entry, if there is one. */
+  getEntryForDate(habitId: string, date: Date): HabitEntry | undefined {
+    return this.habitEntries().get(this.getHabitEntryKey(habitId, date));
+  }
+
+  /**
+   * Marks a habit done and records what it measured.
+   *
+   * Separate from toggleHabit() because a value only makes sense when
+   * completing — un-checking removes the entry, and there is nothing to record.
+   */
+  completeHabitWithValue(habitId: string, value: number | undefined): void {
+    this.updateEntry(habitId, this.formatDate(new Date()), 'completed', value);
+  }
+
+  updateEntry(habitId: string, date: string, status: string, value?: number): void {
     const key = `${habitId}-${date}`;
     const entry: HabitEntry = {
       habitId,
       date,
       status,
+      value,
       completedAt: new Date().toISOString()
     };
-    
-    this.habitEntries.set(key, entry);
+
+    // Create new Map to trigger signal update
+    const newEntries = new Map(this.habitEntries());
+    newEntries.set(key, entry);
+    this.habitEntries.set(newEntries);
+
     this.updateStreaksAndPoints();
     this.saveData();
+
+    // Local state first so the tick is instant, then persist. Until this
+    // existed, saveData() wrote five localStorage keys and nothing else —
+    // habit history never left the browser, so clearing site data lost it and
+    // a second device saw nothing.
+    this.persistEntry(entry);
+  }
+
+  /**
+   * Writes one habit-day to Baserow.
+   *
+   * Failure is non-fatal: the local signal already has the entry, so the UI is
+   * correct and the next successful write or reload reconciles. Same shape as
+   * LevelService.award() — never lose a user action to a flaky network.
+   */
+  /** Reloads habits, entries and game state from Baserow. */
+  refresh(): Observable<void> {
+    return new Observable<void>(observer => {
+      this.loadDataFromDatabase();
+      observer.next();
+      observer.complete();
+    });
+  }
+
+  reset(): void {
+    this.habits.set([]);
+    this.habitEntries.set(new Map());
+    this.gameState.update(s => ({ ...s, totalPoints: 0, dailyStreak: 0, longestStreak: 0 }));
+    // The next user's habits have not been fetched yet, and an empty list from
+    // the previous user must not read as "this one is brand new".
+    this.dataLoaded.set(false);
+  }
+
+  private persistEntry(entry: HabitEntry): void {
+    const userId = this.currentUserId();
+    if (!userId) return;
+
+    this.baserowService
+      .upsertHabitEntry({
+        habit_id: entry.habitId,
+        user_id: userId,
+        date: entry.date,
+        status: entry.status,
+        completed_at: entry.completedAt ?? null,
+        notes: entry.notes ?? '',
+        value: entry.value ?? entry.timeSpent ?? null
+      })
+      .subscribe({
+        next: () => this.syncBus.touched('habits'),
+        error: err => console.warn('HabitsService: habit entry not persisted.', err)
+      });
+  }
+
+  /**
+   * The signed-in user's id.
+   *
+   * NOT localStorage['userId'] — nothing in the app ever writes that key, so
+   * reading it would file every user's data under 'default'.
+   */
+  private currentUserId(): string | null {
+    const id = this.authService.currentUserValue?.id;
+    return id !== undefined && id !== null ? String(id) : null;
   }
 
   getEntryStatus(habitId: string, date: string): string {
     const key = `${habitId}-${date}`;
-    return this.habitEntries.get(key)?.status || 'not-started';
+    return this.habitEntries().get(key)?.status || 'not-started';
   }
 
   getHabitEntries(habitId: string): HabitEntry[] {
     const entries: HabitEntry[] = [];
-    this.habitEntries.forEach((entry, key) => {
+    this.habitEntries().forEach((entry, key) => {
       if (key.startsWith(`${habitId}-`)) {
         entries.push(entry);
       }
@@ -734,9 +1061,25 @@ export class HabitsService {
     this.gameState.update(state => ({
       ...state,
       totalPoints,
-      longestStreak: Math.max(currentGameState.longestStreak, maxStreak),
-      level: Math.floor(totalPoints / 100) + 1
+      // dailyStreak is the user's current best run across habits. It was never
+      // assigned here, so the dashboard streak tile and the avatar status both
+      // always read 0.
+      dailyStreak: maxStreak,
+      longestStreak: Math.max(currentGameState.longestStreak, maxStreak)
+      // `level` is deliberately absent. It is owned by LevelService and summed
+      // from the append-only level ledger, so it is earned and permanent.
+      // Points are volatile — they are recomputed from current completion
+      // rates on every call — and must never move the level again. The spread
+      // above preserves whatever LevelService last pushed via setLevel().
     }));
+  }
+
+  /**
+   * Written only by LevelService. Habits never compute level.
+   * Kept narrow on purpose so the dependency stays one-way.
+   */
+  setLevel(level: number): void {
+    this.gameState.update(state => (state.level === level ? state : { ...state, level }));
   }
 
   calculateStreak(habitId: string): number {
@@ -777,36 +1120,36 @@ export class HabitsService {
 
   // Data persistence
   private saveData(): void {
-    localStorage.setItem('habiti-habits', JSON.stringify(this.habits()));
-    localStorage.setItem('habiti-entries', JSON.stringify(Array.from(this.habitEntries.entries())));
-    localStorage.setItem('habiti-gamestate', JSON.stringify(this.gameState()));
-    localStorage.setItem('habiti-smtp', JSON.stringify(this.smtpConfig));
-    localStorage.setItem('habiti-nightly-plans', JSON.stringify(this.nightlyPlans()));
+    this.userStorage.writeRaw('habiti-habits', JSON.stringify(this.habits()));
+    this.userStorage.writeRaw('habiti-entries', JSON.stringify(Array.from(this.habitEntries().entries())));
+    this.userStorage.writeRaw('habiti-gamestate', JSON.stringify(this.gameState()));
+    this.userStorage.writeRaw('habiti-smtp', JSON.stringify(this.smtpConfig));
+    this.userStorage.writeRaw('habiti-nightly-plans', JSON.stringify(this.nightlyPlans()));
   }
 
   private loadData(): void {
     try {
-      const habitsData = localStorage.getItem('habiti-habits');
+      const habitsData = this.userStorage.readRaw('habiti-habits');
       if (habitsData) {
         this.habits.set(JSON.parse(habitsData));
       }
 
-      const entriesData = localStorage.getItem('habiti-entries');
+      const entriesData = this.userStorage.readRaw('habiti-entries');
       if (entriesData) {
-        this.habitEntries = new Map(JSON.parse(entriesData));
+        this.habitEntries.set(new Map(JSON.parse(entriesData)));
       }
 
-      const gameStateData = localStorage.getItem('habiti-gamestate');
+      const gameStateData = this.userStorage.readRaw('habiti-gamestate');
       if (gameStateData) {
         this.gameState.set(JSON.parse(gameStateData));
       }
 
-      const smtpData = localStorage.getItem('habiti-smtp');
+      const smtpData = this.userStorage.readRaw('habiti-smtp');
       if (smtpData) {
         this.smtpConfig = JSON.parse(smtpData);
       }
 
-      const nightlyPlansData = localStorage.getItem('habiti-nightly-plans');
+      const nightlyPlansData = this.userStorage.readRaw('habiti-nightly-plans');
       if (nightlyPlansData) {
         this.nightlyPlans.set(JSON.parse(nightlyPlansData));
       }
@@ -1204,7 +1547,7 @@ export class HabitsService {
   exportData(): void {
     const data = {
       habits: this.habits(),
-      habitEntries: Array.from(this.habitEntries.entries()),
+      habitEntries: Array.from(this.habitEntries().entries()),
       gameState: this.gameState(),
       smtpConfig: this.smtpConfig,
       exportDate: new Date().toISOString()
@@ -1225,7 +1568,7 @@ export class HabitsService {
       const data = JSON.parse(text);
       
       if (data.habits) this.habits.set(data.habits);
-      if (data.habitEntries) this.habitEntries = new Map(data.habitEntries);
+      if (data.habitEntries) this.habitEntries.set(new Map(data.habitEntries));
       if (data.gameState) this.gameState.set(data.gameState);
       if (data.smtpConfig) this.smtpConfig = data.smtpConfig;
       
@@ -1333,49 +1676,65 @@ export class HabitsService {
   // Proof documentation methods
   addHabitProof(habitId: string, date: Date, proof: { imageUrl?: string; note?: string }): void {
     const key = this.getHabitEntryKey(habitId, date);
-    const entry = this.habitEntries.get(key);
-    
+    const currentEntries = this.habitEntries();
+    const entry = currentEntries.get(key);
+
     if (entry) {
-      entry.proof = {
-        ...entry.proof,
-        ...proof,
-        uploadedAt: new Date().toISOString()
+      const updatedEntry = {
+        ...entry,
+        proof: {
+          ...entry.proof,
+          ...proof,
+          uploadedAt: new Date().toISOString()
+        }
       };
-      this.habitEntries.set(key, entry);
+      const newEntries = new Map(currentEntries);
+      newEntries.set(key, updatedEntry);
+      this.habitEntries.set(newEntries);
       this.saveData();
     }
   }
 
   getHabitProof(habitId: string, date: Date): { imageUrl?: string; note?: string } | undefined {
     const key = this.getHabitEntryKey(habitId, date);
-    const entry = this.habitEntries.get(key);
+    const entry = this.habitEntries().get(key);
     return entry?.proof;
   }
 
   removeHabitProofImage(habitId: string, date: Date): void {
     const key = this.getHabitEntryKey(habitId, date);
-    const entry = this.habitEntries.get(key);
-    
+    const currentEntries = this.habitEntries();
+    const entry = currentEntries.get(key);
+
     if (entry?.proof) {
-      delete entry.proof.imageUrl;
-      if (!entry.proof.note) {
-        delete entry.proof;
-      }
-      this.habitEntries.set(key, entry);
+      const updatedProof = { ...entry.proof };
+      delete updatedProof.imageUrl;
+      const updatedEntry = {
+        ...entry,
+        proof: updatedProof.note ? updatedProof : undefined
+      };
+      const newEntries = new Map(currentEntries);
+      newEntries.set(key, updatedEntry);
+      this.habitEntries.set(newEntries);
       this.saveData();
     }
   }
 
   removeHabitProofNote(habitId: string, date: Date): void {
     const key = this.getHabitEntryKey(habitId, date);
-    const entry = this.habitEntries.get(key);
-    
+    const currentEntries = this.habitEntries();
+    const entry = currentEntries.get(key);
+
     if (entry?.proof) {
-      delete entry.proof.note;
-      if (!entry.proof.imageUrl) {
-        delete entry.proof;
-      }
-      this.habitEntries.set(key, entry);
+      const updatedProof = { ...entry.proof };
+      delete updatedProof.note;
+      const updatedEntry = {
+        ...entry,
+        proof: updatedProof.imageUrl ? updatedProof : undefined
+      };
+      const newEntries = new Map(currentEntries);
+      newEntries.set(key, updatedEntry);
+      this.habitEntries.set(newEntries);
       this.saveData();
     }
   }
@@ -1383,8 +1742,11 @@ export class HabitsService {
   // Database integration methods
   
   loadDataFromDatabase(): void {
-    // Load habits from Baserow
-    this.baserowService.getHabits(undefined, true).subscribe({
+    // Scoped to the signed-in user. This passed `undefined` before, so every
+    // user loaded every habit in the table.
+    const userId = this.currentUserId();
+
+    this.baserowService.getHabits(userId ?? undefined, true).subscribe({
       next: (response) => {
         console.log('🔍 RAW Baserow Response:', JSON.stringify(response, null, 2));
         if (response.results) {
@@ -1395,26 +1757,30 @@ export class HabitsService {
         } else {
           console.warn('⚠️ No results in Baserow response');
         }
+        this.dataLoaded.set(true);
       },
       error: (error) => {
         console.error('❌ Failed to load habits from Baserow:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
         // Fall back to local storage
         this.loadData();
+        this.dataLoaded.set(true);
       }
     });
 
     // Load habit entries
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    this.baserowService.getHabitEntries(undefined, undefined, thirtyDaysAgo.toISOString(), today.toISOString()).subscribe({
+    this.baserowService.getHabitEntries(undefined, userId ?? undefined, thirtyDaysAgo.toISOString(), today.toISOString()).subscribe({
       next: (response) => {
         if (response.results) {
+          const newEntries = new Map(this.habitEntries());
           response.results.forEach((entry: any) => {
             const habitEntry = this.transformBaserowEntryToLocal(entry);
             const key = this.getHabitEntryKey(habitEntry.habitId, new Date(habitEntry.date));
-            this.habitEntries.set(key, habitEntry);
+            newEntries.set(key, habitEntry);
           });
+          this.habitEntries.set(newEntries);
           console.log('Loaded habit entries from Baserow:', response.results.length);
         }
       },
@@ -1424,22 +1790,29 @@ export class HabitsService {
     });
 
     // Load game state
-    const userId = localStorage.getItem('userId') || 'default';
-    this.baserowService.getGameState(userId).subscribe({
+    this.baserowService.getGameState(userId ?? 'default').subscribe({
       next: (response) => {
         if (response.results && response.results.length > 0) {
           const gameStateData = response.results[0];
-          this.gameState.set({
+
+          /**
+           * Merge, do not replace.
+           *
+           * This used to `set()` a whole new object with `theme: 'auto'`,
+           * `weekStartsOn: 'monday'`, `notificationsEnabled: true` and
+           * `soundEnabled: true` hardcoded — so every load silently discarded
+           * whatever the user had chosen. The Baserow game_state row carries
+           * only points, level and streaks (see getGameState/updateGameState),
+           * so those four fields have no server value to restore and must be
+           * carried over from what is already in memory.
+           */
+          this.gameState.update(state => ({
+            ...state,
             totalPoints: gameStateData.total_points || 0,
             level: gameStateData.level || 1,
-            achievements: [],
-            dailyStreak: gameStateData.current_streak || 0,
-            longestStreak: gameStateData.best_streak || 0,
-            theme: 'auto',
-            weekStartsOn: 'monday',
-            notificationsEnabled: true,
-            soundEnabled: true
-          });
+            dailyStreak: gameStateData.daily_streak ?? gameStateData.current_streak ?? 0,
+            longestStreak: gameStateData.longest_streak ?? gameStateData.best_streak ?? 0
+          }));
           console.log('Loaded game state from Baserow');
         }
       },
@@ -1451,11 +1824,12 @@ export class HabitsService {
 
   transformBaserowHabitToLocal(baserowHabit: any): Habit {
     console.log('🔄 Transforming Baserow habit:', baserowHabit);
+    console.log('🔄 Type field value:', baserowHabit.type, 'typeof:', typeof baserowHabit.type);
 
     return {
       id: baserowHabit.id.toString(),
       name: baserowHabit.name || '',
-      type: baserowHabit.type === 2100 ? 'good' : 'bad',
+      type: this.mapHabitType(baserowHabit.type),
       difficulty: this.mapDifficulty(baserowHabit.difficulty),
       streak: baserowHabit.streak || 0,
       bestStreak: baserowHabit.best_streak || 0,
@@ -1469,9 +1843,14 @@ export class HabitsService {
       frequency: this.mapFrequency(baserowHabit.frequency),
       trackingType: this.mapTrackingType(baserowHabit.tracking_type),
       trackingUnit: this.mapTrackingUnit(baserowHabit.tracking_unit),
-      targetValue: baserowHabit.target_value || 1,
+      // `|| 1` here turned "no target" into a target of 1, which then read as
+      // a real user choice. Undefined means "use the library default".
+      targetValue:
+        baserowHabit.target_value != null && baserowHabit.target_value !== ''
+          ? Number(baserowHabit.target_value)
+          : undefined,
       // Lookup fields for category hierarchy
-      category: baserowHabit.category?.[0]?.value || undefined,
+      category: categorySlugFromName(baserowHabit.category?.[0]?.value),
       subcategory: baserowHabit.subcategory?.[0]?.value || undefined,
       group: baserowHabit.group || undefined,
       targetDays: baserowHabit.target_days || undefined
@@ -1485,12 +1864,59 @@ export class HabitsService {
       status: baserowEntry.completed ? 'completed' : 'not-started',
       notes: baserowEntry.notes || '',
       mood: this.mapMood(baserowEntry.mood_after),
+      // Both: `value` is the tracked measurement, `timeSpent` is the legacy
+      // name several older screens still read.
+      value: baserowEntry.value != null ? Number(baserowEntry.value) : undefined,
       timeSpent: baserowEntry.value || 0,
       completedAt: baserowEntry.created_at
     };
   }
 
-  mapDifficulty(value: number): 'easy' | 'medium' | 'hard' {
+  mapHabitType(value: any): 'good' | 'bad' {
+    // Handle various Baserow return formats for single_select fields
+    if (!value) return 'good'; // Default to good if no value
+
+    // If it's a string, check directly
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'bad' ? 'bad' : 'good';
+    }
+
+    // If it's an object with a 'value' property (Baserow single_select format)
+    if (typeof value === 'object' && value.value) {
+      return value.value.toLowerCase() === 'bad' ? 'bad' : 'good';
+    }
+
+    // If it's a number (Baserow option ID), 2100 = good, 2101 = bad
+    if (typeof value === 'number') {
+      return value === 2100 ? 'good' : 'bad';
+    }
+
+    // If it's an object with an 'id' property
+    if (typeof value === 'object' && value.id) {
+      return value.id === 2100 ? 'good' : 'bad';
+    }
+
+    return 'good'; // Default fallback
+  }
+
+  mapDifficulty(value: any): 'easy' | 'medium' | 'hard' {
+    // Handle string values
+    if (typeof value === 'string') {
+      const lower = value.toLowerCase();
+      if (lower === 'easy') return 'easy';
+      if (lower === 'hard') return 'hard';
+      return 'medium';
+    }
+
+    // Handle object with value property (Baserow single_select format)
+    if (typeof value === 'object' && value?.value) {
+      const lower = value.value.toLowerCase();
+      if (lower === 'easy') return 'easy';
+      if (lower === 'hard') return 'hard';
+      return 'medium';
+    }
+
+    // Handle numeric IDs
     switch (value) {
       case 2102: return 'easy';
       case 2104: return 'medium';

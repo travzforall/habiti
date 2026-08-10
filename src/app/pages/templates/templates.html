@@ -1,22 +1,262 @@
-<div class="space-y-8">
+<!--
+  Two ways in: curated packs for people who want a starting point, and the full
+  library for people who know what they are after. Search spans both.
+-->
+<div class="space-y-6">
   <div class="text-center">
-    <h1 class="text-3xl font-bold text-base-content mb-4">📋 Habit Templates</h1>
-    <p class="text-base-content/70">Choose from pre-built habit templates to get started quickly</p>
+    <h1 class="text-3xl font-bold text-slate-800 mb-2">📋 Habit Library</h1>
+    <p class="text-slate-500">
+      Start from a proven set, or browse everything by category.
+    </p>
   </div>
-  
-  <!-- Template cards to enable scrolling -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="bg-base-100 p-6 rounded-lg shadow-md border border-base-300" *ngFor="let template of [
-      'Morning Routine', 'Exercise & Fitness', 'Learning & Education', 'Mindfulness & Meditation',
-      'Productivity', 'Health & Nutrition', 'Sleep Hygiene', 'Social Connections',
-      'Creative Pursuits', 'Financial Wellness', 'Environmental Care', 'Self-Care'
-    ]">
-      <h3 class="text-lg font-semibold mb-3">{{ template }}</h3>
-      <p class="text-base-content/70 mb-4">Pre-configured habits for {{ template.toLowerCase() }} goals</p>
-      <div class="flex justify-between items-center">
-        <span class="text-sm text-base-content/60">5-8 habits included</span>
-        <button class="btn btn-primary btn-sm">Use Template</button>
-      </div>
+
+  <!-- Tabs -->
+  <div class="flex justify-center">
+    <div class="inline-flex bg-slate-100 rounded-xl p-1">
+      <button
+        (click)="tab.set('packs')"
+        class="px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+        [class]="tab() === 'packs' ? 'bg-white shadow text-slate-800' : 'text-slate-500'"
+      >
+        Starter packs
+      </button>
+      <button
+        (click)="tab.set('browse')"
+        class="px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+        [class]="tab() === 'browse' ? 'bg-white shadow text-slate-800' : 'text-slate-500'"
+      >
+        Browse all
+      </button>
     </div>
   </div>
+
+  <div class="max-w-md mx-auto">
+    <input
+      type="search"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+      [placeholder]="tab() === 'packs' ? 'Search packs…' : 'Search every habit…'"
+      class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+    />
+  </div>
+
+  <!-- ---------------------------------------------------------------- Packs -->
+  @if (tab() === 'packs') {
+    @if (visiblePacks().length === 0) {
+      <div class="text-center py-16">
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="text-slate-500">Nothing matches "{{ query() }}".</p>
+      </div>
+    }
+
+    <!-- data-tour: app guide step 6. See src/app/config/app-tour.steps.ts. -->
+    <div data-tour="template-packs" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      @for (pack of visiblePacks(); track pack.id) {
+        <div
+          class="bg-white rounded-2xl shadow-md hover:shadow-xl border border-slate-100 overflow-hidden flex flex-col transition-shadow"
+        >
+          <div class="bg-gradient-to-r {{ pack.accent }} px-5 py-4 text-white">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">{{ pack.icon }}</span>
+              <h3 class="text-lg font-bold">{{ pack.name }}</h3>
+            </div>
+          </div>
+
+          <div class="p-5 flex-1 flex flex-col">
+            <p class="text-sm text-slate-600 mb-4">{{ pack.description }}</p>
+
+            <ul class="space-y-1.5 mb-4 flex-1">
+              @for (habit of pack.habits.slice(0, 4); track habit.id) {
+                <li class="flex items-center gap-2 text-sm text-slate-600">
+                  <span>{{ habit.icon }}</span>
+                  <span class="truncate">{{ habit.name }}</span>
+                  @if (alreadyHas(habit.name)) {
+                    <span class="ml-auto text-[10px] font-bold uppercase text-slate-400">Added</span>
+                  }
+                </li>
+              }
+              @if (pack.habits.length > 4) {
+                <li class="text-xs text-slate-400 pl-6">+{{ pack.habits.length - 4 }} more</li>
+              }
+            </ul>
+
+            <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <span class="text-xs text-slate-500">
+                {{ remainingCount(pack) }} of {{ pack.habits.length }} new
+              </span>
+              <button
+                (click)="open(pack)"
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+              >
+                Use Template
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- --------------------------------------------------------------- Browse -->
+  @if (tab() === 'browse') {
+    <!-- Search overrides the drill-down: people searching want results, not navigation. -->
+    @if (!query().trim() && !openCategory()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        @for (section of library; track section.category.id) {
+          <button
+            (click)="openCategoryView(section.category)"
+            class="text-left bg-white rounded-2xl shadow-md hover:shadow-xl border border-slate-100 overflow-hidden transition-shadow"
+          >
+            <div class="bg-gradient-to-r {{ section.category.accent }} px-5 py-4 text-white">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">{{ section.category.icon }}</span>
+                <div class="min-w-0">
+                  <h3 class="text-lg font-bold truncate">{{ section.category.name }}</h3>
+                  <p class="text-xs text-white/80">{{ section.habits.length }} habits</p>
+                </div>
+              </div>
+            </div>
+            <div class="p-5">
+              <p class="text-sm text-slate-600 mb-3">{{ section.category.description }}</p>
+              <div class="flex flex-wrap gap-1.5">
+                @for (sub of section.category.subcategories; track sub.id) {
+                  <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs">
+                    {{ sub.icon }} {{ sub.name }}
+                  </span>
+                }
+              </div>
+            </div>
+          </button>
+        }
+      </div>
+    }
+
+    @if (!query().trim() && openCategory(); as category) {
+      <div class="space-y-4">
+        <button
+          (click)="backToCategories()"
+          class="text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          ← All categories
+        </button>
+
+        <div class="bg-gradient-to-r {{ category.accent }} rounded-2xl px-5 py-4 text-white">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">{{ category.icon }}</span>
+            <div>
+              <h2 class="text-xl font-bold">{{ category.name }}</h2>
+              <p class="text-sm text-white/85">{{ category.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subcategory filter -->
+        <div class="flex flex-wrap gap-2">
+          <button
+            (click)="openSubcategory.set(null)"
+            class="px-3 py-1.5 rounded-xl text-sm font-medium transition-colors"
+            [class]="
+              openSubcategory() === null
+                ? 'bg-blue-500 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            "
+          >
+            All ({{ countIn(category) }})
+          </button>
+          @for (sub of category.subcategories; track sub.id) {
+            <button
+              (click)="toggleSubcategory(sub)"
+              [title]="sub.description"
+              class="px-3 py-1.5 rounded-xl text-sm font-medium transition-colors"
+              [class]="
+                openSubcategory() === sub.id
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              "
+            >
+              {{ sub.icon }} {{ sub.name }} ({{ countIn(category, sub.id) }})
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (query().trim()) {
+      <p class="text-sm text-slate-500 text-center">
+        {{ visibleHabits().length }} habit{{ visibleHabits().length === 1 ? '' : 's' }} matching
+        "{{ query() }}"
+      </p>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      @for (habit of visibleHabits(); track habit.id) {
+        @let added = alreadyHas(habit.name);
+        <div
+          class="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3"
+          [class.opacity-70]="added"
+        >
+          <span class="text-2xl leading-none shrink-0">{{ habit.icon }}</span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="font-semibold text-slate-800">{{ habit.name }}</h4>
+              @if (habit.type === 'bad') {
+                <span
+                  class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold uppercase"
+                >
+                  Break
+                </span>
+              }
+              @if (added) {
+                <span
+                  class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold uppercase"
+                >
+                  Added
+                </span>
+              }
+            </div>
+            <p class="text-sm text-slate-500 mt-0.5">{{ habit.description }}</p>
+            <div class="flex items-center gap-3 mt-1.5 text-xs text-slate-400 flex-wrap">
+              <span>{{ habit.difficulty }}</span>
+              <span>⚡ {{ habit.points }} pts</span>
+              @if (habit.unit) {
+                <span>{{ habit.goal }} {{ habit.unit }}</span>
+              }
+              @if (showsGuidance(habit)) {
+                <button
+                  (click)="guidanceFor.set(habit)"
+                  class="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  How to do it
+                </button>
+              }
+            </div>
+          </div>
+          <button
+            (click)="addOne(habit)"
+            [disabled]="added"
+            class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ added ? 'Added' : 'Add' }}
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (query().trim() && visibleHabits().length === 0) {
+      <div class="text-center py-16">
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="text-slate-500">No habit matches "{{ query() }}".</p>
+      </div>
+    }
+  }
 </div>
+
+<app-template-picker
+  [pack]="selectedPack()"
+  (close)="selectedPack.set(null)"
+></app-template-picker>
+
+<app-habit-guidance
+  [habit]="guidanceFor()"
+  (close)="guidanceFor.set(null)"
+></app-habit-guidance>

@@ -17,7 +17,8 @@
   </div>
 
   <!-- Add New Habit Form -->
-  <div class="card bg-white shadow-2xl mb-8 border border-slate-200 rounded-2xl overflow-hidden">
+  <!-- data-tour: app guide step 5. See src/app/config/app-tour.steps.ts. -->
+  <div data-tour="add-habit" class="card bg-white shadow-2xl mb-8 border border-slate-200 rounded-2xl overflow-hidden">
     <div class="card-body p-8">
       <div class="flex items-center gap-3 mb-6">
         <div class="p-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg">
@@ -195,6 +196,47 @@
     </div>
   </div>
 
+  <!--
+    Start from a template.
+
+    Also reachable at /templates, but someone staring at an empty habits list
+    should not have to know that page exists — this is where the need appears.
+  -->
+  <div class="card bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
+    <div class="card-body p-6">
+      <div class="flex items-center justify-between gap-4 mb-1">
+        <h2 class="card-title">
+          <span class="text-2xl">✨</span>
+          Start from a template
+        </h2>
+        <a routerLink="/templates" class="text-sm font-medium text-blue-600 hover:text-blue-700 whitespace-nowrap">
+          Browse all →
+        </a>
+      </div>
+      <p class="text-sm text-slate-500 mb-4">Pick a pack, then choose which habits you want.</p>
+
+      <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+        @for (pack of templatePacks; track pack.id) {
+          <button
+            type="button"
+            (click)="openTemplate(pack)"
+            class="shrink-0 w-44 text-left rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden bg-white"
+          >
+            <div class="bg-gradient-to-r {{ pack.accent }} px-3 py-2 text-white flex items-center gap-2">
+              <span class="text-xl">{{ pack.icon }}</span>
+              <span class="text-sm font-semibold truncate">{{ pack.name }}</span>
+            </div>
+            <div class="px-3 py-2">
+              <span class="text-xs text-slate-500">
+                {{ remainingTemplateCount(pack) }} of {{ pack.habits.length }} new
+              </span>
+            </div>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
   <!-- Active Habits List -->
   <div class="card bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
     <div class="card-body p-8">
@@ -326,11 +368,9 @@
                           (click)="$event.stopPropagation()"
                           [value]="habit.points"
                           class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
-                          <option value="5">⭐ 5 pts</option>
-                          <option value="10">⭐⭐ 10 pts</option>
-                          <option value="15">⭐⭐⭐ 15 pts</option>
-                          <option value="20">⭐⭐⭐⭐ 20 pts</option>
-                          <option value="25">⭐⭐⭐⭐⭐ 25 pts</option>
+                          @for (value of pointOptions(habit.points); track value) {
+                            <option [value]="value">{{ pointLabel(value) }}</option>
+                          }
                         </select>
 
                         <!-- Reward -->
@@ -453,11 +493,9 @@
                             (click)="$event.stopPropagation()"
                             [value]="habit.points"
                             class="text-xs border border-slate-200 rounded px-2 py-1 bg-white">
-                            <option value="5">⭐ 5 pts</option>
-                            <option value="10">⭐⭐ 10 pts</option>
-                            <option value="15">⭐⭐⭐ 15 pts</option>
-                            <option value="20">⭐⭐⭐⭐ 20 pts</option>
-                            <option value="25">⭐⭐⭐⭐⭐ 25 pts</option>
+                            @for (value of pointOptions(habit.points); track value) {
+                              <option [value]="value">{{ pointLabel(value) }}</option>
+                            }
                           </select>
 
                           <!-- Reward -->
@@ -986,3 +1024,17 @@
     <button type="button" (click)="closeEditModal()" class="absolute inset-0 cursor-pointer">close</button>
   </form>
 </dialog>
+
+<app-template-picker
+  [pack]="selectedPack()"
+  (close)="selectedPack.set(null)"
+></app-template-picker>
+
+<!-- Opens only for habits that measure something; simple habits toggle in one tap. -->
+<app-habit-log
+  [habit]="loggingHabit()"
+  [spec]="loggingSpec()"
+  [current]="loggingCurrent()"
+  (logged)="onLogged($event)"
+  (cancel)="loggingHabit.set(null)"
+></app-habit-log>

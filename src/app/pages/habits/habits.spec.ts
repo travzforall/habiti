@@ -1,18 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 
-import { Habits } from './habits';
+import { HabitsComponent } from './habits';
 
-describe('Habits', () => {
-  let component: Habits;
-  let fixture: ComponentFixture<Habits>;
+describe('HabitsComponent', () => {
+  let component: HabitsComponent;
+  let fixture: ComponentFixture<HabitsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Habits]
+      imports: [HabitsComponent],
+      providers: [provideHttpClient(), provideRouter([])]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(Habits);
+    fixture = TestBed.createComponent(HabitsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
