@@ -159,7 +159,8 @@
   }
 
   <!-- Calendar Grid -->
-  <div class="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-200/50 overflow-hidden">
+  <!-- data-tour: app guide step 7. See src/app/config/app-tour.steps.ts. -->
+  <div data-tour="calendar-grid" class="bg-white/70 backdrop-blur-xl rounded-2xl border border-slate-200/50 overflow-hidden">
     <!-- Calendar Header with Days -->
     <div class="grid grid-cols-7 border-b border-slate-200/50">
       <div *ngFor="let day of dayNames" 

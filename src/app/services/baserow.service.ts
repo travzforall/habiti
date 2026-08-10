@@ -1,7 +1,52 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+
+/** Comparison operators supported by Baserow's `filter__<field_name>__<op>` query params. */
+export type BaserowFilterOp =
+  | 'equal'
+  | 'not_equal'
+  | 'contains'
+  | 'contains_not'
+  | 'empty'
+  | 'not_empty'
+  | 'higher_than'
+  | 'lower_than'
+  | 'date_after'
+  | 'date_before'
+  | 'boolean'
+  | 'link_row_has';
+
+export interface BaserowFilter {
+  field: string;
+  op: BaserowFilterOp;
+  value?: string | number | boolean;
+}
+
+export interface BaserowQuery {
+  filters?: BaserowFilter[];
+  /** Baserow defaults to AND. Use OR to emulate an `IN` clause across several `equal` filters. */
+  filterType?: 'AND' | 'OR';
+  /** Field name, prefix with `-` for descending. */
+  orderBy?: string;
+  size?: number;
+  page?: number;
+}
+
+export interface BaserowListResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+/** Shape Baserow returns for a link_row cell. */
+export interface BaserowLinkValue {
+  id: number;
+  value: string;
+}
 
 export interface TaskUpdate {
   id?: number;
@@ -35,6 +80,143 @@ export class BaserowService {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Generic row helpers
+  //
+  // Every entity below this block was hand-rolled before these existed. New
+  // features should use these instead: they encode the URL correctly, page
+  // properly, and are the single seam to swap out if writes ever move behind a
+  // server-side proxy.
+  // ---------------------------------------------------------------------------
+
+  /** True when the service has enough configuration to talk to Baserow at all. */
+  private isConfigured(tableId?: number): boolean {
+    return !!(this.baseApiUrl && this.token && tableId);
+  }
+
+  /** Emits `fallback` once and completes — the house idiom for "not configured, don't throw". */
+  private skip<T>(fallback: T, message: string): Observable<T> {
+    console.warn(`Baserow: ${message}`);
+    return new Observable<T>(observer => {
+      observer.next(fallback);
+      observer.complete();
+    });
+  }
+
+  private buildUrl(tableId: number, query?: BaserowQuery, rowId?: number): string {
+    const path = rowId != null ? `${tableId}/${rowId}` : `${tableId}`;
+    const params: string[] = ['user_field_names=true'];
+
+    for (const f of query?.filters ?? []) {
+      const value = f.value == null ? '' : encodeURIComponent(String(f.value));
+      /**
+       * `filter__<name>__<op>`, NOT `filter__field_<name>__<op>`.
+       *
+       * The `field_` prefix is for NUMERIC field ids (`filter__field_6742__equal`).
+       * With user_field_names=true the parameter takes the field's name, and
+       * Baserow IGNORES a filter param it does not recognise rather than
+       * rejecting it — so the `field_` form silently returned every row in the
+       * table. That is how each user ended up reading another user's data.
+       */
+      params.push(`filter__${encodeURIComponent(f.field)}__${f.op}=${value}`);
+    }
+    if (query?.filterType) params.push(`filter_type=${query.filterType}`);
+    if (query?.orderBy) params.push(`order_by=${encodeURIComponent(query.orderBy)}`);
+    if (query?.size != null) params.push(`size=${query.size}`);
+    if (query?.page != null) params.push(`page=${query.page}`);
+
+    return `${this.baseApiUrl}/${path}/?${params.join('&')}`;
+  }
+
+  listRows<T>(tableId: number, query?: BaserowQuery): Observable<BaserowListResponse<T>> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<BaserowListResponse<T>>(
+        { count: 0, next: null, previous: null, results: [] },
+        `listRows skipped for table ${tableId} (configuration incomplete)`
+      );
+    }
+    return this.http.get<BaserowListResponse<T>>(this.buildUrl(tableId, query), {
+      headers: this.getHeaders()
+    });
+  }
+
+  /** Follows Baserow's pagination until exhausted and returns the flattened rows. */
+  listAllRows<T>(tableId: number, query?: BaserowQuery): Observable<T[]> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<T[]>([], `listAllRows skipped for table ${tableId} (configuration incomplete)`);
+    }
+    const size = query?.size ?? 200;
+    const fetchPage = (page: number): Observable<T[]> =>
+      this.listRows<T>(tableId, { ...query, size, page }).pipe(
+        switchMap(response =>
+          response.next
+            ? fetchPage(page + 1).pipe(map(rest => [...response.results, ...rest]))
+            : of(response.results)
+        )
+      );
+    return fetchPage(1);
+  }
+
+  getRow<T>(tableId: number, rowId: number): Observable<T | null> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<T | null>(null, `getRow skipped for table ${tableId}`);
+    }
+    return this.http.get<T>(this.buildUrl(tableId, undefined, rowId), {
+      headers: this.getHeaders()
+    });
+  }
+
+  createRow<T>(tableId: number, data: Record<string, unknown>): Observable<T | null> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<T | null>(null, `createRow skipped for table ${tableId}`);
+    }
+    return this.http.post<T>(this.buildUrl(tableId), data, { headers: this.getHeaders() });
+  }
+
+  updateRow<T>(tableId: number, rowId: number, data: Record<string, unknown>): Observable<T | null> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<T | null>(null, `updateRow skipped for table ${tableId}`);
+    }
+    return this.http.patch<T>(this.buildUrl(tableId, undefined, rowId), data, {
+      headers: this.getHeaders()
+    });
+  }
+
+  deleteRow(tableId: number, rowId: number): Observable<void> {
+    if (!this.isConfigured(tableId)) {
+      return this.skip<void>(undefined as void, `deleteRow skipped for table ${tableId}`);
+    }
+    return this.http.delete<void>(`${this.baseApiUrl}/${tableId}/${rowId}/`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  batchCreateRows<T>(
+    tableId: number,
+    items: Record<string, unknown>[]
+  ): Observable<{ items: T[] }> {
+    if (!this.isConfigured(tableId) || items.length === 0) {
+      return this.skip<{ items: T[] }>({ items: [] }, `batchCreateRows skipped for table ${tableId}`);
+    }
+    const url = `${this.baseApiUrl}/${tableId}/batch/?user_field_names=true`;
+    return this.http.post<{ items: T[] }>(url, { items }, { headers: this.getHeaders() });
+  }
+
+  batchUpdateRows<T>(
+    tableId: number,
+    items: Record<string, unknown>[]
+  ): Observable<{ items: T[] }> {
+    if (!this.isConfigured(tableId) || items.length === 0) {
+      return this.skip<{ items: T[] }>({ items: [] }, `batchUpdateRows skipped for table ${tableId}`);
+    }
+    const url = `${this.baseApiUrl}/${tableId}/batch/?user_field_names=true`;
+    return this.http.patch<{ items: T[] }>(url, { items }, { headers: this.getHeaders() });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Entity-specific methods (pre-date the generic helpers above)
+  // ---------------------------------------------------------------------------
+
   // Create a new task update entry
   createTaskUpdate(update: TaskUpdate): Observable<any> {
     if (!this.baseApiUrl || !this.token || !this.taskUpdatesTableId) {
@@ -64,7 +246,7 @@ export class BaserowService {
     
     // Add filter if taskId is provided
     if (taskId) {
-      url += `&filter__field_task_id__equal=${taskId}`;
+      url += `&filter__task_id__equal=${taskId}`;
     }
     
     // Sort by timestamp descending to get latest updates first
@@ -146,8 +328,20 @@ export class BaserowService {
     return this.http.get(url, { headers: this.getHeaders() });
   }
 
-  // Table IDs
-  private tables = {
+  // Table IDs. Public so feature services can resolve an id by name and pass it
+  // to the generic row helpers above.
+  readonly tables = {
+    /**
+     * A user's own tasks and projects, from environment.ts.
+     *
+     * 0 until the tables exist. Deliberately NOT the `tasks`/`projects` ids
+     * below — those belong to the scheduler app in a different database and
+     * have no user column.
+     */
+    userTasks: environment.baserow.tables.userTasks ?? 0,
+    userProjects: environment.baserow.tables.userProjects ?? 0,
+    userSkills: environment.baserow.tables.userSkills ?? 0,
+
     tasks: 508,
     categories: 504,
     agents: 506,
@@ -516,10 +710,12 @@ export class BaserowService {
       });
     }
     
-    let url = `${this.baseApiUrl}/${this.tables.habitSubcategories}/?user_field_names=true&order_by=display_order`;
-    if (categoryId) {
-      url += `&filter__field_category_id__contains=${categoryId}`;
-    }
+    // category_id is a link_row field: Baserow rejects both `equal` and
+    // `contains` on it, and link_row_has needs the related ROW id, which
+    // callers here do not have. The table is small, so callers narrow the
+    // result themselves.
+    void categoryId;
+    const url = `${this.baseApiUrl}/${this.tables.habitSubcategories}/?user_field_names=true&order_by=display_order`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
 
@@ -532,10 +728,9 @@ export class BaserowService {
       });
     }
     
-    let url = `${this.baseApiUrl}/${this.tables.habitGroups}/?user_field_names=true&order_by=display_order`;
-    if (subcategoryId) {
-      url += `&filter__field_subcategory_id__contains=${subcategoryId}`;
-    }
+    // link_row field — see getHabitSubcategories. Narrowed by the caller.
+    void subcategoryId;
+    const url = `${this.baseApiUrl}/${this.tables.habitGroups}/?user_field_names=true&order_by=display_order`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
 
@@ -552,10 +747,10 @@ export class BaserowService {
     
     const filters = [];
     if (userId) {
-      filters.push(`filter__field_user_id__equal=${userId}`);
+      filters.push(`filter__user_id__equal=${userId}`);
     }
     if (isActive !== undefined) {
-      filters.push(`filter__field_is_active__equal=${isActive}`);
+      filters.push(`filter__is_active__equal=${isActive}`);
     }
     
     if (filters.length > 0) {
@@ -601,17 +796,18 @@ export class BaserowService {
     let url = `${this.baseApiUrl}/${this.tables.entries}/?user_field_names=true&order_by=-date`;
     
     const filters = [];
-    if (habitId) {
-      filters.push(`filter__field_habit_id__contains=${habitId}`);
-    }
+    // habit_id is a link_row field — see getHabitSubcategories. Every caller
+    // passes undefined here anyway; habit-scoped reads use the in-memory
+    // entries map, so this stays a client-side concern.
+    void habitId;
     if (userId) {
-      filters.push(`filter__field_user_id__equal=${userId}`);
+      filters.push(`filter__user_id__equal=${userId}`);
     }
     if (dateFrom) {
-      filters.push(`filter__field_date__date_after=${dateFrom}`);
+      filters.push(`filter__date__date_after=${dateFrom}`);
     }
     if (dateTo) {
-      filters.push(`filter__field_date__date_before=${dateTo}`);
+      filters.push(`filter__date__date_before=${dateTo}`);
     }
     
     if (filters.length > 0) {
@@ -622,6 +818,42 @@ export class BaserowService {
   }
 
   // Create habit entry
+  /**
+   * Writes a habit entry for one habit on one day, updating the existing row
+   * if there is one.
+   *
+   * `createHabitEntry` below is a bare POST, so toggling a habit twice would
+   * leave two rows for the same habit and date and the completion count would
+   * drift. A habit-day is a unique thing; this is the method to use.
+   */
+  upsertHabitEntry(entryData: {
+    habit_id: string;
+    user_id: string;
+    date: string;
+    [key: string]: unknown;
+  }): Observable<any> {
+    const tableId = this.tables.entries;
+    if (!this.isConfigured(tableId)) {
+      return this.skip<any>(null, 'upsertHabitEntry skipped (configuration incomplete)');
+    }
+
+    return this.listRows<{ id: number }>(tableId, {
+      filters: [
+        { field: 'habit_id', op: 'equal', value: entryData.habit_id },
+        { field: 'user_id', op: 'equal', value: entryData.user_id },
+        { field: 'date', op: 'equal', value: entryData.date }
+      ],
+      size: 1
+    }).pipe(
+      switchMap(response => {
+        const existing = response.results?.[0];
+        return existing
+          ? this.updateRow(tableId, existing.id, entryData)
+          : this.createRow(tableId, entryData);
+      })
+    );
+  }
+
   createHabitEntry(entryData: any): Observable<any> {
     if (!this.baseApiUrl || !this.token) {
       return new Observable(observer => {
@@ -644,7 +876,7 @@ export class BaserowService {
     
     let url = `${this.baseApiUrl}/${this.tables.achievements}/?user_field_names=true`;
     if (isActive !== undefined) {
-      url += `&filter__field_is_active__equal=${isActive}`;
+      url += `&filter__is_active__equal=${isActive}`;
     }
     
     return this.http.get(url, { headers: this.getHeaders() });
@@ -659,7 +891,7 @@ export class BaserowService {
       });
     }
     
-    const url = `${this.baseApiUrl}/${this.tables.userAchievements}/?user_field_names=true&filter__field_user_id__equal=${userId}`;
+    const url = `${this.baseApiUrl}/${this.tables.userAchievements}/?user_field_names=true&filter__user_id__equal=${userId}`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
 
@@ -672,7 +904,7 @@ export class BaserowService {
       });
     }
     
-    const url = `${this.baseApiUrl}/${this.tables.gameState}/?user_field_names=true&filter__field_user_id__equal=${userId}`;
+    const url = `${this.baseApiUrl}/${this.tables.gameState}/?user_field_names=true&filter__user_id__equal=${userId}`;
     return this.http.get(url, { headers: this.getHeaders() });
   }
 

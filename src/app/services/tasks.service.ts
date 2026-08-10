@@ -1,11 +1,90 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Task } from '../models/project.model';
+import { UserStorage } from './user-storage';
+import { AuthService } from './auth.service';
+import { BaserowService } from './baserow.service';
+import { SyncBus } from './sync-bus';
+import { TaskRow, fromTask, toTask } from '../models/task-row.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TasksService {
   private readonly STORAGE_KEY = 'habiti_standalone_tasks';
+  private storage = inject(UserStorage);
+  private auth = inject(AuthService);
+  private baserow = inject(BaserowService);
+  private syncBus = inject(SyncBus);
+
+  private get tableId(): number {
+    return this.baserow.tables.userTasks;
+  }
+
+  private userId(): string | null {
+    const id = this.auth.currentUserValue?.id;
+    return id !== undefined && id !== null ? String(id) : null;
+  }
+
+  /**
+   * Loads this account's tasks from Baserow.
+   *
+   * The local cache is the fallback, not the source: it keeps the list on
+   * screen while the request is in flight and if it fails, so a flaky network
+   * shows stale tasks rather than an empty page.
+   */
+  private loadFromServer(): void {
+    const userId = this.userId();
+    if (!userId || !this.tableId) return;
+
+    this.baserow
+      .listAllRows<TaskRow>(this.tableId, {
+        filters: [{ field: 'user_id', op: 'equal', value: userId }]
+      })
+      .subscribe({
+        next: rows => {
+          this._standaloneTasks.set((rows ?? []).map(toTask));
+          this.saveTasks();
+        },
+        error: err => console.warn('TasksService: could not load tasks.', err)
+      });
+  }
+
+  /** Mirrors one task to Baserow. Failure never blocks the UI. */
+  private persist(task: Task): void {
+    const userId = this.userId();
+    if (!userId || !this.tableId) return;
+
+    const data = fromTask(task, userId);
+    const rowId = Number(task.id);
+
+    // A numeric id means the row already exists; a generated local id does not.
+    const request = Number.isFinite(rowId)
+      ? this.baserow.updateRow<TaskRow>(this.tableId, rowId, data)
+      : this.baserow.createRow<TaskRow>(this.tableId, data);
+
+    request.subscribe({
+      next: row => {
+        if (row && !Number.isFinite(rowId)) {
+          // Adopt the server id so the next edit updates rather than duplicates.
+          this._standaloneTasks.update(list =>
+            list.map(t => (t.id === task.id ? { ...t, id: String(row.id) } : t))
+          );
+          this.saveTasks();
+        }
+        this.syncBus.touched('tasks');
+      },
+      error: err => console.warn('TasksService: task not persisted.', err)
+    });
+  }
+
+  private remove(taskId: string): void {
+    const rowId = Number(taskId);
+    if (!this.tableId || !Number.isFinite(rowId)) return;
+    this.baserow.deleteRow(this.tableId, rowId).subscribe({
+      next: () => this.syncBus.touched('tasks'),
+      error: err => console.warn('TasksService: task not deleted on the server.', err)
+    });
+  }
   
   // Reactive signals for state management
   private _standaloneTasks = signal<Task[]>([]);
@@ -74,6 +153,7 @@ export class TasksService {
 
     this._standaloneTasks.update(tasks => [...tasks, task]);
     this.saveTasks();
+    this.persist(task);
     return task;
   }
 
@@ -91,11 +171,15 @@ export class TasksService {
       })
     );
     this.saveTasks();
+
+    const updated = this._standaloneTasks().find(t => t.id === taskId);
+    if (updated) this.persist(updated);
   }
 
   deleteTask(taskId: string): void {
     this._standaloneTasks.update(tasks => tasks.filter(task => task.id !== taskId));
     this.saveTasks();
+    this.remove(taskId);
   }
 
   toggleTask(taskId: string): void {
@@ -151,9 +235,16 @@ export class TasksService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  /** Re-reads this account's tasks. Called when the signed-in user changes. */
+  reload(): void {
+    this._standaloneTasks.set([]);
+    this.loadTasks();
+    this.loadFromServer();
+  }
+
   private loadTasks(): void {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = this.storage.readRaw(this.STORAGE_KEY);
       if (stored) {
         const tasks = JSON.parse(stored);
         // Convert date strings back to Date objects
@@ -173,7 +264,7 @@ export class TasksService {
 
   private saveTasks(): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this._standaloneTasks()));
+      this.storage.writeRaw(this.STORAGE_KEY, JSON.stringify(this._standaloneTasks()));
     } catch (error) {
       console.error('Error saving standalone tasks:', error);
     }

@@ -1,11 +1,97 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Project, Task, Milestone, Goal, ProjectStats } from '../models/project.model';
+import { UserStorage } from './user-storage';
+import { AuthService } from './auth.service';
+import { BaserowService } from './baserow.service';
+import { SyncBus } from './sync-bus';
+import { ProjectRow, fromProject, toProject } from '../models/task-row.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectsService {
   private readonly STORAGE_KEY = 'habiti_projects';
+  private storage = inject(UserStorage);
+  private auth = inject(AuthService);
+  private baserow = inject(BaserowService);
+  private syncBus = inject(SyncBus);
+
+  private get tableId(): number {
+    return this.baserow.tables.userProjects;
+  }
+
+  private userId(): string | null {
+    const id = this.auth.currentUserValue?.id;
+    return id !== undefined && id !== null ? String(id) : null;
+  }
+
+  /**
+   * Loads this account's projects from Baserow.
+   *
+   * Sub-collections (tasks, milestones, goals) live in link_row tables of their
+   * own and are not fetched here, so a server-loaded project keeps whatever the
+   * local cache already holds for those rather than blanking them.
+   */
+  private loadFromServer(): void {
+    const userId = this.userId();
+    if (!userId || !this.tableId) return;
+
+    this.baserow
+      .listAllRows<ProjectRow>(this.tableId, {
+        filters: [{ field: 'user_id', op: 'equal', value: userId }]
+      })
+      .subscribe({
+        next: rows => {
+          const cached = new Map(this._projects().map(p => [p.id, p]));
+          this._projects.set(
+            (rows ?? []).map(row => {
+              const mapped = toProject(row);
+              const local = cached.get(mapped.id);
+              return local
+                ? { ...mapped, tasks: local.tasks, milestones: local.milestones, goals: local.goals }
+                : mapped;
+            })
+          );
+          this.saveProjects();
+        },
+        error: err => console.warn('ProjectsService: could not load projects.', err)
+      });
+  }
+
+  private persist(project: Project): void {
+    const userId = this.userId();
+    if (!userId || !this.tableId) return;
+
+    const data = fromProject(project, userId);
+    const rowId = Number(project.id);
+
+    const request = Number.isFinite(rowId)
+      ? this.baserow.updateRow<ProjectRow>(this.tableId, rowId, data)
+      : this.baserow.createRow<ProjectRow>(this.tableId, data);
+
+    request.subscribe({
+      next: row => {
+        if (row && !Number.isFinite(rowId)) {
+          // Adopt the server id so the next edit updates rather than duplicates.
+          this._projects.update(list =>
+            list.map(p => (p.id === project.id ? { ...p, id: String(row.id) } : p))
+          );
+          this.saveProjects();
+        }
+        this.syncBus.touched('projects');
+      },
+      error: err => console.warn('ProjectsService: project not persisted.', err)
+    });
+  }
+
+  private removeRow(projectId: string): void {
+    const rowId = Number(projectId);
+    if (!this.tableId || !Number.isFinite(rowId)) return;
+    this.baserow.deleteRow(this.tableId, rowId).subscribe({
+      next: () => this.syncBus.touched('projects'),
+      error: err => console.warn('ProjectsService: project not deleted on the server.', err)
+    });
+  }
   
   // Reactive signals for state management
   private _projects = signal<Project[]>([]);
@@ -56,6 +142,7 @@ export class ProjectsService {
 
     this._projects.update(projects => [...projects, project]);
     this.saveProjects();
+    this.persist(project);
     return project;
   }
 
@@ -68,6 +155,9 @@ export class ProjectsService {
       )
     );
     this.saveProjects();
+
+    const updated = this._projects().find(p => p.id === projectId);
+    if (updated) this.persist(updated);
   }
 
   deleteProject(projectId: string): void {
@@ -76,6 +166,7 @@ export class ProjectsService {
       this._selectedProjectId.set(null);
     }
     this.saveProjects();
+    this.removeRow(projectId);
   }
 
   selectProject(projectId: string): void {
@@ -315,9 +406,16 @@ export class ProjectsService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  /** Re-reads this account's projects. Called when the signed-in user changes. */
+  reload(): void {
+    this._projects.set([]);
+    this.loadProjects();
+    this.loadFromServer();
+  }
+
   private loadProjects(): void {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
+      const stored = this.storage.readRaw(this.STORAGE_KEY);
       if (stored) {
         const projects = JSON.parse(stored);
         // Convert date strings back to Date objects
@@ -355,7 +453,7 @@ export class ProjectsService {
 
   private saveProjects(): void {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this._projects()));
+      this.storage.writeRaw(this.STORAGE_KEY, JSON.stringify(this._projects()));
     } catch (error) {
       console.error('Error saving projects:', error);
     }
