@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
@@ -74,6 +75,7 @@ function build() {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideTestUserId(),
       SkillsService,
       SyncBus,
       { provide: AuthService, useClass: MockAuth },

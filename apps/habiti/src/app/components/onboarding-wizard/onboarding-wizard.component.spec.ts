@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -54,6 +55,7 @@ describe('OnboardingWizardComponent', () => {
     await TestBed.configureTestingModule({
       imports: [OnboardingWizardComponent],
       providers: [
+      provideTestUserId(),
         provideHttpClient(),
         provideRouter([]),
         { provide: OnboardingService, useValue: onboarding },

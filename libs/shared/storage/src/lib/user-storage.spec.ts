@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AuthService } from './auth.service';
-import { UserStorage } from './user-storage';
+import { CURRENT_USER_ID, UserStorage } from './user-storage';
 
 /**
  * Account isolation for locally-stored data.
@@ -10,22 +9,25 @@ import { UserStorage } from './user-storage';
  * to indicate it. On a shared machine that is a privacy failure, and it is
  * completely invisible from the UI — which is why it is asserted here.
  */
-class MockAuth {
-  currentUserValue: { id: number | string } | null = { id: 6 };
-}
-
 describe('UserStorage', () => {
   let storage: UserStorage;
-  let auth: MockAuth;
+  /** Stands in for the signed-in account; reassign it to switch users. */
+  let signedInAs: { id: number | string } | null;
 
   beforeEach(() => {
     localStorage.clear();
+    signedInAs = { id: 6 };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [UserStorage, { provide: AuthService, useClass: MockAuth }]
+      providers: [
+        UserStorage,
+        {
+          provide: CURRENT_USER_ID,
+          useValue: () => (signedInAs ? String(signedInAs.id) : null)
+        }
+      ]
     });
     storage = TestBed.inject(UserStorage);
-    auth = TestBed.inject(AuthService) as unknown as MockAuth;
   });
 
   afterEach(() => localStorage.clear());
@@ -37,20 +39,20 @@ describe('UserStorage', () => {
   it('keeps two accounts apart', () => {
     storage.write('tasks', ['user six task']);
 
-    auth.currentUserValue = { id: 7 };
+    signedInAs = { id: 7 };
     storage.resetMigrationState();
 
     // The whole point: user 7 must not see user 6's tasks.
     expect(storage.read<string[]>('tasks', [])).toEqual([]);
 
     storage.write('tasks', ['user seven task']);
-    auth.currentUserValue = { id: 6 };
+    signedInAs = { id: 6 };
     storage.resetMigrationState();
     expect(storage.read<string[]>('tasks', [])).toEqual(['user six task']);
   });
 
   it('files signed-out data under guest', () => {
-    auth.currentUserValue = null;
+    signedInAs = null;
     expect(storage.key('tasks')).toBe('tasks::guest');
   });
 
@@ -76,14 +78,14 @@ describe('UserStorage', () => {
 
       expect(localStorage.getItem('habiti_projects')).toBeNull();
 
-      auth.currentUserValue = { id: 7 };
+      signedInAs = { id: 7 };
       storage.resetMigrationState();
       expect(storage.read<string[]>('habiti_projects', [])).toEqual([]);
     });
 
     it('never lets a signed-out visitor adopt an account\'s data', () => {
       localStorage.setItem('habiti_projects', JSON.stringify(['private']));
-      auth.currentUserValue = null;
+      signedInAs = null;
       storage.resetMigrationState();
 
       expect(storage.read<string[]>('habiti_projects', [])).toEqual([]);
@@ -118,14 +120,14 @@ describe('UserStorage', () => {
 
   it('removes only this account\'s copy', () => {
     storage.write('tasks', ['mine']);
-    auth.currentUserValue = { id: 7 };
+    signedInAs = { id: 7 };
     storage.resetMigrationState();
     storage.write('tasks', ['theirs']);
 
     storage.remove('tasks');
     expect(storage.read<string[]>('tasks', [])).toEqual([]);
 
-    auth.currentUserValue = { id: 6 };
+    signedInAs = { id: 6 };
     storage.resetMigrationState();
     expect(storage.read<string[]>('tasks', [])).toEqual(['mine']);
   });

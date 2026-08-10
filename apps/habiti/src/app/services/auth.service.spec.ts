@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -23,6 +24,7 @@ describe('AuthService.logout', () => {
 
     TestBed.configureTestingModule({
       providers: [
+      provideTestUserId(),
         AuthService,
         provideHttpClient(),
         provideHttpClientTesting(),

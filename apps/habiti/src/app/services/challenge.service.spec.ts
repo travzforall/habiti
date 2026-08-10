@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of } from 'rxjs';
@@ -53,6 +54,7 @@ class MockToastService {
 function build() {
   TestBed.configureTestingModule({
     providers: [
+      provideTestUserId(),
       ChallengeService,
       { provide: AuthService, useClass: MockAuthService },
       { provide: BaserowService, useClass: MockBaserowService },

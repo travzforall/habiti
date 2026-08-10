@@ -1,0 +1,25 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "shared-storage",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/storage/src",
+  "tags": ["type:util", "scope:shared", "platform:web"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default"],
+      "options": {
+        "cwd": "libs/shared/storage",
+        "commands": ["tsc -p tsconfig.lib.json --noEmit"]
+      }
+    },
+    "test": {
+      "executor": "@angular/build:karma",
+      "options": {
+        "tsConfig": "libs/shared/storage/tsconfig.spec.json",
+        "polyfills": ["zone.js", "zone.js/testing"]
+      }
+    }
+  }
+}

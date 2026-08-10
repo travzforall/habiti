@@ -1,5 +1,20 @@
-import { Injectable, inject } from '@angular/core';
-import { AuthService } from './auth.service';
+import { InjectionToken, Injectable, inject } from '@angular/core';
+
+/**
+ * Who is signed in, as far as storage namespacing is concerned.
+ *
+ * Return the account's id, or null when signed out. This is the ONLY thing
+ * UserStorage needs to know about authentication, and taking it as a function
+ * rather than injecting an auth service is what keeps this library free of any
+ * dependency on how a given app authenticates — the admin portal and the kiosk
+ * do not resolve a user the same way the main app does.
+ *
+ * DELIBERATELY NOT OPTIONAL. If it were, an app that forgot to provide it would
+ * quietly namespace every account under `::guest` — which is precisely the
+ * data-bleed this class exists to prevent, restored by omission. Missing means
+ * a loud DI error at startup instead.
+ */
+export const CURRENT_USER_ID = new InjectionToken<() => string | null>('CURRENT_USER_ID');
 
 /**
  * localStorage, namespaced per account.
@@ -15,14 +30,14 @@ import { AuthService } from './auth.service';
  */
 @Injectable({ providedIn: 'root' })
 export class UserStorage {
-  private auth = inject(AuthService);
+  private currentUserId = inject(CURRENT_USER_ID);
 
   /** Keys already migrated this session, so the copy runs at most once each. */
   private migrated = new Set<string>();
 
   private userId(): string {
-    const id = this.auth.currentUserValue?.id;
-    return id !== undefined && id !== null ? String(id) : 'guest';
+    const id = this.currentUserId();
+    return id !== undefined && id !== null && id !== '' ? String(id) : 'guest';
   }
 
   /** The namespaced key for the signed-in account. */

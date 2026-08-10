@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
@@ -138,6 +139,7 @@ describe('DashboardComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent, RouterTestingModule],
       providers: [
+      provideTestUserId(),
         // The dashboard now renders StatusAvatar / DailyInspiration /
         // LevelHistory, which reach BaserowService -> HttpClient.
         provideHttpClient(),

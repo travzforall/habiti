@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -57,6 +58,7 @@ describe('OnboardingService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+      provideTestUserId(),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: HabitsService, useValue: habitsStub },

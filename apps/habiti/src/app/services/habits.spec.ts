@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -37,6 +38,7 @@ describe('HabitsService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+      provideTestUserId(),
         HabitsService,
         SyncBus,
         { provide: BaserowService, useValue: baserowStub },

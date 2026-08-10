@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -45,6 +46,7 @@ class MockBaserowService {
 function build() {
   TestBed.configureTestingModule({
     providers: [
+      provideTestUserId(),
       LevelService,
       { provide: AuthService, useClass: MockAuthService },
       { provide: BaserowService, useClass: MockBaserowService },
@@ -150,6 +152,7 @@ describe('LevelService', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [
+      provideTestUserId(),
           LevelService,
           { provide: AuthService, useClass: MockAuthService },
           {

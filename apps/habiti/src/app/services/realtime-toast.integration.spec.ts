@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, of } from 'rxjs';
@@ -144,6 +145,7 @@ async function build() {
 
   TestBed.configureTestingModule({
     providers: [
+      provideTestUserId(),
       SyncService,
       SyncBus,
       TabBus,

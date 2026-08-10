@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
@@ -126,6 +127,7 @@ function build() {
 
   TestBed.configureTestingModule({
     providers: [
+      provideTestUserId(),
       SyncService,
       SyncBus,
       { provide: TIMER_PORT, useValue: timer },
@@ -356,6 +358,7 @@ describe('SyncService', () => {
       // it moves to a shared library and before anything provides refreshers.
       TestBed.configureTestingModule({
         providers: [
+      provideTestUserId(),
           SyncService,
           SyncBus,
           { provide: TIMER_PORT, useValue: timer },

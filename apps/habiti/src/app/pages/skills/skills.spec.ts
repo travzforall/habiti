@@ -1,3 +1,4 @@
+import { provideTestUserId } from '@habiti/storage/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -11,7 +12,7 @@ describe('SkillsComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SkillsComponent],
-      providers: [provideHttpClient(), provideRouter([])]
+      providers: [provideTestUserId(), provideHttpClient(), provideRouter([])]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SkillsComponent);
