@@ -1,3 +1,4 @@
+import { provideTestSession } from '@habiti/sync/testing';
 import { provideTestUserId } from '@habiti/storage/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -12,7 +13,7 @@ describe('TopNavComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TopNavComponent],
-      providers: [provideTestUserId(), provideHttpClient(), provideRouter([])]
+      providers: [provideTestSession(), provideTestUserId(), provideHttpClient(), provideRouter([])]
     })
     .compileComponents();
 

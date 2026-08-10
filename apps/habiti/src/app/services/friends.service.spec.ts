@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
 import { ToastService } from './toast.service';
 import { FriendshipRow } from '../models/friend.models';
-import { SyncBus } from './sync-public-api';
+import { SyncBus } from '@habiti/sync';
 import { OutboundEvent } from '@habiti/realtime-protocol';
 
 const ME = { id: 1, name: 'Testing User', email: 'test@test.com' };

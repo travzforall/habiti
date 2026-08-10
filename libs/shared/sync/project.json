@@ -1,0 +1,35 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "shared-sync",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/sync/src",
+  "tags": [
+    "type:data-access",
+    "scope:shared",
+    "platform:web"
+  ],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default"
+      ],
+      "options": {
+        "cwd": "libs/shared/sync",
+        "commands": [
+          "tsc -p tsconfig.lib.json --noEmit"
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "cache": true,
+      "options": {
+        "lintFilePatterns": [
+          "libs/shared/sync/src/**/*.ts"
+        ]
+      }
+    }
+  }
+}

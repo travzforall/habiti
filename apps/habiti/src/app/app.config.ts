@@ -6,8 +6,11 @@ import {
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { map } from 'rxjs/operators';
 import { CURRENT_USER_ID } from '@habiti/storage';
+import { REALTIME_URL, SYNC_SESSION } from '@habiti/sync';
 
+import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { AuthService } from './services/auth.service';
@@ -40,6 +43,31 @@ export const appConfig: ApplicationConfig = {
         };
       }
     },
+
+    /**
+     * The session @habiti/sync schedules around.
+     *
+     * The library asks three questions and this is where THIS app answers them
+     * from Xano. A kiosk holding a device credential answers the same three
+     * without ever having a `currentUser`.
+     */
+    {
+      provide: SYNC_SESSION,
+      useFactory: () => {
+        const auth = inject(AuthService);
+        const idOf = (user: { id?: number | string } | null) =>
+          user?.id === undefined || user?.id === null ? null : String(user.id);
+        return {
+          userId$: auth.currentUser.pipe(map(idOf)),
+          currentUserId: () => idOf(auth.currentUserValue),
+          token: () => auth.getToken?.() ?? null
+        };
+      }
+    },
+
+    // Where the relay is. '' means never open a socket, which is the correct
+    // default — see the token's own comment for why that matters.
+    { provide: REALTIME_URL, useValue: environment.realtime?.url ?? '' },
 
     // Tells SyncService which domains exist. Without this the app still runs,
     // and silently never reloads anything — so it belongs at the root config

@@ -2,9 +2,7 @@ import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
-import { SyncService, TIMER_PORT, TimerPort } from './sync.service';
-import { SyncBus } from './sync-bus';
-import { AuthService } from './auth.service';
+import { SyncBus, SyncService, TIMER_PORT, TimerPort } from '@habiti/sync';
 import { ChallengeService } from './challenge.service';
 import { DailyContentService } from './daily-content.service';
 import { FriendsService } from './friends.service';
@@ -16,6 +14,7 @@ import { ProjectsService } from './projects.service';
 import { UserStorage } from '@habiti/storage';
 import { SkillsService } from './skills.service';
 import { provideSyncRefreshers } from './sync-refreshers.providers';
+import { provideTestSession, sessionFromMockAuth } from '@habiti/sync/testing';
 
 /** Drives time synchronously — jasmine.clock() fights zone and effect scheduling. */
 class FakeTimer implements TimerPort {
@@ -122,6 +121,9 @@ class MockAuth {
 
 function build() {
   const timer = new FakeTimer();
+  // One instance, shared by the session provider and returned to the test, so
+  // pushing onto auth.subject drives SyncService the way a real sign-in does.
+  const auth = new MockAuth();
   setVisibility('visible');
   setOnline(true);
 
@@ -131,7 +133,7 @@ function build() {
       SyncService,
       SyncBus,
       { provide: TIMER_PORT, useValue: timer },
-      { provide: AuthService, useClass: MockAuth },
+      provideTestSession(sessionFromMockAuth(auth)),
       { provide: FriendsService, useClass: MockFriends },
       { provide: ChallengeService, useClass: MockChallenges },
       { provide: LevelService, useClass: MockLevels },
@@ -168,7 +170,7 @@ function build() {
     challenges: TestBed.inject(ChallengeService) as unknown as MockChallenges,
     levels: TestBed.inject(LevelService) as unknown as MockLevels,
     bus: TestBed.inject(SyncBus),
-    auth: TestBed.inject(AuthService) as unknown as MockAuth
+    auth
   };
 }
 
@@ -362,7 +364,7 @@ describe('SyncService', () => {
           SyncService,
           SyncBus,
           { provide: TIMER_PORT, useValue: timer },
-          { provide: AuthService, useClass: MockAuth },
+          provideTestSession(),
           { provide: NotificationsService, useClass: MockNotifications },
           { provide: UserStorage, useClass: MockUserStorage }
         ]

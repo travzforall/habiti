@@ -1,7 +1,7 @@
 import { Injectable, InjectionToken, computed, effect, inject, signal } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map } from 'rxjs/operators';
-import { AuthService } from './auth.service';
+import { SYNC_SESSION } from './sync-session';
 import { SyncBus } from './sync-bus';
 import { RealtimeService } from './realtime.service';
 import { SYNC_REFRESHERS, SyncContext } from './sync-refresher';
@@ -58,7 +58,7 @@ const REFOCUS_FLOOR_MS = 5_000;
  */
 @Injectable({ providedIn: 'root' })
 export class SyncService {
-  private auth = inject(AuthService);
+  private session = inject(SYNC_SESSION);
   private bus = inject(SyncBus);
   private timer = inject(TIMER_PORT);
 
@@ -162,7 +162,7 @@ export class SyncService {
    * folded into a queued set and drains in one follow-up pass.
    */
   syncNow(trigger: SyncTrigger, scopes?: RefreshScope[]): Promise<void> {
-    if (!this.auth.currentUserValue) return Promise.resolve();
+    if (!this.session.currentUserId()) return Promise.resolve();
     if (!this._isOnline()) return Promise.resolve();
 
     const requested = scopes ?? this.allScopes();
@@ -304,11 +304,8 @@ export class SyncService {
    * no page reload, so without this they are never loaded for the real user.
    */
   private watchAuth(): void {
-    this.auth.currentUser
-      .pipe(
-        map(user => (user?.id != null ? String(user.id) : null)),
-        distinctUntilChanged()
-      )
+    this.session.userId$
+      .pipe(distinctUntilChanged())
       .subscribe(userId => {
         this.reset();
         this.tabs.post({ type: 'auth', userId });
@@ -319,7 +316,7 @@ export class SyncService {
         }
 
         void this.syncNow('auth');
-        const token = this.auth.getToken?.();
+        const token = this.session.token();
         if (token) {
           this.realtime.connect(token);
         } else {

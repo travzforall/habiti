@@ -16,7 +16,7 @@ import { calculateAge, parseDateOnly } from '@habiti/util';
 import { ChallengeService } from '../../services/challenge.service';
 import { SkillsService } from '../../services/skills.service';
 import { SkillStripComponent } from '../../components/skill-strip/skill-strip.component';
-import { SyncService } from '../../services/sync-public-api';
+import { SyncService } from '@habiti/sync';
 import {
   CATEGORY_COLORS,
   CATEGORY_ICONS,

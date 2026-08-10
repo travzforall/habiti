@@ -6,7 +6,7 @@ import { BottomNavComponent } from '../components/bottom-nav/bottom-nav';
 import { ToastComponent } from '../components/toast/toast.component';
 import { OnboardingWizardComponent } from '../components/onboarding-wizard/onboarding-wizard.component';
 import { TourOverlayComponent } from '../components/tour-overlay/tour-overlay.component';
-import { SyncService } from '../services/sync-public-api';
+import { SyncService } from '@habiti/sync';
 import { OnboardingService } from '../services/onboarding.service';
 import { ThemeService } from '../services/theme.service';
 import { TourService } from '../services/tour.service';

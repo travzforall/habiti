@@ -2,12 +2,8 @@ import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, of } from 'rxjs';
-import { SyncService, TIMER_PORT, TimerPort } from './sync.service';
-import { SyncBus } from './sync-bus';
-import { TabBus } from './tab-bus';
-import { RealtimeService } from './realtime.service';
+import { RealtimeService, SyncBus, SyncService, TIMER_PORT, TabBus, TimerPort } from '@habiti/sync';
 import { NotificationsService } from './notifications.service';
-import { AuthService } from './auth.service';
 import { ChallengeService } from './challenge.service';
 import { DailyContentService } from './daily-content.service';
 import { FriendsService } from './friends.service';
@@ -19,6 +15,8 @@ import { ProjectsService } from './projects.service';
 import { UserStorage } from '@habiti/storage';
 import { SkillsService } from './skills.service';
 import { provideSyncRefreshers } from './sync-refreshers.providers';
+import { provideTestSession, sessionFromMockAuth } from '@habiti/sync/testing';
+import { AuthService } from './auth.service';
 import { RelayEnvelope } from '@habiti/realtime-protocol';
 import { Friend } from '../models/friend.models';
 
@@ -142,6 +140,7 @@ async function build() {
   localStorage.clear();
 
   const realtime = new FakeRealtime();
+  const auth = new MockAuth();
 
   TestBed.configureTestingModule({
     providers: [
@@ -152,7 +151,10 @@ async function build() {
       NotificationsService,
       { provide: TIMER_PORT, useClass: FakeTimer },
       { provide: RealtimeService, useValue: realtime },
-      { provide: AuthService, useClass: MockAuth },
+      provideTestSession(sessionFromMockAuth(auth)),
+      // NotificationsService is REAL here and derives toasts from the signed-in
+      // user, so it still needs an AuthService of its own.
+      { provide: AuthService, useValue: auth },
       { provide: FriendsService, useClass: MockFriends },
       { provide: ChallengeService, useClass: MockChallenges },
       { provide: ToastService, useClass: MockToast },

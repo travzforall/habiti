@@ -7,7 +7,7 @@ import { LevelService } from './level.service';
 import { NotificationsService } from './notifications.service';
 import { ProjectsService } from './projects.service';
 import { SkillsService } from './skills.service';
-import { SYNC_REFRESHERS, SyncRefresher } from './sync-refresher';
+import { SYNC_REFRESHERS, SyncRefresher } from '@habiti/sync';
 import { TasksService } from './tasks.service';
 
 /**

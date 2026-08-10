@@ -1,7 +1,6 @@
-import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, inject, isDevMode, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { SyncBus } from './sync-public-api';
+import { SyncBus } from './sync-bus';
 import {
   ClientFrame,
   OutboundEvent,
@@ -10,6 +9,24 @@ import {
   ServerFrame,
   isRelayEnvelope
 } from '@habiti/realtime-protocol';
+
+/**
+ * Where the relay lives. EMPTY IS THE CORRECT DEFAULT.
+ *
+ * While this is '', RealtimeService never constructs a WebSocket at all and the
+ * app syncs by adaptive polling with a clean console. That is not laziness: the
+ * browser's own "WebSocket connection failed" message comes from the network
+ * stack, is not routed through console.error, and cannot be suppressed by
+ * application code. Not opening the socket is the only way to keep the console
+ * quiet before a relay exists.
+ *
+ * A token rather than a direct environment read, so this service can live in a
+ * shared library — each app points it at its own relay, or at none.
+ */
+export const REALTIME_URL = new InjectionToken<string>('REALTIME_URL', {
+  providedIn: 'root',
+  factory: () => ''
+});
 
 /** Injected so tests can supply a fake socket. */
 export type WebSocketFactory = (url: string) => WebSocket;
@@ -50,7 +67,7 @@ export class RealtimeService {
   private bus = inject(SyncBus);
   private createSocket = inject(WEBSOCKET_FACTORY);
 
-  private readonly url = environment.realtime?.url ?? '';
+  private readonly url = inject(REALTIME_URL);
   private readonly _status = signal<RealtimeStatus>(this.url ? 'idle' : 'disabled');
   private readonly _lastConnectedAt = signal<Date | null>(null);
 
@@ -183,7 +200,7 @@ export class RealtimeService {
           // Outside production, say what arrived. A push that silently does
           // nothing and a push that never arrived look identical from the UI,
           // and that difference is the whole debugging question.
-          if (!environment.production) {
+          if (isDevMode()) {
             console.info(
               `Realtime: received ${frame.envelope.kind}`,
               frame.envelope.hint?.scope ?? []

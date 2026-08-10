@@ -1,3 +1,4 @@
+import { provideTestSession } from '@habiti/sync/testing';
 import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -17,7 +18,7 @@ describe('RootComponent (the bootstrapped shell)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RootComponent],
-      providers: [provideTestUserId(), provideHttpClient(), provideRouter([])]
+      providers: [provideTestSession(), provideTestUserId(), provideHttpClient(), provideRouter([])]
     }).compileComponents();
   });
 

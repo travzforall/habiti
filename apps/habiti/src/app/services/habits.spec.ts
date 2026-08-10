@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
 import { HabitsService } from './habits';
-import { SyncBus } from './sync-public-api';
+import { SyncBus } from '@habiti/sync';
 
 /**
  * Focused coverage of the two things onboarding depends on.

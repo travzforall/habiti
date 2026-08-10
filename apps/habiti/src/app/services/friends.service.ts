@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
 import { ToastService } from './toast.service';
-import { SyncBus } from './sync-public-api';
+import { SyncBus } from '@habiti/sync';
 import { OutboundEvent } from '@habiti/realtime-protocol';
 import {
   Friend,
