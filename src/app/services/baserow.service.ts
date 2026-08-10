@@ -328,29 +328,28 @@ export class BaserowService {
     return this.http.get(url, { headers: this.getHeaders() });
   }
 
-  // Table IDs. Public so feature services can resolve an id by name and pass it
-  // to the generic row helpers above.
+  /**
+   * Table IDs. Public so feature services can resolve an id by name and pass it
+   * to the generic row helpers above.
+   *
+   * EVERY ID COMES FROM environment.ts. This map used to restate roughly half
+   * of them as literals, and the two copies had drifted: `tasks` and
+   * `taskUpdates` were swapped between them, so which table you hit depended on
+   * which map you happened to read. Spreading the one source of truth is what
+   * makes that class of bug impossible.
+   *
+   * This whole map moves server-side when the API lands — it is the registry a
+   * repository implementation needs, and the only place table ids should live.
+   */
   readonly tables = {
-    /**
-     * A user's own tasks and projects, from environment.ts.
-     *
-     * 0 until the tables exist. Deliberately NOT the `tasks`/`projects` ids
-     * below — those belong to the scheduler app in a different database and
-     * have no user column.
-     */
-    userTasks: environment.baserow.tables.userTasks ?? 0,
-    userProjects: environment.baserow.tables.userProjects ?? 0,
-    userSkills: environment.baserow.tables.userSkills ?? 0,
+    ...environment.baserow.tables,
 
-    tasks: 508,
-    categories: 504,
-    agents: 506,
-    projects: 507,
-    milestones: 511,
-    comments: 510,
-    sessions: 512,
-    tasksUpdates: 509,
-    // Habit tables
+    /**
+     * Habit tables, in Habiti's database 128.
+     *
+     * Still literals only because they predate the environment.ts registry.
+     * Move them there rather than adding more here.
+     */
     habitCategories: 517,
     habitSubcategories: 518,
     habitGroups: 519,
@@ -360,7 +359,8 @@ export class BaserowService {
     userAchievements: 525,
     gameState: 524,
     nightlyPlans: 526,
-    analyticsSummary: 527
+    analyticsSummary: 527,
+    categories: 504
   };
 
   // Option mappings for select fields

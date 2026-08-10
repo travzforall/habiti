@@ -30,26 +30,29 @@ export const environment = {
       /**
        * The SCHEDULER app's tables — the Claude automation system.
        *
-       * They live in a different Baserow database, have no user column, and
-       * carry agent/phase semantics that mean nothing to a Habiti user. Do not
-       * write a user's personal work here; use userTasks / userProjects below.
+       * They live in Baserow database 127, NOT Habiti's 128. They have no user
+       * column and carry agent/phase semantics that mean nothing to a Habiti
+       * user. Do not write a user's personal work here; use userTasks /
+       * userProjects below.
+       *
+       * Verified against the live database: 508 is `tasks` (it has task_id,
+       * phase, assigned_agent_id and a link field named tasks_updates), and
+       * 509 is `tasks_updates`. These two were previously swapped here.
        */
-      taskUpdates: 508,
-      tasks: 509,
+      tasks: 508,
+      taskUpdates: 509,
       agents: 506,
       projects: 507,
 
       /**
-       * A user's own tasks and projects.
+       * A user's own tasks and projects, in Habiti's database 128.
        *
-       * 0 until created — TasksService and ProjectsService stay local-only and
-       * warn rather than writing to the wrong database. Create them with:
+       * Created via:
        *   node scripts/create-baserow-table.mjs 27-user-projects.json --apply
        *   node scripts/create-baserow-table.mjs 28-user-tasks.json --apply
-       * then paste the returned ids here.
        */
-      userProjects: 0,
-      userTasks: 0,
+      userProjects: 630,
+      userTasks: 631,
       comments: 510,
       milestones: 511,
       sessions: 512,
