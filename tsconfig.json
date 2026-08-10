@@ -13,7 +13,33 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+
+    /**
+     * Aliases for the modules that become libraries first.
+     *
+     * They point at where the code lives TODAY. The value is that an importer
+     * saying `@habiti/util` cannot tell where the file is — so moving it into
+     * libs/ later is an edit to this block, not to several hundred relative
+     * import statements spread across the app. That turns the riskiest part of
+     * the Nx migration into a config change.
+     *
+     * Deliberately not aliasing everything. Only these four are extracted
+     * early; the rest stay relative until there is a second consumer, because
+     * an alias with one consumer is indirection without a benefit.
+     *
+     * No `@habiti/contracts` yet: nothing imports src/app/models/index.ts —
+     * every consumer reaches for a specific model file — so the barrel is not
+     * yet a surface anyone uses. It gets an alias when the API gives it a
+     * second consumer and a reason to be curated.
+     */
+    "baseUrl": ".",
+    "paths": {
+      "@habiti/realtime-protocol": ["src/app/models/realtime.models.ts"],
+      "@habiti/util": ["src/app/utils/index.ts"],
+      "@habiti/storage": ["src/app/services/user-storage.ts"],
+      "@habiti/sync": ["src/app/services/sync-public-api.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

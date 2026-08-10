@@ -15,10 +15,10 @@ import { LevelService } from './level.service';
 import { ToastService } from './toast.service';
 import { TasksService } from './tasks.service';
 import { ProjectsService } from './projects.service';
-import { UserStorage } from './user-storage';
+import { UserStorage } from '@habiti/storage';
 import { SkillsService } from './skills.service';
 import { provideSyncRefreshers } from './sync-refreshers.providers';
-import { RelayEnvelope } from '../models/realtime.models';
+import { RelayEnvelope } from '@habiti/realtime-protocol';
 import { Friend } from '../models/friend.models';
 
 /**

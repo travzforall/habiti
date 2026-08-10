@@ -12,7 +12,7 @@ import {
 import { BaserowChallengeRunRepository } from './baserow-challenge-run.repository';
 import { BaserowService } from './baserow.service';
 import { AuthService } from './auth.service';
-import { SyncBus } from './sync-bus';
+import { SyncBus } from '@habiti/sync';
 import { environment } from '../../environments/environment';
 import { CHALLENGE_CATALOGUE } from '../config/challenge-catalogue.seed';
 import {

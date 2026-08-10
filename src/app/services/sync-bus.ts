@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import { OutboundEvent, RefreshScope } from '../models/realtime.models';
+import { OutboundEvent, RefreshScope } from '@habiti/realtime-protocol';
 
 /**
  * A dependency-free meeting point between the data services and the sync layer.

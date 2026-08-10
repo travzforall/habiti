@@ -5,8 +5,8 @@ import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
 import { ToastService } from './toast.service';
 import { FriendshipRow } from '../models/friend.models';
-import { SyncBus } from './sync-bus';
-import { OutboundEvent } from '../models/realtime.models';
+import { SyncBus } from '@habiti/sync';
+import { OutboundEvent } from '@habiti/realtime-protocol';
 
 const ME = { id: 1, name: 'Testing User', email: 'test@test.com' };
 const THEM = 'jstain@email.com';

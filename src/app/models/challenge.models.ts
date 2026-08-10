@@ -6,14 +6,15 @@
  * row so that a solo run and a partnered one are the same entity: solo simply
  * has a single participant and skips the invite/negotiate/lock transitions.
  *
- * Naming note: `src/app/game/challenges/` is an unrelated dating-sim minigame
- * that owns the `app-challenges` selector. Everything here is prefixed
- * `Challenge*` and the page uses `app-challenge-list`.
+ * Naming note: everything here is prefixed `Challenge*` and the page uses the
+ * `app-challenge-list` selector. That was originally to avoid colliding with an
+ * unrelated minigame that owned `app-challenges`; the minigame is gone, but the
+ * prefix stays because it reads better next to Campaign and Skill.
  */
 
 import { PlanTier } from './daily-content.models';
 import { ChallengePledge } from './pledge.models';
-import { addDays, daysBetween, parseDateKey, toDateKey } from '../utils/date-key.util';
+import { addDays, daysBetween, parseDateKey, toDateKey } from '@habiti/util';
 
 export type ChallengeDifficulty = 'easy' | 'medium' | 'hard';
 

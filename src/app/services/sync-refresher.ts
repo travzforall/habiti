@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { RefreshScope } from '../models/realtime.models';
+import { RefreshScope } from '@habiti/realtime-protocol';
 
 /**
  * What a refresher is told about the pass it is taking part in.

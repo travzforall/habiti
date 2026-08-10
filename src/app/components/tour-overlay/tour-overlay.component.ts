@@ -16,7 +16,7 @@ import {
   placeAnchored,
   placeCentered,
   safeAreaForWidth
-} from '../../utils/anchor-position.util';
+} from '@habiti/util';
 
 /** Matches Tailwind's `lg`, which is where the whole shell switches layout. */
 const LG_QUERY = '(min-width: 1024px)';

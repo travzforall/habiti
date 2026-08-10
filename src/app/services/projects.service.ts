@@ -1,9 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Project, Task, Milestone, Goal, ProjectStats } from '../models/project.model';
-import { UserStorage } from './user-storage';
+import { UserStorage } from '@habiti/storage';
 import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
-import { SyncBus } from './sync-bus';
+import { SyncBus } from '@habiti/sync';
 import { ProjectRow, fromProject, toProject } from '../models/task-row.models';
 
 @Injectable({

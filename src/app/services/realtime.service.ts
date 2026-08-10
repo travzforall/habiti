@@ -1,7 +1,7 @@
 import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { SyncBus } from './sync-bus';
+import { SyncBus } from '@habiti/sync';
 import {
   ClientFrame,
   OutboundEvent,
@@ -9,7 +9,7 @@ import {
   RelayEnvelope,
   ServerFrame,
   isRelayEnvelope
-} from '../models/realtime.models';
+} from '@habiti/realtime-protocol';
 
 /** Injected so tests can supply a fake socket. */
 export type WebSocketFactory = (url: string) => WebSocket;

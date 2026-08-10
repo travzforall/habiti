@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, map, throwError, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
-import { isAdult } from '../utils/age.util';
+import { isAdult } from '@habiti/util';
 
 export interface User {
   id: number;

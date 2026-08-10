@@ -12,7 +12,7 @@ import { LevelService } from './level.service';
 import { NotificationsService } from './notifications.service';
 import { TasksService } from './tasks.service';
 import { ProjectsService } from './projects.service';
-import { UserStorage } from './user-storage';
+import { UserStorage } from '@habiti/storage';
 import { SkillsService } from './skills.service';
 import { provideSyncRefreshers } from './sync-refreshers.providers';
 

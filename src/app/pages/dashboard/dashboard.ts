@@ -12,11 +12,11 @@ import { ToastService } from '../../services/toast.service';
 import { StatusAvatarComponent } from '../../components/status-avatar/status-avatar.component';
 import { DailyInspirationComponent } from '../../components/daily-inspiration/daily-inspiration.component';
 import { LevelHistoryComponent } from '../../components/level-history/level-history.component';
-import { calculateAge, parseDateOnly } from '../../utils/age.util';
+import { calculateAge, parseDateOnly } from '@habiti/util';
 import { ChallengeService } from '../../services/challenge.service';
 import { SkillsService } from '../../services/skills.service';
 import { SkillStripComponent } from '../../components/skill-strip/skill-strip.component';
-import { SyncService } from '../../services/sync.service';
+import { SyncService } from '@habiti/sync';
 import {
   CATEGORY_COLORS,
   CATEGORY_ICONS,

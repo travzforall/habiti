@@ -1,8 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { BaserowService } from './baserow.service';
 import { AuthService } from './auth.service';
-import { SyncBus } from './sync-bus';
-import { UserStorage } from './user-storage';
+import { SyncBus } from '@habiti/sync';
+import { UserStorage } from '@habiti/storage';
 import { Observable, ReplaySubject, catchError, map, of, forkJoin, switchMap } from 'rxjs';
 
 export interface WorkoutExercise {

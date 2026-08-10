@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { MINIMUM_AGE, isAdult, latestAdultBirthDate, parseDateOnly } from '../../utils/age.util';
+import { MINIMUM_AGE, isAdult, latestAdultBirthDate, parseDateOnly } from '@habiti/util';
 
 @Component({
   selector: 'app-register',

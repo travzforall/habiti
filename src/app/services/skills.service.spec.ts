@@ -8,10 +8,10 @@ import { ChallengeService } from './challenge.service';
 import { HabitsService } from './habits';
 import { ProjectsService } from './projects.service';
 import { SubscriptionService } from './subscription.service';
-import { SyncBus } from './sync-bus';
+import { SyncBus } from '@habiti/sync';
 import { TasksService } from './tasks.service';
 import { ToastService } from './toast.service';
-import { UserStorage } from './user-storage';
+import { UserStorage } from '@habiti/storage';
 import { skillDefinition } from '../config/skill-catalogue';
 
 /**

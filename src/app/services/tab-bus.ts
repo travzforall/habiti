@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import { RefreshScope, RelayEnvelope } from '../models/realtime.models';
+import { RefreshScope, RelayEnvelope } from '@habiti/realtime-protocol';
 
 export type TabMessage =
   | { type: 'refresh'; scopes: RefreshScope[]; nonce: string }

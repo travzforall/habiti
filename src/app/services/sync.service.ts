@@ -6,9 +6,9 @@ import { SyncBus } from './sync-bus';
 import { RealtimeService } from './realtime.service';
 import { SYNC_REFRESHERS, SyncContext } from './sync-refresher';
 import { TabBus } from './tab-bus';
-import { UserStorage } from './user-storage';
-import { RefreshScope, RelayEnvelope, scopesFor } from '../models/realtime.models';
-import { toDateKey } from '../utils/date-key.util';
+import { UserStorage } from '@habiti/storage';
+import { RefreshScope, RelayEnvelope, scopesFor } from '@habiti/realtime-protocol';
+import { toDateKey } from '@habiti/util';
 
 /** Injected so tests can drive time without fighting zone.js. */
 export interface TimerPort {
