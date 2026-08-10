@@ -1,0 +1,28 @@
+{
+  "name": "habiti-realtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hint relay for Habiti. Carries refetch nudges between users; never data.",
+  "main": "dist/index.js",
+  "scripts": {
+    "check:protocol": "node scripts/check-protocol.mjs",
+    "prebuild": "npm run check:protocol",
+    "build": "tsc",
+    "dev": "npm run build && node --watch --env-file-if-exists=.env dist/index.js",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run check:protocol && node --test dist/*.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "~5.9.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
