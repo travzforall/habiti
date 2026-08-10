@@ -8,9 +8,12 @@
 // ---------------------------------------------------------------------------
 
 /**
- * Habiti's own plan. Deliberately distinct from `SubscriptionTier` in
- * monitoring.models.ts, which belongs to the separate security-monitoring
- * product and means something else entirely.
+ * Habiti's own plan, and the only subscription concept in the app.
+ *
+ * This is a CATALOGUE grant: it says which content and features a user may
+ * reach. It is not the same thing as access to one specific paid item — that
+ * will be a per-item entitlement, and conflating the two is what makes
+ * "subscriber" and "bought this" impossible to tell apart later.
  */
 export type PlanTier = 'free' | 'plus';
 

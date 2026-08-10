@@ -35,10 +35,9 @@ const MAX_QUEUED = 20;
 /**
  * The realtime connection.
  *
- * A deliberately separate client from websocket.service.ts: that one belongs to
- * the monitoring product, hardcodes a dead host, authenticates via the query
- * string, and permanently gives up after 10 reconnect attempts. Two products,
- * two protocols, two clients.
+ * Talks to realtime-server/ and nothing else. The relay carries refresh HINTS,
+ * never row data — a dropped hint degrades to SyncService's adaptive polling,
+ * which is what lets the relay stay a single instance.
  *
  * DAY-ONE BEHAVIOUR: with no url configured this never constructs a WebSocket
  * at all. That is not laziness — the browser's own "WebSocket connection

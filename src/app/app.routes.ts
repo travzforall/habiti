@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { DashboardComponent } from './pages/dashboard/dashboard';
 import { LoginComponent } from './pages/login/login.component';
 import { AuthGuard } from './guards/auth.guard';
-import { OperatorGuard } from './guards/operator.guard';
 
 // Dashboard and login are eager: they are the two entry points every session hits.
 // Everything else is lazy so it lands in its own chunk instead of the initial bundle.
@@ -82,80 +81,5 @@ export const routes: Routes = [
     loadComponent: () => import('./game/game').then(m => m.GameComponent),
     canActivate: [AuthGuard]
   },
-  {
-    path: 'test-db',
-    loadComponent: () =>
-      import('./pages/test-database/test-database.component').then(m => m.TestDatabaseComponent),
-    canActivate: [AuthGuard]
-  },
-
-  // Security & Camera Routes
-  {
-    path: 'security',
-    loadComponent: () =>
-      import('./pages/security/security-dashboard').then(m => m.SecurityDashboardComponent),
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'security/cameras',
-    loadComponent: () => import('./pages/security/camera-list').then(m => m.CameraListComponent),
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'security/cameras/add',
-    loadComponent: () => import('./pages/security/add-camera').then(m => m.AddCameraComponent),
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'security/cameras/:id',
-    loadComponent: () => import('./pages/security/camera-detail').then(m => m.CameraDetailComponent),
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'security/events',
-    loadComponent: () =>
-      import('./pages/security/events-timeline').then(m => m.EventsTimelineComponent),
-    canActivate: [AuthGuard]
-  },
-
-  // Pet Management Routes — every path renders the same dashboard component (unchanged behaviour)
-  ...['pets', 'pets/add', 'pets/training', 'pets/:id', 'pets/:id/training', 'pets/:id/health'].map(
-    path => ({
-      path,
-      loadComponent: () => import('./pages/pets/pets-dashboard').then(m => m.PetsDashboardComponent),
-      canActivate: [AuthGuard]
-    })
-  ),
-
-  // Emergency Response Routes
-  ...[
-    'emergency',
-    'emergency/contacts',
-    'emergency/contacts/add',
-    'emergency/devices',
-    'emergency/devices/add',
-    'emergency/history',
-    'emergency/settings'
-  ].map(path => ({
-    path,
-    loadComponent: () =>
-      import('./pages/emergency/emergency-dashboard').then(m => m.EmergencyDashboardComponent),
-    canActivate: [AuthGuard]
-  })),
-
-  // 24/7 Monitoring Center Routes (Operator Only)
-  ...[
-    'monitoring',
-    'monitoring/incidents',
-    'monitoring/incidents/:id',
-    'monitoring/subscribers',
-    'monitoring/subscribers/:id'
-  ].map(path => ({
-    path,
-    loadComponent: () =>
-      import('./pages/monitoring/monitoring-center').then(m => m.MonitoringCenterComponent),
-    canActivate: [AuthGuard, OperatorGuard]
-  })),
-
   { path: '**', redirectTo: '/dashboard' }
 ];
