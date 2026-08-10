@@ -1,0 +1,732 @@
+<div class="space-y-8 px-4 py-6 w-full">
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Challenges</h1>
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        Finish a challenge, earn levels. Levels are permanent — they never go down.
+      </p>
+    </div>
+
+    <div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-xl px-4 py-3 text-center">
+      <div class="text-2xl font-bold leading-none">{{ level() }}</div>
+      <div class="text-xs text-white/80 mt-1">{{ bandIcon() }} {{ bandLabel() }}</div>
+    </div>
+  </div>
+
+  <!-- Settling up. Habiti records the obligation; it never takes payment. -->
+  @if (openSettlements().length > 0 || settlementsToConfirm().length > 0) {
+    <section>
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3">Settling up</h2>
+
+      <div class="space-y-2">
+        @for (s of openSettlements(); track s.id) {
+          <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-800 dark:text-slate-100">
+                  {{ s.runTitle || 'A challenge' }} didn't land
+                </p>
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                  @if (s.amount) {
+                    You staked {{ s.currency }} {{ s.amount
+                    }}@if (s.creditorUserId) { to your partner } @else { to {{ charityName }} }.
+                  } @else {
+                    You staked: {{ s.receiptNote || 'a forfeit' }}.
+                  }
+                  @if (s.dueBy) { <span class="text-xs">Due by {{ s.dueBy }}.</span> }
+                </p>
+              </div>
+
+              @if (s.status === 'self_reported_paid') {
+                <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium whitespace-nowrap">
+                  Waiting to be confirmed
+                </span>
+              }
+            </div>
+
+            @if (s.status !== 'self_reported_paid') {
+              <div class="mt-3 flex items-center gap-2 flex-wrap">
+                @if (!s.creditorUserId) {
+                  @if (donationLink) {
+                    <a [href]="donationLink"
+                       target="_blank"
+                       rel="noopener"
+                       class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-colors">
+                      Donate to {{ charityName }} ↗
+                    </a>
+                  } @else {
+                    <span class="text-xs text-red-600 dark:text-red-400">
+                      No donation link configured yet — ask an admin to set
+                      <code>charity.iluvProjectAfricaUrl</code>.
+                    </span>
+                  }
+                }
+                <button type="button"
+                        class="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        (click)="settle(s)">
+                  I've settled this
+                </button>
+              </div>
+
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Habiti records this agreement — it never holds or transfers money. You give directly,
+                then mark it here.
+              </p>
+            }
+          </div>
+        }
+
+        @for (s of settlementsToConfirm(); track s.id) {
+          <div class="p-4 rounded-xl bg-white/80 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
+            <p class="font-semibold text-slate-800 dark:text-slate-100">
+              Someone says they've settled
+            </p>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              {{ s.runTitle || 'A challenge' }} —
+              @if (s.amount) { {{ s.currency }} {{ s.amount }} } @else { {{ s.receiptNote }} }
+            </p>
+            <div class="mt-3 flex items-center gap-2">
+              <button type="button"
+                      class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                      (click)="confirmSettled(s)">
+                Confirm
+              </button>
+              <button type="button"
+                      class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors"
+                      (click)="waive(s)">
+                Waive it
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Invitations waiting on me -->
+  @if (partnerInvites().length > 0) {
+    <section>
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3">Invitations</h2>
+      <div class="space-y-2">
+        @for (run of partnerInvites(); track run.id) {
+          <div class="flex items-center gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <span class="text-2xl">{{ run.icon }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-slate-800 dark:text-slate-100">
+                {{ ownerFor(run)?.name || 'Someone' }} invited you to {{ run.title }}
+              </p>
+              <p class="text-xs text-slate-600 dark:text-slate-400">
+                {{ difficultyLabel(run.terms.difficulty) }} · {{ run.terms.periodsTotal }} check-ins ·
+                worth {{ run.terms.levelValue }} levels
+              </p>
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              <button type="button"
+                      class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                      (click)="respondToInvite(run.id, true)">
+                Join
+              </button>
+              <button type="button"
+                      class="px-3 py-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 transition-colors"
+                      (click)="respondToInvite(run.id, false)">
+                No thanks
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- In progress -->
+  @if (activeRuns().length > 0) {
+    <section>
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3">In progress</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        @for (run of activeRuns(); track run.id) {
+          @let p = progress(run);
+          <div class="bg-white/80 dark:bg-slate-800/70 rounded-xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+            <div class="flex items-start gap-3 cursor-pointer"
+                 role="button"
+                 tabindex="0"
+                 [attr.aria-label]="'Open ' + run.title + ' details'"
+                 (click)="openDetail(run)"
+                 (keydown.enter)="openDetail(run)">
+              <span class="text-3xl leading-none">{{ run.icon }}</span>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 hover:underline underline-offset-2">
+                  {{ run.title }}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ difficultyLabel(run.terms.difficulty) }} · worth {{ run.terms.levelValue }} levels · ends {{ run.endsOn }}
+                </p>
+                @if (run.pledge) {
+                  <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    ⚠ {{ describe(run.pledge) }}
+                  </p>
+                }
+              </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
+                <span>{{ p.periodsPassed }} of {{ p.periodsTotal }} check-ins</span>
+                @if (p.periodsMissed > 0) {
+                  <span class="text-amber-600 dark:text-amber-400">
+                    {{ p.periodsMissed }} missed · {{ run.terms.graceMisses }} allowed
+                  </span>
+                }
+              </div>
+              <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
+                     [style.width.%]="p.percent"></div>
+              </div>
+            </div>
+
+            <!-- Partner's progress, side by side. The whole point of a shared run. -->
+            @if (partnerFor(run); as partner) {
+              <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2">
+                  <app-status-avatar
+                    size="sm"
+                    displayMode="photo"
+                    [photoUrl]="partner.avatarUrl"
+                    [name]="partner.name">
+                  </app-status-avatar>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                      <span class="font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {{ partner.name }}
+                      </span>
+                      @if (partner.inviteStatus === 'invited') {
+                        <span class="text-slate-400 dark:text-slate-500">Not answered yet</span>
+                      } @else if (partner.inviteStatus === 'declined') {
+                        <span class="text-slate-400 dark:text-slate-500">Declined</span>
+                      } @else {
+                        <span class="text-slate-500 dark:text-slate-400">
+                          {{ partner.checkIns.length }} of {{ run.terms.periodsTotal }}
+                        </span>
+                      }
+                    </div>
+                    <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-blue-500 rounded-full transition-all duration-500"
+                           [style.width.%]="partner.inviteStatus === 'accepted'
+                             ? (partner.checkIns.length / run.terms.periodsTotal) * 100
+                             : 0"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Actions -->
+            <div class="mt-4 flex items-center gap-2 flex-wrap">
+              @if (p.canComplete) {
+                <button type="button"
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                        (click)="complete(run)">
+                  Claim {{ run.terms.levelValue }} levels
+                </button>
+              } @else if (p.checkedInToday) {
+                <span class="px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium">
+                  ✓ Checked in today
+                </span>
+              } @else {
+                <button type="button"
+                        class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                        (click)="checkIn(run)">
+                  Check in today
+                </button>
+                <!-- The evidence behind the claim. Shown, never enforced —
+                     challenges cover things Habiti doesn't track as habits. -->
+                <span class="text-xs"
+                      [class]="isBacked(run) ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'">
+                  {{ isBacked(run) ? '✓' : '·' }}
+                  {{ habitsToday().completed }}/{{ habitsToday().total }} habits done today
+                </span>
+              }
+
+              <button type="button"
+                      class="px-3 py-2 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 transition-colors"
+                      (click)="abandon(run)">
+                Give up
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Catalogue -->
+  <section>
+    <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">Start a challenge</h2>
+    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+      Level values shown at your default difficulty ({{ difficultyLabel(defaultDifficulty()) }}). You can change it when you start.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      @for (entry of catalogue(); track entry.template.id) {
+        <div class="bg-white/80 dark:bg-slate-800/70 rounded-xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex flex-col">
+          <div class="flex items-start gap-3">
+            <span class="text-3xl leading-none">{{ entry.template.icon }}</span>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ entry.template.title }}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ categoryMeta[entry.template.category].icon }} {{ categoryMeta[entry.template.category].label }}
+                · {{ entry.template.durationDays }} days
+              </p>
+            </div>
+            <span class="px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold whitespace-nowrap">
+              +{{ entry.levelValue }}
+            </span>
+          </div>
+
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-3 flex-1">{{ entry.template.description }}</p>
+
+          <div class="mt-4">
+            @if (entry.inProgress) {
+              <span class="block text-center px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-medium">
+                In progress
+              </span>
+            } @else {
+              <button type="button"
+                      class="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                      (click)="openStart(entry.template)">
+                Start
+              </button>
+            }
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-2">
+              Alone or with a friend
+            </p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- History -->
+  @if (finishedRuns().length > 0) {
+    <section>
+      <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3">Finished</h2>
+      <div class="space-y-2">
+        @for (run of finishedRuns(); track run.id) {
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-white/60 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
+            <span class="text-xl">{{ run.icon }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ run.title }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ difficultyLabel(run.terms.difficulty) }} · {{ run.checkIns.length }} of {{ run.terms.periodsTotal }} check-ins
+              </p>
+            </div>
+            @switch (run.status) {
+              @case ('completed') {
+                <span class="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-bold">
+                  +{{ run.terms.levelValue }}
+                </span>
+              }
+              @case ('failed') {
+                <span class="px-2 py-1 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-xs font-medium">
+                  Missed
+                </span>
+              }
+              @default {
+                <span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                  Stopped
+                </span>
+              }
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<!-- Start dialog -->
+@if (starting(); as template) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+       (click)="closeStart()"
+       role="dialog"
+       aria-modal="true">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
+         (click)="$event.stopPropagation()">
+      <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-5">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">{{ template.icon }}</span>
+          <div>
+            <h2 class="text-xl font-bold">{{ template.title }}</h2>
+            <p class="text-sm text-white/80">{{ template.durationDays }} days · pick your difficulty</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 overflow-y-auto flex-1 space-y-2">
+        @for (option of startOptions(); track option.difficulty) {
+          <button type="button"
+                  class="w-full text-left p-3 rounded-xl border-2 transition-colors"
+                  [class]="option.selected
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                  (click)="choose(option.difficulty)">
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold text-slate-800 dark:text-slate-100">
+                {{ option.meta.icon }} {{ option.meta.label }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                +{{ option.levelValue }} levels
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ option.tier.blurb }}</p>
+          </button>
+        }
+
+        <!-- Which habits count. Empty = any habit, which is right for things
+             Habiti doesn't track (staying clean, going to a meeting). -->
+        <div class="pt-3 mt-1 border-t border-slate-200 dark:border-slate-700">
+          <p class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+            Which habits count (optional)
+          </p>
+
+          @if (allHabits().length === 0) {
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              No habits yet —
+              <a routerLink="/habits" class="underline underline-offset-2" (click)="closeStart()">add one</a>
+              and you can tie this challenge to it.
+            </p>
+          } @else {
+            <div class="max-h-40 overflow-y-auto space-y-1 pr-1">
+              @for (habit of allHabits(); track habit.id) {
+                <button type="button"
+                        class="w-full flex items-center gap-2 p-2 rounded-lg border transition-colors"
+                        [class]="chosenHabitIds().includes(habit.id)
+                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                          : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-700'"
+                        (click)="toggleHabit(habit.id)">
+                  <span class="text-base leading-none">{{ habit.icon || '✅' }}</span>
+                  <span class="flex-1 text-left text-sm text-slate-700 dark:text-slate-200 truncate">
+                    {{ habit.name }}
+                  </span>
+                  @if (chosenHabitIds().includes(habit.id)) {
+                    <span class="text-amber-600 dark:text-amber-400 text-sm">✓</span>
+                  }
+                </button>
+              }
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+              @if (chosenHabitIds().length === 0) {
+                Nothing picked — any habit will count toward a check-in.
+              } @else {
+                {{ chosenHabitIds().length }} habit(s) tracked on the progress grid.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Optional partner. Solo is the default; picking someone invites them. -->
+        <div class="pt-3 mt-1 border-t border-slate-200 dark:border-slate-700">
+          <p class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+            Do it with someone (optional)
+          </p>
+
+          @if (friends().length === 0) {
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              No friends yet —
+              <a routerLink="/friends" class="underline underline-offset-2" (click)="closeStart()">invite someone</a>
+              and you can take a challenge on together.
+            </p>
+          } @else {
+            <div class="space-y-1">
+              @for (friend of friends(); track friend.friendshipId) {
+                <button type="button"
+                        class="w-full flex items-center gap-2 p-2 rounded-lg border transition-colors"
+                        [class]="chosenPartnerId() === friend.userId
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-700'"
+                        (click)="choosePartner(friend.userId)">
+                  <app-status-avatar
+                    size="sm"
+                    displayMode="photo"
+                    [photoUrl]="friend.avatarUrl"
+                    [name]="friend.name">
+                  </app-status-avatar>
+                  <span class="flex-1 text-left text-sm text-slate-700 dark:text-slate-200 truncate">
+                    {{ friend.name }}
+                  </span>
+                  @if (chosenPartnerId() === friend.userId) {
+                    <span class="text-blue-600 dark:text-blue-400 text-sm">✓</span>
+                  }
+                </button>
+              }
+            </div>
+            @if (chosenPartner(); as partner) {
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                {{ partner.name }} will be invited. You can start checking in straight away.
+              </p>
+            }
+          }
+        </div>
+
+        <!-- Stake -->
+        <div class="pt-3 mt-1 border-t border-slate-200 dark:border-slate-700">
+          <p class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+            Put something on it (optional)
+          </p>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            @for (kind of pledgeKinds; track kind) {
+              <button type="button"
+                      class="p-2 rounded-lg border text-left transition-colors"
+                      [class]="pledgeKind() === kind
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'"
+                      (click)="setPledgeKind(kind)">
+                <span class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                  {{ pledgeMeta[kind].icon }} {{ pledgeMeta[kind].label }}
+                </span>
+                <span class="block text-[11px] text-slate-500 dark:text-slate-400">
+                  {{ pledgeMeta[kind].description }}
+                </span>
+              </button>
+            }
+          </div>
+
+          @if (pledgeKind() !== 'none') {
+            <div class="mt-2 space-y-2">
+              @if (pledgeMeta[pledgeKind()].hasAmount) {
+                <input type="number"
+                       min="1"
+                       class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm"
+                       placeholder="Amount (USD)"
+                       [ngModel]="pledgeAmount()"
+                       (ngModelChange)="pledgeAmount.set($event)">
+              }
+
+              <input type="text"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm"
+                     [placeholder]="pledgeKind() === 'non_monetary'
+                       ? 'e.g. cook dinner every Sunday for a month'
+                       : 'A note (optional)'"
+                     [ngModel]="pledgeDescription()"
+                     (ngModelChange)="pledgeDescription.set($event)">
+
+              <!--
+                The honest disclaimer, in-product rather than buried in terms.
+                A money stake cannot be started until this is ticked.
+              -->
+              @if (needsDisclaimer()) {
+                <label class="flex items-start gap-2 p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 cursor-pointer">
+                  <input type="checkbox"
+                         class="mt-0.5"
+                         [ngModel]="disclaimerAccepted()"
+                         (ngModelChange)="disclaimerAccepted.set($event)">
+                  <span class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <strong class="text-slate-800 dark:text-slate-200">Habiti records this agreement.
+                    It never holds or transfers money.</strong>
+                    If you miss the challenge, you give directly to
+                    {{ charityName }} and mark it here yourself. Only stake with people you trust.
+                  </span>
+                </label>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex gap-2">
+        <button type="button"
+                class="flex-1 px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+                (click)="closeStart()">
+          Cancel
+        </button>
+        <button type="button"
+                class="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition-colors"
+                [disabled]="!canStart()"
+                [title]="canStart() ? '' : 'Tick the box to confirm you understand the stake'"
+                (click)="confirmStart()">
+          Start challenge
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Challenge detail: the habit x date grid -->
+@if (detail(); as run) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+       (click)="closeDetail()"
+       role="dialog"
+       aria-modal="true">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+         (click)="$event.stopPropagation()">
+
+      <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-5 flex items-start justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="text-3xl">{{ run.icon }}</span>
+          <div class="min-w-0">
+            <h2 class="text-xl font-bold truncate">{{ run.title }}</h2>
+            <p class="text-sm text-white/80">
+              {{ difficultyLabel(run.terms.difficulty) }} ·
+              {{ run.startsOn }} to {{ run.endsOn }} ·
+              worth {{ run.terms.levelValue }} levels
+            </p>
+          </div>
+        </div>
+        <button type="button"
+                class="text-white/80 hover:text-white text-xl leading-none p-1 -m-1"
+                (click)="closeDetail()"
+                aria-label="Close">✕</button>
+      </div>
+
+      <div class="overflow-auto flex-1 px-6 py-4">
+        @if (detailGrid(); as grid) {
+          <!-- Which habits this run tracks. Editable at any time; the level
+               payout stays frozen at whatever was agreed when it started. -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <span class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Habits tracked
+              </span>
+              @if (run.status === 'active') {
+                @if (editingHabits()) {
+                  <span class="flex gap-2">
+                    <button type="button"
+                            class="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                            (click)="editingHabits.set(false)">Cancel</button>
+                    <button type="button"
+                            class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                            (click)="saveDetailHabits()">Save</button>
+                  </span>
+                } @else {
+                  <button type="button"
+                          class="text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                          (click)="startEditingHabits()">Edit</button>
+                }
+              }
+            </div>
+
+            @if (editingHabits()) {
+              @if (allHabits().length === 0) {
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  No habits yet -
+                  <a routerLink="/habits" class="underline underline-offset-2" (click)="closeDetail()">add one</a>.
+                </p>
+              } @else {
+                <div class="max-h-44 overflow-y-auto space-y-1 pr-1 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+                  @for (habit of allHabits(); track habit.id) {
+                    <button type="button"
+                            class="w-full flex items-center gap-2 p-2 rounded-lg border transition-colors"
+                            [class]="detailHabitIds().includes(habit.id)
+                              ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                              : 'border-transparent hover:bg-slate-100 dark:hover:bg-slate-700'"
+                            (click)="toggleDetailHabit(habit.id)">
+                      <span class="text-base leading-none">{{ habit.icon || '\u2705' }}</span>
+                      <span class="flex-1 text-left text-sm text-slate-700 dark:text-slate-200 truncate">
+                        {{ habit.name }}
+                      </span>
+                      @if (detailHabitIds().includes(habit.id)) {
+                        <span class="text-amber-600 dark:text-amber-400 text-sm">&#10003;</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+            } @else if (grid.habits.length === 0) {
+              <div class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 text-xs text-slate-600 dark:text-slate-300">
+                No habits are tied to this challenge, so any habit counts toward a check-in.
+                The row below is your check-in record.
+              </div>
+            }
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="border-separate" style="border-spacing: 2px">
+              <thead>
+                <tr>
+                  <th class="sticky left-0 bg-white dark:bg-slate-800 text-left text-[11px] uppercase tracking-wider text-slate-400 pr-3 pb-1">
+                    Habit
+                  </th>
+                  @for (date of grid.dates; track date) {
+                    <th class="text-[10px] text-slate-400 dark:text-slate-500 font-normal pb-1 w-6">
+                      {{ dayLabel(date) }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of grid.habits; track row.habit.id) {
+                  <tr>
+                    <td class="sticky left-0 bg-white dark:bg-slate-800 pr-3 text-sm text-slate-700 dark:text-slate-200 whitespace-nowrap max-w-[10rem] truncate">
+                      {{ row.habit.icon || '\u2705' }} {{ row.habit.name }}
+                    </td>
+                    @for (cell of row.cells; track cell.date) {
+                      <td>
+                        <div class="w-5 h-5 rounded"
+                             [class]="cell.completed
+                               ? 'bg-green-500'
+                               : cell.isFuture
+                                 ? 'bg-slate-100 dark:bg-slate-700/40'
+                                 : 'bg-slate-200 dark:bg-slate-700'"
+                             [class.ring-2]="cell.isToday"
+                             [class.ring-amber-500]="cell.isToday"
+                             [title]="cell.date + (cell.completed ? ' - done' : cell.isFuture ? '' : ' - missed')"></div>
+                      </td>
+                    }
+                  </tr>
+                }
+
+                <tr>
+                  <td class="sticky left-0 bg-white dark:bg-slate-800 pr-3 pt-2 text-sm font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                    Checked in
+                  </td>
+                  @for (cell of grid.checkInRow; track cell.date) {
+                    <td class="pt-2">
+                      <div class="w-5 h-5 rounded-full"
+                           [class]="cell.checkedIn
+                             ? 'bg-amber-500'
+                             : cell.isFuture
+                               ? 'bg-slate-100 dark:bg-slate-700/40'
+                               : 'bg-slate-200 dark:bg-slate-700'"
+                           [class.ring-2]="cell.isToday"
+                           [class.ring-amber-500]="cell.isToday"
+                           [title]="cell.date + (cell.checkedIn ? ' - checked in' : cell.isFuture ? '' : ' - no check-in')"></div>
+                    </td>
+                  }
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center gap-4 mt-4 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-500"></span> habit done</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-500"></span> checked in</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-slate-200 dark:bg-slate-700"></span> missed</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-slate-100 dark:bg-slate-700/40"></span> upcoming</span>
+          </div>
+
+          @if (partnerFor(run); as partner) {
+            <p class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400">
+              With {{ partner.name }} - {{ partner.checkIns.length }} of {{ run.terms.periodsTotal }} check-ins
+            </p>
+          }
+
+          @if (run.pledge) {
+            <p class="mt-2 text-sm text-amber-700 dark:text-amber-400">
+              &#9888; {{ describe(run.pledge) }}
+            </p>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Offered right after starting a challenge, for the habits it tracks. -->
+<app-template-picker
+  [pack]="suggestedPack()"
+  (added)="onSuggestedHabitsAdded($event)"
+  (close)="closeSuggested()"
+></app-template-picker>

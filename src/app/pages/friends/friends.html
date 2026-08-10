@@ -1,0 +1,178 @@
+<div class="space-y-6 px-4 py-6 w-full">
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Friends</h1>
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        Take on a challenge together, or just keep each other honest.
+      </p>
+    </div>
+    <button type="button"
+            class="px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            (click)="refresh()"
+            [disabled]="loading()">
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </div>
+
+  <!-- Invite -->
+  <div class="bg-white/80 dark:bg-slate-800/70 rounded-xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+    <h2 class="font-bold text-slate-800 dark:text-slate-100 mb-1">Invite someone</h2>
+    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+      By email. They don't need a Habiti account yet — the invite waits for them.
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-2">
+      <input type="email"
+             class="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm"
+             placeholder="their@email.com"
+             autocomplete="off"
+             [ngModel]="inviteEmail()"
+             (ngModelChange)="inviteEmail.set($event)"
+             (keydown.enter)="invite()">
+      <button type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+              [disabled]="!inviteEmail().trim() || sending()"
+              (click)="invite()">
+        {{ sending() ? 'Sending…' : 'Send invite' }}
+      </button>
+    </div>
+
+    <input type="text"
+           class="w-full mt-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm"
+           placeholder="Add a note (optional)"
+           [ngModel]="inviteMessage()"
+           (ngModelChange)="inviteMessage.set($event)">
+  </div>
+
+  @if (error(); as message) {
+    <div class="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
+      {{ message }}
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-full sm:w-auto sm:inline-flex">
+    @for (t of tabs(); track t.id) {
+      <button type="button"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              [class]="tab() === t.id
+                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'"
+              (click)="select(t.id)">
+        {{ t.label }}
+        @if (t.count > 0) {
+          <span class="ml-1 px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold">
+            {{ t.count }}
+          </span>
+        }
+      </button>
+    }
+  </div>
+
+  <!-- List -->
+  @if (visible().length === 0) {
+    <div class="text-center py-12">
+      <div class="text-4xl mb-2">
+        @switch (tab()) {
+          @case ('incoming') { 📭 }
+          @case ('sent') { 📤 }
+          @default { 👥 }
+        }
+      </div>
+      <p class="text-slate-600 dark:text-slate-400">
+        @switch (tab()) {
+          @case ('incoming') { No requests waiting on you. }
+          @case ('sent') { You haven't invited anyone yet. }
+          @default { No friends yet — invite someone above. }
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="space-y-2">
+      @for (friend of visible(); track friend.friendshipId) {
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-white/80 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60">
+          <app-status-avatar
+            size="sm"
+            displayMode="photo"
+            [photoUrl]="friend.avatarUrl"
+            [name]="displayName(friend)">
+          </app-status-avatar>
+
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-slate-800 dark:text-slate-100 truncate">
+              {{ displayName(friend) }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+              @if (friend.name && friend.name !== friend.email) {
+                {{ friend.email }}
+              } @else if (!friend.userId) {
+                Not on Habiti yet
+              }
+              @if (friend.inviteMessage) {
+                · "{{ friend.inviteMessage }}"
+              }
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 flex-shrink-0">
+            @switch (tab()) {
+              @case ('incoming') {
+                <button type="button"
+                        class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                        (click)="accept(friend)">
+                  Accept
+                </button>
+                <button type="button"
+                        class="px-3 py-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 transition-colors"
+                        (click)="decline(friend)">
+                  Decline
+                </button>
+              }
+              @case ('sent') {
+                @switch (friend.status) {
+                  @case ('pending') {
+                    <span class="text-xs text-slate-400 dark:text-slate-500">Pending</span>
+                    <button type="button"
+                            class="px-3 py-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 transition-colors"
+                            (click)="cancel(friend)">
+                      Withdraw
+                    </button>
+                  }
+                  @case ('declined') {
+                    <span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                      Declined
+                    </span>
+                    <!-- Removing the row lets you invite them again later. -->
+                    <button type="button"
+                            class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors"
+                            (click)="remove(friend)">
+                      Clear
+                    </button>
+                  }
+                  @default {
+                    <span class="px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                      {{ friend.status | titlecase }}
+                    </span>
+                    <button type="button"
+                            class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors"
+                            (click)="remove(friend)">
+                      Clear
+                    </button>
+                  }
+                }
+              }
+              @default {
+                <button type="button"
+                        class="px-3 py-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 transition-colors"
+                        (click)="remove(friend)">
+                  Remove
+                </button>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
