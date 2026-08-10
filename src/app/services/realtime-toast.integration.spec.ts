@@ -17,6 +17,7 @@ import { TasksService } from './tasks.service';
 import { ProjectsService } from './projects.service';
 import { UserStorage } from './user-storage';
 import { SkillsService } from './skills.service';
+import { provideSyncRefreshers } from './sync-refreshers.providers';
 import { RelayEnvelope } from '../models/realtime.models';
 import { Friend } from '../models/friend.models';
 
@@ -163,7 +164,13 @@ async function build() {
       {
         provide: DailyContentService,
         useValue: { refresh: () => of(undefined), reset: () => {}, refreshForToday: () => {} }
-      }
+      },
+
+      // Without this SyncService has an empty refresher registry and reloads
+      // NOTHING — no error, no warning, just a relay hint that arrives and does
+      // nothing. Which is precisely the end-to-end path this file exists to
+      // prove, so leaving it out fails these tests rather than weakening them.
+      provideSyncRefreshers()
     ]
   });
 

@@ -2,21 +2,13 @@ import { Injectable, InjectionToken, computed, effect, inject, signal } from '@a
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, distinctUntilChanged, map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
-import { ChallengeService } from './challenge.service';
-import { DailyContentService } from './daily-content.service';
-import { FriendsService } from './friends.service';
-import { HabitsService } from './habits';
-import { LevelService } from './level.service';
-import { NotificationsService } from './notifications.service';
 import { SyncBus } from './sync-bus';
 import { RealtimeService } from './realtime.service';
+import { SYNC_REFRESHERS, SyncContext } from './sync-refresher';
 import { TabBus } from './tab-bus';
-import { TasksService } from './tasks.service';
-import { ProjectsService } from './projects.service';
 import { UserStorage } from './user-storage';
-import { SkillsService } from './skills.service';
 import { RefreshScope, RelayEnvelope, scopesFor } from '../models/realtime.models';
-import { toDateKey } from '../models/challenge.models';
+import { toDateKey } from '../utils/date-key.util';
 
 /** Injected so tests can drive time without fighting zone.js. */
 export interface TimerPort {
@@ -70,18 +62,18 @@ export class SyncService {
   private bus = inject(SyncBus);
   private timer = inject(TIMER_PORT);
 
-  private habits = inject(HabitsService);
-  private friends = inject(FriendsService);
-  private challenges = inject(ChallengeService);
-  private levels = inject(LevelService);
-  private dailyContent = inject(DailyContentService);
-  private notifications = inject(NotificationsService);
   private realtime = inject(RealtimeService);
   private tabs = inject(TabBus);
-  private tasks = inject(TasksService);
-  private projects = inject(ProjectsService);
   private userStorage = inject(UserStorage);
-  private skills = inject(SkillsService);
+
+  /**
+   * Every domain that can be reloaded, registered by the features themselves.
+   *
+   * Empty is legitimate — a host that provides no refreshers still gets working
+   * cadence, tab coordination and connection state, it simply has nothing to
+   * reload. See provideSyncRefreshers() for this app's set.
+   */
+  private refreshers = inject(SYNC_REFRESHERS, { optional: true }) ?? [];
 
   private readonly _isOnline = signal(navigator.onLine);
   private readonly _isVisible = signal(!document.hidden);
@@ -103,12 +95,7 @@ export class SyncService {
    */
   readonly hasPending = computed(() => {
     if (this.timer.now() < this._hotUntil()) return true;
-    if (this.friends.pendingOutgoing().length > 0) return true;
-    if (this.friends.incomingRequests().length > 0) return true;
-    if (this.challenges.settlementsToConfirm().length > 0) return true;
-    return this.challenges
-      .activeRuns()
-      .some(run => (run.participants ?? []).some(p => p.inviteStatus === 'invited'));
+    return this.refreshers.some(refresher => refresher.hasPending?.() ?? false);
   });
 
   /** Paused (0) means the timer is torn down, not merely skipped. */
@@ -231,55 +218,32 @@ export class SyncService {
 
   reset(): void {
     // Storage is namespaced per account, so the migration bookkeeping has to be
-    // re-evaluated for whoever signs in next.
+    // re-evaluated for whoever signs in next. Before the refreshers, because the
+    // locally-cached ones re-read storage as they reset.
     this.userStorage.resetMigrationState();
-    // Locally-stored features: re-read from the new account's namespace rather
-    // than leaving the previous user's tasks and projects on screen.
-    this.tasks.reload();
-    this.projects.reload();
-    this.skills.reload();
 
-    this.friends.reset();
-    this.challenges.reset();
-    this.levels.reset();
-    this.habits.reset();
-    this.dailyContent.reset();
-    this.notifications.reset();
+    for (const refresher of this.refreshers) refresher.reset?.();
+
     this._lastSyncAt.set(null);
     this._lastError.set(null);
   }
 
   private allScopes(): RefreshScope[] {
-    return [
-      'friends',
-      'challenges',
-      'settlements',
-      'levels',
-      'habits',
-      'dailyContent',
-      'tasks',
-      'projects',
-      'skills'
-    ];
+    return [...new Set(this.refreshers.flatMap(refresher => refresher.scopes))];
   }
 
   private run(scopes: RefreshScope[], reconcile: boolean): Promise<void> {
     const wanted = new Set(scopes);
+    const context: SyncContext = { scopes: wanted, reconcile };
     const calls: Observable<void>[] = [];
 
-    if (wanted.has('friends')) calls.push(this.friends.refresh());
-    if (wanted.has('challenges')) calls.push(this.challenges.refreshRuns({ reconcile }));
-    // 'challenges' already reloads settlements, so don't fetch them twice.
-    else if (wanted.has('settlements')) calls.push(this.challenges.refreshSettlements());
-    // Skip levels while an award is mid-write — refreshing then would fight the
-    // optimistic record. It is re-queued by the caller's next full pass.
-    if (wanted.has('levels') && !this.levels.hasAwardsInFlight()) calls.push(this.levels.refresh());
-    if (wanted.has('habits')) calls.push(this.habits.refresh());
-    if (wanted.has('dailyContent')) calls.push(this.dailyContent.refresh());
-    // Locally-cached but server-backed: reload() re-reads this account's rows.
-    if (wanted.has('tasks')) this.tasks.reload();
-    if (wanted.has('projects')) this.projects.reload();
-    if (wanted.has('skills')) this.skills.reload();
+    for (const refresher of this.refreshers) {
+      if (!refresher.scopes.some(scope => wanted.has(scope))) continue;
+      if (refresher.canRun && !refresher.canRun()) continue;
+      // A synchronous re-read returns nothing and is already done by here.
+      const pending = refresher.refresh(context);
+      if (pending) calls.push(pending);
+    }
 
     if (calls.length === 0) return Promise.resolve();
 
@@ -322,16 +286,15 @@ export class SyncService {
 
   /**
    * A tab left open overnight computed check-in state against yesterday,
-   * because ChallengeService froze its date at construction. One clock owner
-   * lives here rather than a second timer in each service.
+   * because services freeze their date at construction. One clock owner lives
+   * here rather than a second timer in each service.
    */
   private checkDayRollover(): void {
     const today = toDateKey();
     if (today === this._today()) return;
 
     this._today.set(today);
-    this.challenges.setToday(today);
-    this.dailyContent.refreshForToday();
+    for (const refresher of this.refreshers) refresher.onDayRollover?.(today);
     void this.syncNow('day-rollover');
   }
 

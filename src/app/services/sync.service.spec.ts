@@ -14,6 +14,7 @@ import { TasksService } from './tasks.service';
 import { ProjectsService } from './projects.service';
 import { UserStorage } from './user-storage';
 import { SkillsService } from './skills.service';
+import { provideSyncRefreshers } from './sync-refreshers.providers';
 
 /** Drives time synchronously — jasmine.clock() fights zone and effect scheduling. */
 class FakeTimer implements TimerPort {
@@ -138,7 +139,20 @@ function build() {
       { provide: TasksService, useClass: MockTasks },
       { provide: ProjectsService, useClass: MockProjects },
       { provide: UserStorage, useClass: MockUserStorage },
-      { provide: SkillsService, useClass: MockSkills }
+      { provide: SkillsService, useClass: MockSkills },
+
+      /**
+       * The REAL refresher wiring, over the mocks above.
+       *
+       * SyncService no longer names any domain — it reads SYNC_REFRESHERS — so
+       * hand-rolling fake refreshers here would test the scheduler against a
+       * registry the app does not use, and every one of these assertions would
+       * keep passing while the production wiring was wrong. Using the real
+       * providers means this spec covers sync-refreshers.providers.ts too:
+       * the settlements de-duplication and the levels in-flight skip are
+       * declared there now, and are asserted below.
+       */
+      provideSyncRefreshers()
     ]
   });
 
@@ -289,6 +303,77 @@ describe('SyncService', () => {
       // Refreshing mid-write would wipe the optimistic record and the level
       // would visibly drop back.
       expect(levels.refresh).not.toHaveBeenCalled();
+    });
+
+    it('asking for settlements alone fetches only settlements', async () => {
+      const { service, challenges } = build();
+      challenges.refreshRuns.calls.reset();
+      challenges.refreshSettlements.calls.reset();
+
+      await service.syncNow('realtime', ['settlements']);
+
+      expect(challenges.refreshSettlements).toHaveBeenCalled();
+      expect(challenges.refreshRuns).not.toHaveBeenCalled();
+    });
+
+    it('asking for both does NOT fetch settlements twice', async () => {
+      const { service, challenges } = build();
+      challenges.refreshRuns.calls.reset();
+      challenges.refreshSettlements.calls.reset();
+
+      await service.syncNow('realtime', ['challenges', 'settlements']);
+
+      // refreshRuns already reloads settlements. One service owning two scopes
+      // is the reason SyncRefresher.refresh() is handed the whole requested
+      // set rather than only the scopes it declared.
+      expect(challenges.refreshRuns).toHaveBeenCalled();
+      expect(challenges.refreshSettlements).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('the refresher registry', () => {
+    it('a full pass covers every registered scope', async () => {
+      const { service, friends, challenges, levels } = build();
+      friends.refresh.calls.reset();
+      challenges.refreshRuns.calls.reset();
+      levels.refresh.calls.reset();
+
+      // No scope argument: the list is derived from the registry, so a domain
+      // that registers is swept in without SyncService being edited.
+      await service.syncNow('manual');
+
+      expect(friends.refresh).toHaveBeenCalled();
+      expect(challenges.refreshRuns).toHaveBeenCalled();
+      expect(levels.refresh).toHaveBeenCalled();
+    });
+
+    it('runs with an empty registry instead of throwing', async () => {
+      const timer = new FakeTimer();
+      setVisibility('visible');
+      setOnline(true);
+
+      // A host with no features registered — the shape SyncService is in once
+      // it moves to a shared library and before anything provides refreshers.
+      TestBed.configureTestingModule({
+        providers: [
+          SyncService,
+          SyncBus,
+          { provide: TIMER_PORT, useValue: timer },
+          { provide: AuthService, useClass: MockAuth },
+          { provide: NotificationsService, useClass: MockNotifications },
+          { provide: UserStorage, useClass: MockUserStorage }
+        ]
+      });
+
+      const service = TestBed.inject(SyncService);
+      TestBed.tick();
+
+      await service.syncNow('manual');
+
+      // Cadence and connection state still work; there is simply nothing to load.
+      expect(service.lastSyncAt()).not.toBeNull();
+      expect(service.lastError()).toBeNull();
+      expect(service.currentIntervalMs()).toBe(60_000);
     });
   });
 
