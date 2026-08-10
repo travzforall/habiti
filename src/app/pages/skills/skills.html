@@ -1,0 +1,492 @@
+<!--
+  Skills.
+
+  Deliberately has NO checkboxes. Ticking happens on the dashboard, /tasks and
+  /challenges — this page is a lens over that evidence, and the moment it grows
+  its own logging it has become a fifth list instead of the thing that makes
+  the other four add up.
+-->
+<div class="space-y-6 px-2 py-2 w-full">
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">🧭 Skills</h1>
+    <p class="text-slate-500 dark:text-slate-400">
+      The long game. Habits are the practice, tasks and projects are the work — a skill is what
+      they add up to.
+    </p>
+  </div>
+
+  <div class="flex justify-center">
+    <div class="inline-flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+      <button
+        (click)="tab.set('mine')"
+        class="px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+        [class]="tab() === 'mine' ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'"
+      >
+        My skills{{ activeTracks().length ? ' (' + activeTracks().length + ')' : '' }}
+      </button>
+      <button
+        (click)="tab.set('browse')"
+        class="px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+        [class]="tab() === 'browse' ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'"
+      >
+        Browse all
+      </button>
+    </div>
+  </div>
+
+  @if (!canStart()) {
+    <div
+      class="max-w-2xl mx-auto rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 p-4 flex items-start gap-3"
+    >
+      <span class="text-2xl">🔒</span>
+      <div>
+        <div class="font-semibold text-amber-900 dark:text-amber-200">Skills need Habiti Plus</div>
+        <p class="text-sm text-amber-800 dark:text-amber-300 mt-0.5">
+          Browse the whole catalogue below to see what it would organise for you. Starting one
+          needs a paid plan.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- ------------------------------------------------------------- My skills -->
+  @if (tab() === 'mine') {
+    @if (activeTracks().length === 0) {
+      <div class="text-center py-16">
+        <div class="text-5xl mb-3">🧭</div>
+        <p class="text-slate-500 dark:text-slate-400 mb-4">
+          No skills yet. Pick one and the habits you already keep start counting toward it.
+        </p>
+        <button
+          (click)="tab.set('browse')"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+        >
+          Browse skills
+        </button>
+      </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      @for (track of activeTracks(); track track.id) {
+        @if (definitionFor(track); as definition) {
+          <div
+            class="bg-white dark:bg-slate-800/70 rounded-2xl shadow-md border border-slate-100 dark:border-slate-700/60 overflow-hidden"
+          >
+            <button (click)="open(definition)" class="w-full text-left">
+              <div class="bg-gradient-to-r {{ accentFor(definition) }} px-5 py-4 text-white">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl">{{ definition.icon }}</span>
+                  <div class="min-w-0 flex-1">
+                    <h3 class="text-lg font-bold truncate">{{ definition.name }}</h3>
+                    <p class="text-xs text-white/85">
+                      Tier {{ track.tier }}/5 · {{ tierName(track) }}
+                    </p>
+                  </div>
+                  @if (isClaimable(track)) {
+                    <span
+                      class="shrink-0 px-2 py-1 rounded-full bg-white text-emerald-700 text-[10px] font-bold uppercase animate-pulse"
+                    >
+                      Claim
+                    </span>
+                  }
+                </div>
+              </div>
+            </button>
+
+            <div class="p-5 space-y-3">
+              <div class="flex items-center gap-4 text-sm">
+                <span class="text-slate-600 dark:text-slate-300">
+                  <span class="font-bold">{{ practiceDays(track) }}</span> practice days
+                </span>
+                @if (track.campaignKeys.length) {
+                  <span class="text-slate-500 dark:text-slate-400">
+                    🏆 {{ track.campaignKeys.length }} campaign{{ track.campaignKeys.length === 1 ? '' : 's' }}
+                  </span>
+                }
+              </div>
+
+              <!-- Exactly one line. A list of everything outstanding is a backlog. -->
+              @if (nextStep(track); as step) {
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 p-3">
+                  <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">Next up</div>
+                  <div class="text-sm text-slate-700 dark:text-slate-200">
+                    {{ step.label }} — {{ step.have }} of {{ step.need }}
+                  </div>
+                  <div class="mt-2 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      class="h-full bg-gradient-to-r from-blue-500 to-blue-600"
+                      [style.width.%]="progressFraction(track)"
+                    ></div>
+                  </div>
+                </div>
+              } @else {
+                <p class="text-sm text-emerald-600 dark:text-emerald-400">
+                  Every tier claimed. This one is yours.
+                </p>
+              }
+
+              <div class="flex items-center gap-2 pt-1">
+                @if (isClaimable(track)) {
+                  <button
+                    (click)="claim(track)"
+                    class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                  >
+                    Claim tier {{ track.tier + 1 }}
+                  </button>
+                }
+                <button
+                  (click)="open(definition)"
+                  class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <!-- ---------------------------------------------------------------- Browse -->
+  @if (tab() === 'browse') {
+    <div class="max-w-md mx-auto">
+      <input
+        type="search"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        placeholder="Search skills, or the habits behind them…"
+        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+      />
+    </div>
+
+    @if (query().trim()) {
+      <p class="text-sm text-center text-slate-500 dark:text-slate-400">
+        {{ resultCount() }} skill{{ resultCount() === 1 ? '' : 's' }} matching "{{ query() }}"
+      </p>
+    }
+
+    @if (resultCount() === 0) {
+      <div class="text-center py-16">
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="text-slate-500 dark:text-slate-400">Nothing matches "{{ query() }}".</p>
+      </div>
+    }
+
+    @for (section of visibleCatalogue(); track section.category.id) {
+      <section class="space-y-3">
+        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <span>{{ section.category.icon }}</span>
+          {{ section.category.name }}
+          <span class="text-sm font-normal text-slate-400">{{ section.skills.length }}</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          @for (definition of section.skills; track definition.id) {
+            @let started = trackFor(definition.id);
+            <button
+              (click)="open(definition)"
+              class="text-left bg-white dark:bg-slate-800/70 rounded-2xl shadow-md hover:shadow-xl border border-slate-100 dark:border-slate-700/60 overflow-hidden transition-shadow"
+            >
+              <div class="bg-gradient-to-r {{ accentFor(definition) }} px-4 py-3 text-white">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl">{{ definition.icon }}</span>
+                  <h3 class="font-bold truncate">{{ definition.name }}</h3>
+                  @if (started) {
+                    <span class="ml-auto text-[10px] font-bold uppercase bg-white/25 px-2 py-0.5 rounded-full">
+                      Tier {{ started.tier }}
+                    </span>
+                  } @else if (!canStart()) {
+                    <span class="ml-auto">🔒</span>
+                  }
+                </div>
+              </div>
+              <div class="p-4">
+                <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                  {{ definition.description }}
+                </p>
+                <div class="flex flex-wrap gap-1">
+                  @for (habit of habitsFor(definition).slice(0, 3); track habit.id) {
+                    <span
+                      class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs"
+                    >
+                      {{ habit.icon }} {{ habit.name }}
+                    </span>
+                  }
+                  @if (definition.habitIds.length > 3) {
+                    <span class="px-2 py-0.5 text-xs text-slate-400">
+                      +{{ definition.habitIds.length - 3 }}
+                    </span>
+                  }
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>
+
+<!-- ---------------------------------------------------------------- Detail -->
+@if (detail(); as definition) {
+  <div
+    class="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="definition.name"
+  >
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" (click)="close()"></div>
+
+    <div
+      class="relative w-full sm:max-w-2xl max-h-[85vh] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+    >
+      <div class="bg-gradient-to-r {{ accentFor(definition) }} px-6 py-5 text-white shrink-0">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">{{ definition.icon }}</span>
+              <h2 class="text-xl font-bold truncate">{{ definition.name }}</h2>
+            </div>
+            <p class="text-white/90 text-sm mt-1">{{ definition.description }}</p>
+          </div>
+          <button
+            (click)="close()"
+            aria-label="Close"
+            class="shrink-0 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        @if (detailTrack(); as track) {
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/40 p-4 flex items-center gap-6">
+            <div>
+              <div class="text-xs text-slate-400 uppercase tracking-wide">Tier</div>
+              <div class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                {{ track.tier }}<span class="text-base text-slate-400">/5</span>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-400 uppercase tracking-wide">Practice days</div>
+              <div class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                {{ practiceDays(track) }}
+              </div>
+            </div>
+            @if (isClaimable(track)) {
+              <button
+                (click)="claim(track)"
+                class="ml-auto px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-semibold shadow-md"
+              >
+                Claim tier {{ track.tier + 1 }}
+              </button>
+            }
+          </div>
+        }
+
+        <!-- The ladder, always visible: the commitment should be legible before you start. -->
+        <div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">The ladder</h3>
+          <div class="space-y-2">
+            @for (rung of detailLadder(); track rung.tier.level) {
+              <div
+                class="rounded-2xl border p-3"
+                [class]="
+                  rung.met
+                    ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-700/50 dark:bg-emerald-900/20'
+                    : 'border-slate-200 dark:border-slate-700'
+                "
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {{ rung.tier.level }}. {{ rung.tier.name }}
+                  </span>
+                  @if (rung.met) {
+                    <span class="text-emerald-600 text-xs font-bold">✓ met</span>
+                  }
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ rung.tier.blurb }}</p>
+                <div class="mt-2 space-y-1">
+                  @for (requirement of rung.requirements; track requirement.label) {
+                    <div class="flex items-center gap-2 text-xs">
+                      <span [class]="requirement.done ? 'text-emerald-600' : 'text-slate-400'">
+                        {{ requirement.done ? '✓' : '○' }}
+                      </span>
+                      <span class="text-slate-600 dark:text-slate-300">{{ requirement.label }}</span>
+                      <span class="ml-auto text-slate-400">
+                        {{ requirement.have }} / {{ requirement.need }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @if (detailLadder().length === 0) {
+              @for (rung of definition.tiers; track rung.level) {
+                <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div class="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {{ rung.level }}. {{ rung.name }}
+                  </div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ rung.blurb }}</p>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">The practice</h3>
+          <div class="flex flex-wrap gap-1.5">
+            @for (habit of habitsFor(definition); track habit.id) {
+              <span
+                class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs"
+              >
+                {{ habit.icon }} {{ habit.name }}
+              </span>
+            }
+          </div>
+        </div>
+
+        @if (detailTrack(); as track) {
+          @if (campaignOptions().length) {
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="font-semibold text-slate-800 dark:text-slate-100">
+                    Push it with a campaign
+                  </h3>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    A time-boxed run on the habits above. Finishing one is worth permanent levels.
+                  </p>
+                </div>
+                @if (!choosingCampaign()) {
+                  <button
+                    (click)="openCampaignChooser()"
+                    class="shrink-0 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    Choose
+                  </button>
+                }
+              </div>
+
+              @if (choosingCampaign()) {
+                <div class="mt-3 space-y-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-wide text-slate-400">Difficulty</span>
+                    @for (level of ['easy', 'medium', 'hard']; track level) {
+                      <button
+                        (click)="chosenDifficulty.set($any(level))"
+                        class="px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                        [class]="
+                          chosenDifficulty() === level
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        "
+                      >
+                        {{ level }}
+                      </button>
+                    }
+                  </div>
+
+                  @for (template of campaignOptions(); track template.id) {
+                    <button
+                      (click)="startCampaign(template, track)"
+                      class="w-full text-left flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    >
+                      <span class="text-2xl">{{ template.icon }}</span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block font-medium text-slate-800 dark:text-slate-100">
+                          {{ template.title }}
+                        </span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">
+                          {{ template.durationDays }} days · {{ template.description }}
+                        </span>
+                      </span>
+                    </button>
+                  }
+
+                  <button
+                    (click)="choosingCampaign.set(false)"
+                    class="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              }
+
+              @if (track.campaignKeys.length && !choosingCampaign()) {
+                <p class="text-xs text-slate-400 mt-2">
+                  {{ track.campaignKeys.length }} campaign{{ track.campaignKeys.length === 1 ? '' : 's' }}
+                  started for this skill.
+                </p>
+              }
+            </div>
+          }
+        }
+
+        @if (definition.starterTasks.length) {
+          <div>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">Starter work</h3>
+            <ul class="space-y-1.5">
+              @for (starter of definition.starterTasks; track starter.key) {
+                <li class="text-sm text-slate-600 dark:text-slate-300">
+                  <span class="font-medium">{{ starter.title }}</span>
+                  <span class="text-slate-400"> — {{ starter.description }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <div
+        class="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3 shrink-0"
+      >
+        @if (detailTrack(); as track) {
+          <div class="flex items-center gap-2">
+            @if (track.status === 'active') {
+              <button (click)="pause(track)" class="px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl">
+                Pause
+              </button>
+            } @else {
+              <button (click)="resume(track)" class="px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-xl">
+                Resume
+              </button>
+            }
+            <button (click)="abandon(track)" class="px-3 py-2 text-sm text-slate-400 hover:text-rose-600 rounded-xl">
+              Stop tracking
+            </button>
+          </div>
+          <button (click)="close()" class="px-5 py-2.5 rounded-xl bg-slate-800 text-white font-medium">
+            Done
+          </button>
+        } @else {
+          <button (click)="close()" class="px-4 py-2.5 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium">
+            Cancel
+          </button>
+          <button
+            (click)="start(definition)"
+            [disabled]="!canStart()"
+            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {{ canStart() ? 'Start this skill' : 'Habiti Plus only' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<app-template-picker
+  [pack]="suggestedPack()"
+  (added)="onHabitsAdded($event)"
+  (close)="closeSuggested()"
+></app-template-picker>
+
+<app-skill-starter-picker
+  [skill]="starterFor()"
+  (applied)="onStarterApplied($event)"
+  (close)="closeStarter()"
+></app-skill-starter-picker>
