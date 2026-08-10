@@ -1,0 +1,58 @@
+/**
+ * The spotlight.
+ *
+ * One element does the dim, the hole and the ring: a huge box-shadow spread
+ * paints everything outside the element's box, leaving the box itself clear.
+ *
+ * NOTE the absence of `backdrop-filter` here, and keep it that way. It would
+ * make this a containing block for any `position: fixed` descendant and
+ * re-create the bug documented in root.html:20-34 — which presents as a
+ * positioning bug, not a CSS one, and cost this codebase real time once
+ * already. A blurred scrim also re-rasterises on every scroll frame.
+ */
+.tour-spotlight {
+  box-shadow: 0 0 0 9999px rgb(15 23 42 / 0.55); // slate-900/55
+  outline: 2px solid rgb(96 165 250); // blue-400
+  outline-offset: 2px;
+
+  // Transitioning four numbers is why box-shadow was chosen over an SVG mask:
+  // the glide between steps is what makes a hand-rolled tour feel deliberate.
+  transition:
+    left 200ms ease,
+    top 200ms ease,
+    width 200ms ease,
+    height 200ms ease;
+}
+
+/* An outline rather than a border, so highlighting never shifts layout. */
+
+.tour-card {
+  animation: tour-card-in 180ms ease-out;
+}
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spotlight {
+    transition: none;
+  }
+
+  .tour-card {
+    animation: none;
+  }
+}
+
+@media (hover: none) {
+  .tour-card button:hover {
+    background-color: initial;
+  }
+}

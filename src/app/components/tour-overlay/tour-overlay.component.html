@@ -1,0 +1,118 @@
+<!--
+  z-[130] blocker / z-[131] spotlight / z-[132] card — the tour slots in
+  src/app/config/z-layers.ts. The literals are deliberate: Tailwind's JIT scans
+  source text and cannot see a class assembled from a constant.
+-->
+@if (active(); as _) {
+  @if (blockerVisible()) {
+    <!-- Transparent, and its only job is to eat clicks. A box-shadow captures
+         no pointer events, so without this the whole page stays clickable. -->
+    <div class="fixed inset-0 z-[130]" (click)="onBlockerClick()" aria-hidden="true"></div>
+  }
+
+  @if (spotlight(); as box) {
+    <div
+      class="tour-spotlight fixed z-[131] rounded-2xl pointer-events-none"
+      aria-hidden="true"
+      [style.left.px]="box.left"
+      [style.top.px]="box.top"
+      [style.width.px]="box.width"
+      [style.height.px]="box.height"
+    ></div>
+  } @else {
+    <!-- No anchor: dim the whole screen so a centred tip still reads as modal. -->
+    <div class="fixed inset-0 z-[131] bg-slate-900/55 pointer-events-none" aria-hidden="true"></div>
+  }
+
+  <!--
+    The card is hidden until it has been measured, and hidden again while the
+    next step resolves: this step's copy shown over the page the NEXT step just
+    navigated to reads as a bug, and it is the state a cross-route step spends
+    its first few hundred ms in.
+  -->
+  @if (step(); as s) {
+    <div
+      #card
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tour-title"
+      aria-describedby="tour-body"
+      class="tour-card fixed z-[132] w-[min(22rem,calc(100vw-2rem))] bg-white/95 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl p-4 focus:outline-none"
+      [class.invisible]="!position() || resolving()"
+      [style.left.px]="position()?.left ?? 0"
+      [style.top.px]="position()?.top ?? 0"
+    >
+      <p
+        id="tour-title"
+        class="font-bold text-slate-800 text-base leading-snug pr-6"
+      >
+        {{ s.title }}
+      </p>
+
+      <button
+        type="button"
+        (click)="skip()"
+        [attr.aria-label]="isPageTip() ? 'Dismiss tip' : 'Exit the guide'"
+        class="absolute top-3 right-3 w-6 h-6 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors text-xs"
+      >
+        ✕
+      </button>
+
+      <p id="tour-body" class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+        {{ s.body }}
+      </p>
+
+      @if (isPageTip()) {
+        <div class="flex justify-end mt-4">
+          <button
+            type="button"
+            (click)="next()"
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+          >
+            Got it
+          </button>
+        </div>
+      } @else {
+        <div class="flex items-center justify-between gap-3 mt-4">
+          <span class="text-[11px] font-semibold text-slate-400 tabular-nums">
+            {{ progress().current }} / {{ progress().total }}
+          </span>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="skip()"
+              class="px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              Skip tour
+            </button>
+
+            @if (!isFirst()) {
+              <button
+                type="button"
+                (click)="prev()"
+                class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Back
+              </button>
+            }
+
+            <button
+              type="button"
+              (click)="next()"
+              [disabled]="resolving()"
+              class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-semibold shadow-md hover:shadow-lg disabled:opacity-60 transition-all"
+            >
+              {{ resolving() ? '…' : isLast() ? 'Done' : 'Next' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Announced separately so a screen reader hears the step change even
+       though focus lands on the card each time. -->
+  <p class="sr-only" aria-live="polite">{{ announcement() }}</p>
+}
