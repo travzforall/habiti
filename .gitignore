@@ -45,3 +45,12 @@ Thumbs.db
 # Schema changes need a user JWT — the database token in environment.ts can
 # only touch rows. Never commit this.
 .baserow-creds
+
+# Nx local cache and computed project graph. Both are derived from the source
+# tree and are per-machine; a shared cache is a remote one, never a committed one.
+.nx/cache
+.nx/workspace-data
+
+# Editor rule files Nx generates for AI assistants.
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
