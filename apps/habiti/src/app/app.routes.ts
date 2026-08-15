@@ -50,8 +50,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/legal/legal-document.page').then(m => m.LegalDocumentPage)
       },
+      {
+        path: ':docId/diff/:from/:to',
+        loadComponent: () => import('./pages/legal/legal-diff.page').then(m => m.LegalDiffPage)
+      },
       { path: '**', redirectTo: '' }
     ]
+  },
+
+  /**
+   * The re-acceptance gate. GUARDED — unlike everything else under /legal,
+   * because it records an acceptance and needs to know who is accepting.
+   *
+   * Sits outside the /legal children so it does not inherit the public
+   * treatment, and keeps `chrome: false` because it is a decision to make
+   * without the rest of the app in the way.
+   */
+  {
+    path: 'legal-accept',
+    loadComponent: () => import('./pages/legal/legal-accept.page').then(m => m.LegalAcceptPage),
+    canActivate: [AuthGuard],
+    data: { chrome: false }
   },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
   {

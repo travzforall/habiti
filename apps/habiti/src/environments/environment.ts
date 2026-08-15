@@ -88,6 +88,18 @@ export const environment = {
        * then paste the returned id here.
        */
       userSkills: 632,
+      /**
+       * What each user has agreed to: documents accepted, Article 9 consents.
+       *
+       * 0 until created — ConsentService records everything locally and warns
+       * once. Create it with:
+       *   node scripts/create-baserow-table.mjs 30-legal-acceptances.json --apply
+       * then paste the returned id here.
+       *
+       * Note that a row here is CORROBORATION, not evidence, while the Baserow
+       * token ships in the bundle — see the notes in the schema file.
+       */
+      legalAcceptances: 0,
     },
   },
   /**

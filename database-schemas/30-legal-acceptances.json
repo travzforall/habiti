@@ -1,0 +1,96 @@
+{
+  "table_name": "legal_acceptances",
+  "description": "Append-only log of what each user agreed to: legal documents accepted, explicit consent for special-category (Article 9) habits, consent to share those with challenge partners, and any future withdrawal-right waiver at checkout. Import THIRTIETH (no dependencies)",
+  "import_order": 30,
+  "dependencies": [],
+  "notes": [
+    "APPEND-ONLY. Rows are never updated and never deleted, with ONE exception: withdrawn_at is stamped on the row being withdrawn. Withdrawing a consent is itself a fact the controller must be able to show (Article 7(3)), so the record survives - it is not erased, it is closed. Everything else - re-accepting a new version, re-consenting after withdrawal - is a NEW row.",
+    "FORGEABLE, AND THIS ONE MATTERS. The Baserow API token ships in the client bundle, so any user can write a row here, including a row for somebody else. Read the same warning on 26-user-onboarding.json. What that means in practice: this table is CORROBORATION, not evidence. What Habiti can genuinely prove today is what each document SAID and from when - git history, the deploy record, and the checked-in content_hash under code review. What it cannot yet prove is that a specific person clicked accept. That gap barely matters for terms acceptance, where the sign-up flow is itself evidence of contract formation; it matters a great deal for Article 9 explicit consent, where being able to demonstrate consent IS the obligation. It closes when the API writes these rows.",
+    "written_by RECORDS PROVENANCE, and exists precisely because of the point above. Every row written today says 'client'. When the API starts writing them it says 'api'. Without this column, a table containing both would be one in which no row could be trusted, and there would be no way to tell them apart afterwards.",
+    "content_hash IS THE POINT OF THE ROW. A version number alone does not identify what someone agreed to - if v1's text were ever edited, every record pointing at 'v1' would silently start meaning different words. The hash is sha256 of the canonicalised (key-sorted) blocks array, checked into the document file and re-verified in CI by scripts/check-legal.mjs. Same mechanism as accepted_rules_hash in 17-campaign-participants.json.",
+    "consent_kind IS A DISCRIMINATOR, NOT A REASON TO SPLIT THE TABLE. A consent is an acceptance with a scope. Splitting document acceptance from Article 9 consent into two tables would mean two schemas, two services and two places to look when answering 'what did this person agree to' - which is the one question this table exists to answer.",
+    "scope IS ONLY MEANINGFUL FOR SOME KINDS. For special_category it is the category ('health', 'mental_health', 'sobriety', 'religion'). For campaign_share it is the campaign_key. For document_acceptance it is empty - the document_id already says what was accepted.",
+    "user_id is plain text holding String(user.id), NOT a link field. Users live in Xano, not Baserow - see 00-import-order.md.",
+    "NO IP ADDRESS AND NO USER AGENT. It is common to log both alongside a consent record, and it would be more evidence. It would also mean collecting personal data the app collects nowhere else, to prove consent for collecting personal data. Given the rows are forgeable anyway, the extra data would buy very little and cost a new category of collection to disclose. Revisit when the API writes these rows and the evidential value is real.",
+    "ui_surface RECORDS WHERE THE USER WAS ASKED. If a consent flow is ever found to be unfair - a pre-ticked box, a modal with no real refusal path - this is what identifies which rows are affected."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string"},
+    "consent_kind": {
+      "type": "single_select",
+      "options": ["document_acceptance", "special_category", "campaign_share", "withdrawal_waiver"],
+      "required": true,
+      "description": "document_acceptance = agreed to Terms/Privacy. special_category = Article 9 explicit consent to store sensitive habits. campaign_share = consent to show those to named challenge partners. withdrawal_waiver = express request to start a paid digital service inside the 14-day withdrawal period (not used yet - there is no billing)"
+    },
+    "document_id": {"type": "text", "description": "Legal document id, e.g. 'terms' or 'privacy'. Empty for special_category and campaign_share"},
+    "document_version": {"type": "number", "description": "The version accepted. Empty when there is no document"},
+    "content_hash": {"type": "text", "description": "sha256 of the document's canonicalised blocks, so the exact text is identifiable later"},
+    "scope": {"type": "text", "description": "Article 9 category, or campaign_key. Empty for document_acceptance"},
+    "accepted": {"type": "boolean", "required": true, "default": true, "description": "False records an explicit REFUSAL, which is worth keeping - it is how we know not to ask again in the same session, and it shows the refusal path was real"},
+    "accepted_at": {"type": "date_time", "required": true},
+    "withdrawn_at": {"type": "date_time", "description": "Set when the user withdraws this consent. The only field ever updated on an existing row"},
+    "ui_surface": {
+      "type": "single_select",
+      "options": ["registration", "reacceptance_gate", "habit_add", "campaign_join", "settings", "checkout"],
+      "description": "Where the user was standing when asked"
+    },
+    "written_by": {"type": "single_select", "options": ["client", "api"], "required": true, "default": "client", "description": "Provenance. 'client' rows are forgeable - see notes"},
+    "app_version": {"type": "text", "description": "Which build asked. Helps tie a row to the flow that produced it"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "user_id": "1",
+      "consent_kind": "document_acceptance",
+      "document_id": "terms",
+      "document_version": 1,
+      "content_hash": "bbc304b4b22d641a6d362b4a2b2c55e789e2dfe8c563a4a2d70e0f9a86ebaa24",
+      "scope": "",
+      "accepted": true,
+      "accepted_at": "2026-08-15T09:00:00Z",
+      "ui_surface": "registration",
+      "written_by": "client",
+      "app_version": "1.0.0"
+    },
+    {
+      "user_id": "1",
+      "consent_kind": "special_category",
+      "document_id": "",
+      "document_version": null,
+      "content_hash": "",
+      "scope": "sobriety",
+      "accepted": true,
+      "accepted_at": "2026-08-15T09:14:00Z",
+      "ui_surface": "habit_add",
+      "written_by": "client",
+      "app_version": "1.0.0"
+    },
+    {
+      "user_id": "1",
+      "consent_kind": "campaign_share",
+      "document_id": "",
+      "document_version": null,
+      "content_hash": "",
+      "scope": "chl_9f3a2b",
+      "accepted": true,
+      "accepted_at": "2026-08-15T09:20:00Z",
+      "ui_surface": "campaign_join",
+      "written_by": "client",
+      "app_version": "1.0.0"
+    },
+    {
+      "user_id": "3",
+      "consent_kind": "special_category",
+      "document_id": "",
+      "document_version": null,
+      "content_hash": "",
+      "scope": "religion",
+      "accepted": false,
+      "accepted_at": "2026-08-15T10:02:00Z",
+      "ui_surface": "habit_add",
+      "written_by": "client",
+      "app_version": "1.0.0"
+    }
+  ]
+}

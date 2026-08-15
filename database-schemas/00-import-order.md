@@ -39,8 +39,28 @@ console warning until real ids are filled in.
 25. **25-challenge-templates.json** - Challenge catalogue (independent)
 26. **26-user-onboarding.json** - Setup-wizard + app-guide state, one row per user (independent)
 
-Same rule for 23–26: record the id in `environment.ts`. Each owning service keeps
+27. **27-user-projects.json** - A user's own projects, with a user column (independent)
+28. **28-user-tasks.json** - A user's own tasks (depends on user projects)
+29. **29-user-skills.json** - Skill tracks; stores NO progress, which is recomputed from habit entries (independent)
+30. **30-legal-acceptances.json** - Append-only log of documents accepted and consents given (independent)
+
+Same rule for 23–30: record the id in `environment.ts`. Each owning service keeps
 its state in localStorage while the id is `0` and flushes once a real one appears.
+
+### A note on 30-legal-acceptances
+
+It is the one table here whose *forgeability* changes what it is worth, rather
+than merely what it may gate. Every other table's warning says "do not gate an
+entitlement on this". This one says something narrower and sharper: a
+client-written consent row is **corroboration, not evidence**, because the
+shared bundle token means anyone can write a row — including a row for someone
+else. That is tolerable for terms acceptance, where the sign-up flow is itself
+evidence of contract formation. It is not sufficient for Article 9 explicit
+consent, where being able to *demonstrate* consent is the actual obligation.
+
+The `written_by` column exists so that when the API starts writing these rows,
+the trustworthy ones can be told apart from the rest — a distinction that is
+free to record now and impossible to reconstruct later.
 
 ## Database Relationships:
 

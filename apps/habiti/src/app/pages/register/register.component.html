@@ -133,11 +133,52 @@
           </label>
         </div>
 
+        <!--
+          Acceptance. UNTICKED BY DEFAULT and required — a pre-ticked box is not
+          agreement, and under GDPR it is not consent at all.
+
+          One checkbox covers both documents because accepting the Terms forms
+          the contract and the Privacy Policy is NOTICE rather than consent;
+          asking someone to "consent" to being informed muddles the two.
+
+          Nothing sensitive is asked for here on purpose. Article 9 consent is a
+          separate question at the moment it is actually needed — bundling it
+          into this checkbox would invalidate it.
+        -->
+        <div class="form-control mt-6">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-primary mt-0.5 shrink-0"
+              [(ngModel)]="acceptedTerms"
+              name="acceptedTerms"
+              [class.checkbox-error]="errors.acceptedTerms" />
+            <span class="text-sm leading-relaxed">
+              I agree to the
+              <a routerLink="/legal/terms" target="_blank" class="link link-primary">
+                Terms of Service</a
+              >
+              and I have read the
+              <a routerLink="/legal/privacy" target="_blank" class="link link-primary">
+                Privacy Policy</a
+              >.
+            </span>
+          </label>
+          <label class="label" *ngIf="errors.acceptedTerms">
+            <span class="label-text-alt text-error">{{ errors.acceptedTerms }}</span>
+          </label>
+
+          <p class="mt-3 text-xs text-base-content/60 leading-relaxed">
+            Habiti can track health, recovery and faith habits. We ask you separately, at the time,
+            before storing any of those — and separately again before showing them to anyone else.
+          </p>
+        </div>
+
         <div class="form-control mt-6">
           <button
             type="submit"
             class="btn btn-primary"
-            [disabled]="isLoading"
+            [disabled]="isLoading || !acceptedTerms"
             [class.loading]="isLoading">
             {{ isLoading ? 'Creating account...' : 'Sign up' }}
           </button>

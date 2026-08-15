@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ConsentService } from '../../services/consent.service';
 import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 import { MINIMUM_AGE, isAdult, latestAdultBirthDate, parseDateOnly } from '@habiti/util';
 
@@ -26,12 +27,24 @@ export class RegisterComponent {
   errors: any = {};
   isLoading = false;
 
+  /**
+   * Acceptance of the Terms and Privacy Policy.
+   *
+   * Separate from formData because it is not a profile field — it is the act
+   * that forms the contract, and it is recorded against the signed-in user
+   * after registration succeeds rather than posted with the account details.
+   *
+   * FALSE BY DEFAULT and never pre-ticked.
+   */
+  acceptedTerms = false;
+
   /** Bound to the date input's `max`, so the picker cannot offer an under-18 date. */
   readonly maxBirthDate = latestAdultBirthDate();
   readonly minimumAge = MINIMUM_AGE;
   
   constructor(
     private authService: AuthService,
+    private consent: ConsentService,
     private router: Router
   ) {}
   
@@ -78,6 +91,12 @@ export class RegisterComponent {
       this.errors.dateOfBirth = `You must be at least ${MINIMUM_AGE} to use Habiti`;
     }
 
+    // The button is already disabled without this, but a disabled button is a
+    // UI convention, not a guarantee — the check belongs here too.
+    if (!this.acceptedTerms) {
+      this.errors.acceptedTerms = 'Please accept the Terms of Service to continue';
+    }
+
     return Object.keys(this.errors).length === 0;
   }
   
@@ -89,7 +108,11 @@ export class RegisterComponent {
     this.isLoading = true;
     
     this.authService.register(this.formData).subscribe({
-      next: (response) => {
+      next: () => {
+        // Registration does not sign the user in, so there is no id to record
+        // the acceptance against yet. Stash it; ConsentService adopts it on the
+        // first sign-in with this email.
+        this.consent.stashSignupAcceptance(this.formData.email);
         this.router.navigate(['/login'], { queryParams: { registered: 'true' } });
       },
       error: (error) => {

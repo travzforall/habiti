@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { BehaviorSubject, of } from 'rxjs';
 import { SyncBus, SyncService, TIMER_PORT, TimerPort } from '@habiti/sync';
+import { AuthService } from './auth.service';
+import { BaserowService } from './baserow.service';
 import { ChallengeService } from './challenge.service';
 import { DailyContentService } from './daily-content.service';
 import { FriendsService } from './friends.service';
@@ -107,6 +109,16 @@ class MockProjects {
 }
 class MockUserStorage {
   resetMigrationState = jasmine.createSpy('storage.resetMigrationState');
+  // ConsentService reads and writes through UserStorage. A mock that only
+  // implements resetMigrationState makes its constructor throw, which takes the
+  // whole refresher registry down with it and leaves every sync assertion here
+  // failing for a reason that has nothing to do with sync.
+  private data = new Map<string, unknown>();
+  read = <T>(key: string, fallback: T): T => (this.data.get(key) as T) ?? fallback;
+  write = (key: string, value: unknown) => void this.data.set(key, value);
+  remove = (key: string) => void this.data.delete(key);
+  readRaw = (key: string) => (this.data.get(key) as string) ?? null;
+  writeRaw = (key: string, value: string) => void this.data.set(key, value);
 }
 class MockSkills {
   reload = jasmine.createSpy('skills.reload');
@@ -134,6 +146,10 @@ function build() {
       SyncBus,
       { provide: TIMER_PORT, useValue: timer },
       provideTestSession(sessionFromMockAuth(auth)),
+      // ConsentService needs to know WHO is signed in — the id to file a record
+      // against, and the email to match a stashed sign-up acceptance. Without
+      // this it resolves the real AuthService and reaches for HttpClient.
+      { provide: AuthService, useValue: auth },
       { provide: FriendsService, useClass: MockFriends },
       { provide: ChallengeService, useClass: MockChallenges },
       { provide: LevelService, useClass: MockLevels },
@@ -156,6 +172,10 @@ function build() {
        * the settlements de-duplication and the levels in-flight skip are
        * declared there now, and are asserted below.
        */
+      // ConsentService joins the refresher registry, and it reaches BaserowService
+      // for the acceptance table. Nothing here exercises consents; this keeps the
+      // registry constructible.
+      { provide: BaserowService, useValue: { createRow: () => of(null), updateRow: () => of(null), listAllRows: () => of([]) } },
       provideSyncRefreshers()
     ]
   });

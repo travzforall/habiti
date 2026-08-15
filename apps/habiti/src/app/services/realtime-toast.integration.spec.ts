@@ -17,6 +17,7 @@ import { SkillsService } from './skills.service';
 import { provideSyncRefreshers } from './sync-refreshers.providers';
 import { provideTestSession, sessionFromMockAuth } from '@habiti/sync/testing';
 import { AuthService } from './auth.service';
+import { BaserowService } from './baserow.service';
 import { RelayEnvelope } from '@habiti/realtime-protocol';
 import { Friend } from '../models/friend.models';
 
@@ -161,7 +162,19 @@ async function build() {
       // Server-backed but locally cached; only reload() is reachable from here.
       { provide: TasksService, useValue: { reload: () => {} } },
       { provide: ProjectsService, useValue: { reload: () => {} } },
-      { provide: UserStorage, useValue: { resetMigrationState: () => {} } },
+      {
+        provide: UserStorage,
+        // ConsentService reads through UserStorage; a resetMigrationState-only
+        // stub makes its constructor throw and empties the refresher registry.
+        useValue: {
+          resetMigrationState: () => {},
+          read: (_k: string, fallback: unknown) => fallback,
+          write: () => {},
+          remove: () => {},
+          readRaw: () => null,
+          writeRaw: () => {}
+        }
+      },
       { provide: SkillsService, useValue: { reload: () => {} } },
       { provide: LevelService, useValue: { refresh: () => of(undefined), reset: () => {}, hasAwardsInFlight: () => false } },
       { provide: HabitsService, useValue: { refresh: () => of(undefined), reset: () => {} } },
@@ -174,6 +187,10 @@ async function build() {
       // NOTHING — no error, no warning, just a relay hint that arrives and does
       // nothing. Which is precisely the end-to-end path this file exists to
       // prove, so leaving it out fails these tests rather than weakening them.
+      // ConsentService joins the refresher registry, and it reaches BaserowService
+      // for the acceptance table. Nothing here exercises consents; this keeps the
+      // registry constructible.
+      { provide: BaserowService, useValue: { createRow: () => of(null), updateRow: () => of(null), listAllRows: () => of([]) } },
       provideSyncRefreshers()
     ]
   });

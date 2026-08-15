@@ -1,5 +1,6 @@
 import { EnvironmentProviders, Provider, inject, makeEnvironmentProviders } from '@angular/core';
 import { ChallengeService } from './challenge.service';
+import { ConsentService } from './consent.service';
 import { DailyContentService } from './daily-content.service';
 import { FriendsService } from './friends.service';
 import { HabitsService } from './habits';
@@ -112,6 +113,23 @@ export function provideSyncRefreshers(): EnvironmentProviders {
         reset: () => dailyContent.reset(),
         onDayRollover: () => dailyContent.refreshForToday()
       };
+    }),
+
+    /**
+     * Consents: no scopes, reset only.
+     *
+     * Nothing pushes a hint when a consent changes — they change because the
+     * user just clicked something, and the service already updated its own
+     * signal. What this needs is the account switch, so the next person's
+     * agreements are read rather than the previous person's left on screen.
+     *
+     * Registered before notifications and after the domains, because reload()
+     * is also where a sign-up acceptance is adopted once there is finally a
+     * user id to attach it to.
+     */
+    refresher(() => {
+      const consent = inject(ConsentService);
+      return { scopes: [], refresh: () => undefined, reset: () => consent.reload() };
     }),
 
     /**
