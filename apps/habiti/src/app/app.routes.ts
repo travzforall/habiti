@@ -59,6 +59,16 @@ export const routes: Routes = [
   },
 
   /**
+   * How Habiti is built and secured. Public, and the page a security-minded
+   * reader checks against reality — so it is written honestly or not at all.
+   */
+  {
+    path: 'trust',
+    loadComponent: () => import('./pages/legal/trust.page').then(m => m.TrustPage),
+    data: { chrome: false }
+  },
+
+  /**
    * The re-acceptance gate. GUARDED — unlike everything else under /legal,
    * because it records an acceptance and needs to know who is accepting.
    *
