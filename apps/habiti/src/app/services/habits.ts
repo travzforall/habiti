@@ -3,6 +3,8 @@ import { BaserowService } from './baserow.service';
 import { AuthService } from './auth.service';
 import { SyncBus } from '@habiti/sync';
 import { UserStorage } from '@habiti/storage';
+import { ConsentService } from './consent.service';
+import { SensitiveCategory } from '../models/consent.models';
 import { Observable, ReplaySubject, catchError, map, of, forkJoin, switchMap } from 'rxjs';
 
 export interface WorkoutExercise {
@@ -100,6 +102,16 @@ export interface Habit {
   targetValue?: number;
   workoutPlan?: WorkoutPlan;
 }
+
+/**
+ * What addHabits() accepts.
+ *
+ * `sensitiveCategory` is NOT part of Habit — it is derived from the library and
+ * carried on the draft so the service can enforce Article 9 consent without
+ * importing the catalogue. It is never persisted; re-deriving it is always more
+ * truthful than trusting a copy.
+ */
+export type HabitDraft = Partial<Habit> & { sensitiveCategory?: SensitiveCategory };
 
 export interface DayColumn {
   date: Date;
@@ -296,7 +308,8 @@ export class HabitsService {
     private baserowService: BaserowService,
     private authService: AuthService,
     private syncBus: SyncBus,
-    private userStorage: UserStorage
+    private userStorage: UserStorage,
+    private consent: ConsentService
   ) {
     // Initialize by loading data from Baserow (ONLY data source)
     this.loadDataFromDatabase();
@@ -633,16 +646,39 @@ export class HabitsService {
    * Local-first so the list repaints instantly; a failed write leaves the habit
    * on screen rather than yanking it away, and the next sync reconciles.
    */
-  addHabits(drafts: Partial<Habit>[]): Observable<Habit[]> {
+  addHabits(drafts: HabitDraft[]): Observable<Habit[]> {
     const done = new ReplaySubject<Habit[]>(1);
 
-    if (drafts.length === 0) {
+    /**
+     * The Article 9 backstop.
+     *
+     * The consent modal in the UI is the real gate — it is where the user is
+     * actually asked. This is the second lock: a service that silently accepts
+     * unconsented special-category data is a worse shape than a service that
+     * refuses it, and there are three call sites today with more to come.
+     *
+     * `sensitiveCategory` travels on the draft rather than being derived here,
+     * because deriving it would mean importing the habit library into a service
+     * the nav bars construct eagerly — the ~137 kB the wizard was deferred to
+     * avoid. See toHabitDraft().
+     */
+    const allowed = drafts.filter(draft => {
+      const category = draft.sensitiveCategory;
+      if (!category || this.consent.hasSensitiveConsent(category)) return true;
+      console.warn(
+        `HabitsService: refusing "${draft.name}" — it records ${category} data and ` +
+          `no explicit consent is on file. Ask through the consent dialog first.`
+      );
+      return false;
+    });
+
+    if (allowed.length === 0) {
       done.next([]);
       done.complete();
       return done.asObservable();
     }
 
-    const created = drafts.map(habit => this.toNewHabit(habit));
+    const created = allowed.map(habit => this.toNewHabit(habit));
 
     this.habits.update(habits => [...habits, ...created]);
     this.saveData();

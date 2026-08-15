@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 import { HabitsService } from '../../services/habits';
+import { ConsentService } from '../../services/consent.service';
+import { ToastService } from '../../services/toast.service';
+import { SENSITIVE_CATEGORY_COPY, sensitiveCategoryOf } from '../../config/sensitive-habits';
+import { libraryHabitByName } from '../../config/habit-library';
+import { SensitiveCategory } from '../../models/consent.models';
 import { HabitImporterService } from '../../services/habit-importer.service';
 import { ChallengeService } from '../../services/challenge.service';
 import { OnboardingService } from '../../services/onboarding.service';
@@ -31,6 +36,68 @@ export class SettingsComponent {
 
   /** Computed, so the About card cannot go stale the way the hardcoded 2024 did. */
   protected readonly currentYear = new Date().getFullYear();
+
+  private consent = inject(ConsentService);
+  private toast = inject(ToastService);
+
+  /** Live Article 9 consents — withdrawn ones drop out of this list. */
+  protected readonly sensitiveConsents = this.consent.sensitiveConsents;
+
+  protected consentLabel(scope: string | undefined): string {
+    const copy = SENSITIVE_CATEGORY_COPY[scope as SensitiveCategory];
+    return copy ? `${copy.icon} ${copy.label}` : (scope ?? 'Unknown');
+  }
+
+  /**
+   * The habits a withdrawal would affect, offered for deletion afterwards.
+   *
+   * Held here rather than deleted immediately, because deletion is OFFERED and
+   * not forced: someone may want Habiti to stop treating the data as consented
+   * while keeping their own history, and quietly destroying months of recovery
+   * tracking because they clicked "withdraw" would be its own kind of harm.
+   */
+  protected readonly withdrawnCategory = signal<SensitiveCategory | null>(null);
+
+  protected readonly affectedHabits = computed(() => {
+    const category = this.withdrawnCategory();
+    if (!category) return [];
+    return this.habits().filter(habit => {
+      const entry = habit.name ? libraryHabitByName(habit.name) : undefined;
+      return !!entry && sensitiveCategoryOf(entry) === category;
+    });
+  });
+
+  /**
+   * Withdraws a consent.
+   *
+   * A consent you can withdraw while the data stays put is not much of a
+   * consent, so this is immediately followed by the offer to delete what it
+   * covered — see affectedHabits().
+   */
+  protected withdrawConsent(scope: string | undefined): void {
+    if (!scope) return;
+    const category = scope as SensitiveCategory;
+    this.consent.withdraw('special_category', category);
+    this.withdrawnCategory.set(category);
+
+    const label = SENSITIVE_CATEGORY_COPY[category]?.label ?? scope;
+    this.toast.success('Consent withdrawn', `Habiti will not store new ${label.toLowerCase()} habits.`);
+  }
+
+  /** Deletes the habits the withdrawn consent covered. */
+  protected deleteAffectedHabits(): void {
+    const affected = this.affectedHabits();
+    for (const habit of affected) this.habitsService.deleteHabit(habit.id);
+    this.withdrawnCategory.set(null);
+    this.toast.success(
+      `Deleted ${affected.length} habit${affected.length === 1 ? '' : 's'}`,
+      'And everything recorded against them.'
+    );
+  }
+
+  protected keepAffectedHabits(): void {
+    this.withdrawnCategory.set(null);
+  }
 
   // Challenge difficulty: the global default, overridable per challenge.
   protected readonly difficulties = CHALLENGE_DIFFICULTIES;

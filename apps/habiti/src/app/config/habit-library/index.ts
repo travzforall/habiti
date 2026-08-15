@@ -5,6 +5,7 @@ import { MIND } from './mind';
 import { WORK } from './work';
 import { LibraryCategory, LibraryHabit, LibrarySection, LibrarySubcategory } from './types';
 import { TrackingSpec, trackingFor } from './tracking';
+import { sensitiveCategoryOf } from '../sensitive-habits';
 
 export * from './types';
 export * from './tracking';
@@ -186,6 +187,20 @@ export function toHabitDraft(h: LibraryHabit) {
     // Carried onto the habit so the target survives without a library lookup,
     // and so the user can change it later.
     trackingUnit: spec.unit,
-    targetValue: spec.target
+    targetValue: spec.target,
+    /**
+     * Whether this habit reveals Article 9 data, and which kind.
+     *
+     * TRAVELS WITH THE DRAFT, and that is the whole design. HabitsService has
+     * to refuse an unconsented sensitive habit, but it deliberately does not
+     * import the habit library — it is constructed eagerly by the nav bars, and
+     * importing the library there is what put ~137 kB into the initial bundle
+     * once before. Classifying here and carrying the answer keeps the
+     * enforcement in the service and the catalogue out of the bundle.
+     *
+     * NOT persisted onto the Habit; it is derived, and re-deriving it is always
+     * more truthful than trusting a copy stored months ago.
+     */
+    sensitiveCategory: sensitiveCategoryOf(h)
   };
 }

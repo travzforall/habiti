@@ -162,6 +162,11 @@ describe('habit library', () => {
         'icon',
         'name',
         'points',
+        // Whether this habit reveals Article 9 data. Undefined for most, and
+        // present on every draft so HabitsService can refuse an unconsented
+        // sensitive habit without importing the catalogue — it is constructed
+        // eagerly by the nav bars, where the library costs ~137 kB.
+        'sensitiveCategory',
         // Carried through so a new habit keeps its target without a library
         // lookup, and so the user can change it later.
         'targetValue',

@@ -194,6 +194,83 @@
     </div>
 
     <!--
+      Your consents.
+
+      Withdrawal has to be as easy as giving it (Article 7(3)), and it has to be
+      real: withdrawing offers to delete the habits the consent covered, because
+      a consent you can withdraw while the data stays put is not much of one.
+    -->
+    <div class="bg-base-100 p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <span>🔐</span> Your consents
+      </h2>
+
+      <!--
+        The offer, after a withdrawal. Deleting is offered rather than done:
+        someone may want Habiti to stop treating the data as consented while
+        keeping their own history, and destroying months of recovery tracking
+        because they clicked "withdraw" would be its own kind of harm.
+      -->
+      @if (withdrawnCategory()) {
+        <div class="alert alert-warning mb-4 flex flex-col items-start gap-2">
+          @if (affectedHabits().length > 0) {
+            <p class="text-sm">
+              You still have {{ affectedHabits().length }}
+              {{ affectedHabits().length === 1 ? 'habit' : 'habits' }} of that kind. Delete
+              {{ affectedHabits().length === 1 ? 'it' : 'them' }} and everything recorded against
+              {{ affectedHabits().length === 1 ? 'it' : 'them' }}?
+            </p>
+            <div class="flex gap-2">
+              <button type="button" class="btn btn-sm btn-error" (click)="deleteAffectedHabits()">
+                Delete {{ affectedHabits().length }}
+              </button>
+              <button type="button" class="btn btn-sm btn-ghost" (click)="keepAffectedHabits()">
+                Keep them
+              </button>
+            </div>
+          } @else {
+            <p class="text-sm">Done — you had none of that kind stored.</p>
+            <button type="button" class="btn btn-sm btn-ghost" (click)="keepAffectedHabits()">
+              Close
+            </button>
+          }
+        </div>
+      }
+
+      @if (sensitiveConsents().length === 0) {
+        <p class="text-sm text-base-content/70">
+          You have not agreed to store any health, recovery or faith habits. We will ask if you
+          ever add one.
+        </p>
+      } @else {
+        <p class="text-sm text-base-content/70 mb-3">
+          You agreed to let Habiti store these. Withdraw any of them at any time.
+        </p>
+        <ul class="space-y-2">
+          @for (consent of sensitiveConsents(); track consent.id) {
+            <li class="flex items-center justify-between gap-3 rounded-lg bg-base-200 p-3">
+              <span class="min-w-0">
+                <span class="block text-sm font-medium">
+                  {{ consentLabel(consent.scope) }}
+                </span>
+                <span class="block text-xs text-base-content/60">
+                  Agreed {{ consent.acceptedAt | date: 'mediumDate' }}
+                </span>
+              </span>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline btn-error shrink-0"
+                (click)="withdrawConsent(consent.scope)"
+              >
+                Withdraw
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!--
       About & legal.
 
       These links are genuinely bound, unlike the theme select and the

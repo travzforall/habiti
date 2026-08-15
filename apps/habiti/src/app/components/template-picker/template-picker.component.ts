@@ -14,6 +14,10 @@ import { Habit, HabitsService } from '../../services/habits';
 import { ToastService } from '../../services/toast.service';
 import { HabitTemplatePack, isAlreadyAdded } from '../../config/habit-template-packs';
 import { LibraryHabit, hasGuidance, toHabitDraft } from '../../config/habit-library';
+import { sensitiveCategoriesIn } from '../../config/sensitive-habits';
+import { SensitiveCategory } from '../../models/consent.models';
+import { ConsentService } from '../../services/consent.service';
+import { SensitiveConsentComponent } from '../sensitive-consent/sensitive-consent.component';
 
 /**
  * Pick which habits from a pack to add.
@@ -26,8 +30,23 @@ import { LibraryHabit, hasGuidance, toHabitDraft } from '../../config/habit-libr
 @Component({
   selector: 'app-template-picker',
   standalone: true,
-  imports: [CommonModule, HabitGuidanceComponent],
+  imports: [CommonModule, HabitGuidanceComponent, SensitiveConsentComponent],
   template: `
+    <!--
+      The Article 9 consent dialog, on top of this one.
+
+      Rendered as a SIBLING rather than nested inside the picker's backdrop:
+      backdrop-filter makes an element a containing block for position: fixed
+      descendants, so nesting it would position it against the picker card and
+      scroll it with the list. Same reason root.html keeps the glass panel
+      beside the router outlet rather than around it.
+    -->
+    <app-sensitive-consent
+      [categories]="consentNeeded()"
+      (accepted)="onConsentAccepted($event)"
+      (declined)="onConsentDeclined()"
+    />
+
     @if (pack(); as p) {
       <div
         class="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4"
@@ -171,6 +190,19 @@ import { LibraryHabit, hasGuidance, toHabitDraft } from '../../config/habit-libr
 export class TemplatePickerComponent {
   private habitsService = inject(HabitsService);
   private toast = inject(ToastService);
+  private consent = inject(ConsentService);
+
+  /**
+   * Article 9 consent state, held while the dialog is open.
+   *
+   * The chosen habits are parked rather than added, so that agreeing adds
+   * exactly the set the user picked — re-deriving it after the modal closes
+   * would risk adding a different set than the one they were shown.
+   */
+  protected readonly consentNeeded = signal<SensitiveCategory[]>([]);
+  private readonly pendingHabits = signal<LibraryHabit[]>([]);
+  private readonly pendingSkipped = signal(0);
+  private readonly pendingPackName = signal('');
 
   constructor() {
     /**
@@ -279,11 +311,61 @@ export class TemplatePickerComponent {
       return;
     }
 
+    /**
+     * Article 9 gate.
+     *
+     * Only the categories NOT already consented to are asked about — someone
+     * who agreed to recovery tracking last week is not asked again, which is
+     * the difference between a considered prompt and a nag.
+     */
+    const needed = sensitiveCategoriesIn(fresh).filter(c => !this.consent.hasSensitiveConsent(c));
+    if (needed.length > 0) {
+      this.pendingHabits.set(fresh);
+      this.pendingSkipped.set(skipped);
+      this.pendingPackName.set(pack.name);
+      this.consentNeeded.set(needed);
+      return;
+    }
+
+    this.commit(fresh, skipped, pack.name);
+  }
+
+  /** Consent given: record it, then add exactly what was on the table. */
+  protected onConsentAccepted(categories: SensitiveCategory[]): void {
+    for (const category of categories) {
+      this.consent.recordSensitiveConsent(category, true, 'habit_add');
+    }
+    this.consentNeeded.set([]);
+    this.commit(this.pendingHabits(), this.pendingSkipped(), this.pendingPackName());
+  }
+
+  /**
+   * Declined. Nothing is added — not even the non-sensitive habits in the pack.
+   *
+   * Quietly adding "the rest" would be a worse answer than it looks: the user
+   * asked for a set, and silently delivering a different one teaches them their
+   * choices are being second-guessed. The refusal is recorded, which is also
+   * what shows the path was real.
+   */
+  protected onConsentDeclined(): void {
+    for (const category of this.consentNeeded()) {
+      this.consent.recordSensitiveConsent(category, false, 'habit_add');
+    }
+    this.consentNeeded.set([]);
+    this.pendingHabits.set([]);
+    this.toast.info('Nothing added', 'You can add habits that do not need that at any time.');
+    this.reset();
+    this.close.emit();
+  }
+
+  private commit(fresh: LibraryHabit[], skipped: number, packName: string): void {
+    if (fresh.length === 0) return;
+
     this.habitsService.addHabits(fresh.map(toHabitDraft)).subscribe(created => this.added.emit(created));
 
     this.toast.success(
       `Added ${fresh.length} habit${fresh.length === 1 ? '' : 's'}`,
-      skipped > 0 ? `${skipped} you already had ${skipped === 1 ? 'was' : 'were'} skipped.` : pack.name
+      skipped > 0 ? `${skipped} you already had ${skipped === 1 ? 'was' : 'were'} skipped.` : packName
     );
 
     this.reset();
