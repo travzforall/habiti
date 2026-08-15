@@ -83,6 +83,29 @@ export function sensitiveCategoriesIn(habits: readonly LibraryHabit[]): Sensitiv
   return [...found];
 }
 
+/**
+ * Challenge categories that reveal Article 9 data by themselves.
+ *
+ * A shared challenge shows the other participants which days you checked in —
+ * `ChallengeParticipant.checkIns` is commented "visible to the other side,
+ * which is the point". For a thirty-day "Clean Streak" that means another
+ * person can see which days you did and did not stay clean, which is recovery
+ * data disclosed to a third party.
+ *
+ * Keyed off the challenge CATEGORY rather than the bound habits because the
+ * category is the honest signal: the challenge is named and described as being
+ * about sobriety, so joining it discloses that regardless of which habits are
+ * attached to it.
+ */
+export const SENSITIVE_CHALLENGE_CATEGORIES: Record<string, SensitiveCategory> = {
+  sobriety: 'sobriety'
+};
+
+/** The Article 9 category a challenge would disclose, if any. */
+export function sensitiveCategoryOfChallenge(category: string): SensitiveCategory | undefined {
+  return SENSITIVE_CHALLENGE_CATEGORIES[category];
+}
+
 /** How each category is described to the user, in the consent prompt. */
 export const SENSITIVE_CATEGORY_COPY: Record<
   SensitiveCategory,

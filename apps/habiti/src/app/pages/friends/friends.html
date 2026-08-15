@@ -43,6 +43,22 @@
            placeholder="Add a note (optional)"
            [ngModel]="inviteMessage()"
            (ngModelChange)="inviteMessage.set($event)">
+
+    <!--
+      GDPR Article 14, in one sentence.
+
+      An invite stores a real person's email address before they have heard of
+      Habiti, and no email is ever sent — so they get no notice from us at all.
+      The usual "disproportionate effort" exemption is weak precisely because we
+      hold their address and simply do not use it. Telling the INVITER is the
+      one notice actually available at this moment, and it also discourages
+      inviting people who have not asked to hear from you.
+    -->
+    <p class="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+      Only invite people you know. We store their email address so we can connect you if they join,
+      and they can ask us to delete it — see our
+      <a routerLink="/legal/privacy" class="underline hover:text-blue-600">Privacy Policy</a>.
+    </p>
   </div>
 
   @if (error(); as message) {

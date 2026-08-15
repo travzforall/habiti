@@ -13,6 +13,8 @@ import { BaserowChallengeRunRepository } from './baserow-challenge-run.repositor
 import { BaserowService } from './baserow.service';
 import { AuthService } from './auth.service';
 import { SyncBus } from '@habiti/sync';
+import { ConsentService } from './consent.service';
+import { sensitiveCategoryOfChallenge } from '../config/sensitive-habits';
 import { environment } from '../../environments/environment';
 import { CHALLENGE_CATALOGUE } from '../config/challenge-catalogue.seed';
 import {
@@ -63,6 +65,7 @@ export class ChallengeService {
   private baserow = inject(BaserowService);
   private toast = inject(ToastService);
   private bus = inject(SyncBus);
+  private consent = inject(ConsentService);
 
   /**
    * Baserow when the campaign tables exist, localStorage otherwise.
@@ -526,6 +529,30 @@ export class ChallengeService {
   respondToInvite(runId: string, accept: boolean): Observable<ChallengeRun | null> {
     const run = this._runs().find(r => r.id === runId);
     if (!run) return of(null);
+
+    /**
+     * The sharing backstop.
+     *
+     * Accepting a recovery challenge tells the other participants which days
+     * you did and did not stay clean — `ChallengeParticipant.checkIns` is
+     * "visible to the other side, which is the point". That is Article 9 data
+     * disclosed to a third party, and consenting to RECORD it is not
+     * consenting to SHOW it to a named person.
+     *
+     * The UI asks first; this refuses if it somehow did not.
+     */
+    const sensitive = sensitiveCategoryOfChallenge(run.category);
+    if (accept && sensitive && !this.consent.hasShareConsent(run.campaignKey)) {
+      console.warn(
+        `ChallengeService: refusing to join "${run.title}" — it would share ${sensitive} ` +
+          `check-ins with the other participants and no share consent is on file.`
+      );
+      this.toast.warning(
+        'One more thing first',
+        'Joining this shares your check-ins with the other people in it. Please confirm that first.'
+      );
+      return of(null);
+    }
 
     const me = this.userId();
     const updated: ChallengeRun = {
