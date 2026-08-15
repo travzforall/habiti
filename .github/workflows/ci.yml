@@ -66,6 +66,13 @@ jobs:
       - name: Publish directory is deployable
         run: npm run verify:assets
 
+      # Two source facts a typecheck cannot see: that no legal document's text
+      # has drifted from the hash every acceptance record points at, and that
+      # the eager registry has not started importing the prose (which would put
+      # seven documents into the initial bundle).
+      - name: Legal documents are intact
+        run: npm run verify:legal
+
   relay:
     name: Relay — typecheck, protocol, test
     runs-on: ubuntu-latest

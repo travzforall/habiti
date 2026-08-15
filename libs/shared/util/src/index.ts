@@ -21,4 +21,5 @@
  */
 export * from './lib/age.util';
 export * from './lib/anchor-position.util';
+export * from './lib/canonical-json.util';
 export * from './lib/date-key.util';
