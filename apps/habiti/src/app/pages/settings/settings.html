@@ -193,15 +193,30 @@
       </div>
     </div>
 
-    <!-- About -->
+    <!--
+      About & legal.
+
+      These links are genuinely bound, unlike the theme select and the
+      notification toggles above them — see the note in settings.ts. Each shows
+      its version so a user can tell whether they are reading what they agreed
+      to. The copyright year is computed rather than a hardcoded 2024.
+    -->
     <div class="bg-base-100 p-6 rounded-lg shadow-md">
       <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-        <span>ℹ️</span> About
+        <span>ℹ️</span> About & legal
       </h2>
-      <div class="space-y-2">
+
+      <app-legal-links layout="list" />
+
+      <div class="mt-4 pt-4 border-t border-base-300 space-y-2">
+        <a
+          routerLink="/trust"
+          class="block text-sm text-primary hover:underline"
+        >
+          How Habiti is built and secured
+        </a>
         <p class="text-sm text-base-content/70">Version: 1.0.0</p>
-        <p class="text-sm text-base-content/70">Built with Angular & TailwindCSS</p>
-        <p class="text-sm text-base-content/70">© 2024 Habiti</p>
+        <p class="text-sm text-base-content/70">© {{ currentYear }} Habiti</p>
       </div>
     </div>
   </div>

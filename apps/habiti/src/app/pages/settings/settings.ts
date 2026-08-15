@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 import { HabitsService } from '../../services/habits';
 import { HabitImporterService } from '../../services/habit-importer.service';
 import { ChallengeService } from '../../services/challenge.service';
@@ -16,7 +17,7 @@ import {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LegalLinksComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
@@ -27,6 +28,9 @@ export class SettingsComponent {
 
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
+
+  /** Computed, so the About card cannot go stale the way the hardcoded 2024 did. */
+  protected readonly currentYear = new Date().getFullYear();
 
   // Challenge difficulty: the global default, overridable per challenge.
   protected readonly difficulties = CHALLENGE_DIFFICULTIES;

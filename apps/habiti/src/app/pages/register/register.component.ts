@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 import { MINIMUM_AGE, isAdult, latestAdultBirthDate, parseDateOnly } from '@habiti/util';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LegalLinksComponent],
   templateUrl: './register.component.html'
 })
 export class RegisterComponent {

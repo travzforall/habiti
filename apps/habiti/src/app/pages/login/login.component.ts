@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LegalLinksComponent],
   templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {

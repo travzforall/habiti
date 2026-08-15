@@ -145,11 +145,20 @@
       </form>
       
       <div class="divider">OR</div>
-      
+
       <p class="text-center">
-        Already have an account? 
+        Already have an account?
         <a routerLink="/login" class="link link-primary">Sign in</a>
       </p>
+
+      <!--
+        Reachable BEFORE signing up, which is the only time they are any use to
+        someone deciding whether to. The acceptance checkbox lands here in the
+        next change; these links are what it will point at.
+      -->
+      <div class="mt-6 pt-4 border-t border-base-300">
+        <app-legal-links layout="inline" />
+      </div>
     </div>
   </div>
 </div>

@@ -7,10 +7,51 @@ import { AuthGuard } from './guards/auth.guard';
 // Everything else is lazy so it lands in its own chunk instead of the initial bundle.
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
+
+  // `chrome: false` drops the nav bars — see root.ts. Sign-in and sign-up were
+  // rendering the full app shell, sidebar included, to signed-out visitors.
+  { path: 'login', component: LoginComponent, data: { chrome: false } },
   {
     path: 'register',
-    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
+    loadComponent: () =>
+      import('./pages/register/register.component').then(m => m.RegisterComponent),
+    data: { chrome: false }
+  },
+
+  /**
+   * The legal documents. PUBLIC, DELIBERATELY — no AuthGuard.
+   *
+   * A privacy policy nobody can read without an account is not a privacy
+   * policy. These have to work for someone who is not a user at all: a person
+   * whose email address was used in an invite, or a regulator following a link.
+   *
+   * Declared ABOVE the `**` wildcard, which redirects to /dashboard and would
+   * otherwise swallow them. The scoped `legal/**` below catches typos within
+   * this section without touching the global wildcard.
+   *
+   * Lazily loaded: LegalDocumentPage is the only thing that imports the prose,
+   * and that is what keeps seven documents out of the initial bundle.
+   */
+  {
+    path: 'legal',
+    data: { chrome: false },
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/legal/legal-index.page').then(m => m.LegalIndexPage)
+      },
+      {
+        path: ':docId',
+        loadComponent: () =>
+          import('./pages/legal/legal-document.page').then(m => m.LegalDocumentPage)
+      },
+      {
+        path: ':docId/v/:version',
+        loadComponent: () =>
+          import('./pages/legal/legal-document.page').then(m => m.LegalDocumentPage)
+      },
+      { path: '**', redirectTo: '' }
+    ]
   },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
   {

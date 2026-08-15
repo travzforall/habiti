@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { TopNavComponent } from '../components/top-nav/top-nav';
 import { SideNavComponent } from '../components/side-nav/side-nav.component';
 import { BottomNavComponent } from '../components/bottom-nav/bottom-nav';
@@ -57,7 +58,38 @@ export class RootComponent implements OnInit {
   /** Same idea for the tour overlay — see the note in root.html. */
   protected readonly tourActive = inject(TourService).active;
 
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  /**
+   * Whether to render the navigation chrome around the outlet.
+   *
+   * Sign-in, sign-up and the legal pages are reachable by people who are not
+   * signed in — and the legal pages by people who are not users at all: someone
+   * whose email was used in an invite, or a regulator following a link. Wrapping
+   * those in a sidebar full of links to guarded routes is noise at best.
+   *
+   * A route opts out with `data: { chrome: false }`. Default is on, so a new
+   * feature route cannot lose its navigation by forgetting something.
+   */
+  protected readonly chromeVisible = signal(true);
+
   ngOnInit(): void {
     this.theme.applyStored();
+
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.chromeVisible.set(this.wantsChrome()));
+
+    // NavigationEnd has usually already fired for the first route by the time
+    // this component initialises, so the initial value has to be read directly.
+    this.chromeVisible.set(this.wantsChrome());
+  }
+
+  /** Reads the deepest activated child, which is where a lazy route's data lands. */
+  private wantsChrome(): boolean {
+    let route = this.route.snapshot;
+    while (route.firstChild) route = route.firstChild;
+    return route.data['chrome'] !== false;
   }
 }

@@ -34,6 +34,26 @@
   <app-tour-overlay></app-tour-overlay>
 }
 
+<!--
+  Two layouts, chosen by the route's `data.chrome`.
+
+  The BARE branch exists because /legal and /trust have to be readable by people
+  who are not signed in, and often are not users at all — someone whose email
+  address was used in an invite, or a regulator following a link. Wrapping those
+  in a sidebar of links to guarded routes helps nobody. /login and /register get
+  the same treatment; they were always rendering the full app chrome to signed-
+  out visitors, which was a wart nobody had got to.
+
+  Note the bare branch has NO backdrop-filter layer. That is deliberate, not an
+  omission — see the long note below about what blur does to `position: fixed`.
+-->
+@if (!chromeVisible()) {
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
+    <main class="mx-auto max-w-3xl px-4 py-8 lg:py-12">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+} @else {
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
   <app-top-nav></app-top-nav>
 
@@ -81,3 +101,4 @@
     class="fixed -z-10 bottom-20 left-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"
   ></div>
 </div>
+}

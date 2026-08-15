@@ -3,6 +3,7 @@ import { provideTestUserId } from '@habiti/storage/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { RootComponent } from './root';
 
 /**
@@ -52,5 +53,55 @@ describe('RootComponent (the bootstrapped shell)', () => {
 
   it('renders a router outlet', () => {
     expect(render().querySelector('router-outlet')).toBeTruthy();
+  });
+
+  /**
+   * The bare layout.
+   *
+   * /legal and /trust have to be readable by people who are not signed in, and
+   * frequently are not users at all — someone whose email address was used in
+   * an invite, or a regulator following a link. Surrounding those pages with a
+   * sidebar of links to guarded routes is noise.
+   *
+   * Chrome is on by DEFAULT, so a new feature route cannot silently lose its
+   * navigation by forgetting to opt in. Only `chrome: false` turns it off.
+   */
+  describe('the bare layout', () => {
+    async function renderAt(path: string, routeData?: Record<string, unknown>): Promise<HTMLElement> {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [RootComponent],
+        providers: [
+          provideTestSession(),
+          provideTestUserId(),
+          provideHttpClient(),
+          provideRouter([{ path, children: [], data: routeData }])
+        ]
+      }).compileComponents();
+
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/${path}`);
+
+      const fixture = TestBed.createComponent(RootComponent);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('hides the nav chrome for a route marked chrome: false', async () => {
+      const el = await renderAt('legal', { chrome: false });
+      expect(el.querySelector('app-top-nav')).toBeNull();
+      expect(el.querySelector('app-side-nav')).toBeNull();
+      expect(el.querySelector('app-bottom-nav')).toBeNull();
+      // The page itself must still render, and toasts must still be possible.
+      expect(el.querySelector('router-outlet')).toBeTruthy();
+      expect(el.querySelector('app-toast')).toBeTruthy();
+    });
+
+    it('keeps the chrome for a route that says nothing about it', async () => {
+      const el = await renderAt('dashboard');
+      expect(el.querySelector('app-top-nav')).toBeTruthy();
+      expect(el.querySelector('app-side-nav')).toBeTruthy();
+      expect(el.querySelector('app-bottom-nav')).toBeTruthy();
+    });
   });
 });
