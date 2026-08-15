@@ -129,16 +129,6 @@ export interface Achievement {
   requirement: (gameState: GameState, habits: Habit[]) => boolean;
 }
 
-export interface SMTPConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  username: string;
-  password: string;
-  fromEmail: string;
-  toEmail: string;
-}
-
 /**
  * Local category slug <-> the category NAME in Baserow table 517.
  *
@@ -573,16 +563,6 @@ export class HabitsService {
     { id: '8', name: 'No junk food', category: 'health', icon: '🥗', type: 'bad', difficulty: 'medium', points: 12, goal: 1, description: 'Avoid processed and unhealthy foods', tags: ['nutrition', 'health', 'diet'] }
   ];
 
-  smtpConfig: SMTPConfig = {
-    host: '',
-    port: 587,
-    secure: false,
-    username: '',
-    password: '',
-    fromEmail: '',
-    toEmail: ''
-  };
-
   // Utility Methods
   formatDate(date: Date): string {
     // Use local date components to avoid timezone issues
@@ -616,7 +596,6 @@ export class HabitsService {
       if (seenIds.has(habit.id)) {
         newId = this.generateUniqueId();
         idMapping[habit.id] = newId;
-        console.log(`Fixing duplicate ID: ${habit.id} -> ${newId} for habit: ${habit.name}`);
       }
 
       seenIds.add(newId);
@@ -636,7 +615,6 @@ export class HabitsService {
 
       this.habits.set(updatedHabits);
       this.saveData();
-      console.log('Fixed duplicate habit IDs');
     }
   }
 
@@ -1123,7 +1101,6 @@ export class HabitsService {
     this.userStorage.writeRaw('habiti-habits', JSON.stringify(this.habits()));
     this.userStorage.writeRaw('habiti-entries', JSON.stringify(Array.from(this.habitEntries().entries())));
     this.userStorage.writeRaw('habiti-gamestate', JSON.stringify(this.gameState()));
-    this.userStorage.writeRaw('habiti-smtp', JSON.stringify(this.smtpConfig));
     this.userStorage.writeRaw('habiti-nightly-plans', JSON.stringify(this.nightlyPlans()));
   }
 
@@ -1144,10 +1121,11 @@ export class HabitsService {
         this.gameState.set(JSON.parse(gameStateData));
       }
 
-      const smtpData = this.userStorage.readRaw('habiti-smtp');
-      if (smtpData) {
-        this.smtpConfig = JSON.parse(smtpData);
-      }
+      // A dormant SMTP config (host, username, PASSWORD) used to be read here and
+      // written back out by exportData(). Nothing ever sent mail — a browser
+      // cannot open an SMTP socket — so it stored a credential to no purpose and
+      // then handed it to the user in a downloaded file. Removed entirely.
+      this.userStorage.remove('habiti-smtp');
 
       const nightlyPlansData = this.userStorage.readRaw('habiti-nightly-plans');
       if (nightlyPlansData) {
@@ -1543,13 +1521,23 @@ export class HabitsService {
     this.saveData();
   }
 
-  // Export/Import functionality
+  /**
+   * A local backup of habit data.
+   *
+   * NOT a GDPR Article 20 portability export, and it must not be described as
+   * one: it serialises client-side signals only — habits, entries, game state —
+   * and knows nothing about the profile, challenges, pledges, levels, friends,
+   * skills, projects or tasks. A real export has to come from the server.
+   *
+   * It also used to include `smtpConfig`, which carried a stored PASSWORD, so
+   * every "backup" handed the user a credential in a plaintext file. That field
+   * is gone along with the rest of the dormant SMTP config.
+   */
   exportData(): void {
     const data = {
       habits: this.habits(),
       habitEntries: Array.from(this.habitEntries().entries()),
       gameState: this.gameState(),
-      smtpConfig: this.smtpConfig,
       exportDate: new Date().toISOString()
     };
     
@@ -1570,8 +1558,8 @@ export class HabitsService {
       if (data.habits) this.habits.set(data.habits);
       if (data.habitEntries) this.habitEntries.set(new Map(data.habitEntries));
       if (data.gameState) this.gameState.set(data.gameState);
-      if (data.smtpConfig) this.smtpConfig = data.smtpConfig;
-      
+      // data.smtpConfig in an older backup is ignored on purpose — see exportData().
+
       this.saveData();
     } catch (error) {
       console.error('Error importing data:', error);
@@ -1748,12 +1736,9 @@ export class HabitsService {
 
     this.baserowService.getHabits(userId ?? undefined, true).subscribe({
       next: (response) => {
-        console.log('🔍 RAW Baserow Response:', JSON.stringify(response, null, 2));
         if (response.results) {
           const habits = response.results.map((row: any) => this.transformBaserowHabitToLocal(row));
           this.habits.set(habits);
-          console.log('✅ Loaded habits from Baserow:', habits.length);
-          console.log('📊 Habits Data:', JSON.stringify(habits, null, 2));
         } else {
           console.warn('⚠️ No results in Baserow response');
         }
@@ -1781,7 +1766,6 @@ export class HabitsService {
             newEntries.set(key, habitEntry);
           });
           this.habitEntries.set(newEntries);
-          console.log('Loaded habit entries from Baserow:', response.results.length);
         }
       },
       error: (error) => {
@@ -1813,7 +1797,6 @@ export class HabitsService {
             dailyStreak: gameStateData.daily_streak ?? gameStateData.current_streak ?? 0,
             longestStreak: gameStateData.longest_streak ?? gameStateData.best_streak ?? 0
           }));
-          console.log('Loaded game state from Baserow');
         }
       },
       error: (error) => {
@@ -1823,8 +1806,6 @@ export class HabitsService {
   }
 
   transformBaserowHabitToLocal(baserowHabit: any): Habit {
-    console.log('🔄 Transforming Baserow habit:', baserowHabit);
-    console.log('🔄 Type field value:', baserowHabit.type, 'typeof:', typeof baserowHabit.type);
 
     return {
       id: baserowHabit.id.toString(),
@@ -1981,7 +1962,6 @@ export class HabitsService {
     if (habit.id && !habit.id.startsWith('habit-')) {
       // Update existing habit
       this.baserowService.updateHabit(parseInt(habit.id), habitData).subscribe({
-        next: () => console.log('Habit synced to Baserow'),
         error: (error) => console.error('Failed to sync habit:', error)
       });
     } else {
@@ -1995,7 +1975,6 @@ export class HabitsService {
             habits[index].id = response.id.toString();
             this.habits.set([...habits]);
           }
-          console.log('New habit created in Baserow');
         },
         error: (error) => console.error('Failed to create habit:', error)
       });
@@ -2017,7 +1996,6 @@ export class HabitsService {
     };
 
     this.baserowService.createHabitEntry(entryData).subscribe({
-      next: () => console.log('Entry synced to Baserow'),
       error: (error) => console.error('Failed to sync entry:', error)
     });
   }

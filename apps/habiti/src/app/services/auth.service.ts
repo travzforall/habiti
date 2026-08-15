@@ -92,7 +92,6 @@ export class AuthService {
     
     return this.http.post(url, registerData, { headers: this.getHeaders() }).pipe(
       map((response: any) => {
-        console.log('Register response:', response);
         
         // Handle case where user data might not be included
         const user: User = response.user ? {
@@ -147,7 +146,6 @@ export class AuthService {
     
     return this.http.post(url, loginData, { headers: this.getHeaders() }).pipe(
       switchMap((response: any) => {
-        console.log('Login response:', response);
         
         if (!response.authToken) {
           throw new Error('Invalid email or password');
@@ -160,7 +158,6 @@ export class AuthService {
         const meUrl = `${this.xanoApiUrl}${this.xanoEndpoints.auth.me}`;
         return this.http.get(meUrl, { headers: this.getHeaders(response.authToken) }).pipe(
           map((userResponse: any) => {
-            console.log('User data response:', userResponse);
             
             // Use the new User interface structure
             const user: User = {
@@ -262,7 +259,6 @@ export class AuthService {
     
     return this.http.get(url, { headers: this.getHeaders(token) }).pipe(
       map((response: any) => {
-        console.log('Get current user response:', response);
         
         // Directly use the response structure from the API
         const user: User = {

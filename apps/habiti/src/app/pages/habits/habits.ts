@@ -355,18 +355,14 @@ export class HabitsComponent {
     const habits = this.getFilteredHabits();
     const grouped: any[] = [];
 
-    console.log('Total habits:', habits.length);
     if (habits.length > 0) {
-      console.log('Sample habit:', habits[0]);
     }
 
     // Get all unique category IDs from actual habits
     const categoryIds = new Set(habits.map(h => h.category).filter(Boolean));
-    console.log('Category IDs found:', Array.from(categoryIds));
 
     // Get habits without any category
     const uncategorizedHabits = habits.filter(h => !h.category);
-    console.log('Uncategorized habits:', uncategorizedHabits.length);
 
     // Group by category first
     for (const categoryId of categoryIds) {
@@ -442,10 +438,8 @@ export class HabitsComponent {
 
       // Add habits without subcategories to category level
       const ungroupedCategoryHabits = categoryHabits.filter(h => !h.subcategory);
-      console.log(`Category ${categoryId}: ${ungroupedCategoryHabits.length} habits without subcategory`);
       if (ungroupedCategoryHabits.length > 0) {
         categoryGroup.habits = ungroupedCategoryHabits;
-        console.log('Habits added to category:', ungroupedCategoryHabits.map(h => h.name));
       }
 
       grouped.push(categoryGroup);
@@ -464,8 +458,6 @@ export class HabitsComponent {
       });
     }
 
-    console.log('Grouped categories:', grouped.length);
-    console.log('Grouped data:', grouped);
     return grouped;
   }
 

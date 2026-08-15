@@ -127,7 +127,34 @@
       // the imports that enforce-module-boundaries inspects.
       "files": ["*.ts", "*.tsx"],
       "parser": "@typescript-eslint/parser",
-      "rules": {}
+      "rules": {
+        // The second error-level rule, and it is here for a privacy reason
+        // rather than a stylistic one.
+        //
+        // auth.service.ts logged whole API responses — bearer token, email,
+        // date of birth — and habits.ts logged the raw Baserow response, which
+        // is the user's entire habit list. That list can contain
+        // `therapy-session`, `no-alcohol` and `take-medication`: GDPR Article 9
+        // special-category data, printed to a console in production, on a
+        // machine that may be shared.
+        //
+        // 24 such calls were removed. `warn`, `error` and `info` stay allowed:
+        // they are used deliberately here for failures and for the relay's
+        // one-line-per-connect diagnostic, and they carry messages rather than
+        // response bodies. `log` and `debug` are where dumping happens.
+        "no-console": ["error", { "allow": ["warn", "error", "info"] }]
+      }
+    },
+    {
+      // The relay is a Node process, and there `console.log` IS the logging
+      // mechanism — one JSON line per event to stdout, read by whoever operates
+      // the service. That is the opposite of the browser case: nothing is
+      // written to a user's device, and the relay already takes care not to log
+      // emails (see the DEBUG_ADDRESSES flag in realtime-server/src/config.ts).
+      "files": ["realtime-server/**/*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
     }
   ]
 }

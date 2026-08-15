@@ -449,17 +449,14 @@ export class BaserowService {
       // Step 2: Create categories first
       this.createCategories(Array.from(categories)).subscribe({
         next: (catResults) => {
-          console.log('Categories created:', catResults);
           
           // Step 3: Create agents
           this.createAgents(Array.from(agents)).subscribe({
             next: (agentResults) => {
-              console.log('Agents created:', agentResults);
               
               // Step 4: Create project
               this.createProjects(Array.from(projects)).subscribe({
                 next: (projResults) => {
-                  console.log('Projects created:', projResults);
                   
                   // Step 5: Create tasks with references
                   this.createTasks(tasks).subscribe({
@@ -630,7 +627,6 @@ export class BaserowService {
           next: (response) => {
             created += batch.length;
             results.push(response);
-            console.log(`Batch ${index + 1}/${batches.length} uploaded`);
             
             // Process next batch with small delay
             setTimeout(() => processBatch(index + 1), 500);
