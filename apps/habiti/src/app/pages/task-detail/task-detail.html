@@ -1,0 +1,625 @@
+@if (task(); as task) {
+  <div class="space-y-6">
+    <!-- Breadcrumb: where this task lives, and the way back out -->
+    <nav class="flex flex-wrap items-center gap-2 text-sm text-slate-500" aria-label="Breadcrumb">
+      <a routerLink="/tasks" class="hover:text-blue-600">Tasks</a>
+      @if (project(); as project) {
+        <span aria-hidden="true">/</span>
+        <a [routerLink]="['/projects', project.id]" class="hover:text-blue-600">
+          {{ project.icon }} {{ project.title || 'Untitled project' }}
+        </a>
+      }
+      <span aria-hidden="true">/</span>
+      <span class="truncate text-slate-700 dark:text-slate-300">{{ task.title }}</span>
+    </nav>
+
+    <!-- Header -->
+    <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="flex min-w-0 items-start gap-4">
+          <button
+            (click)="toggle()"
+            [attr.aria-label]="task.completed ? 'Mark not done' : 'Mark done'"
+            class="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded border-2 transition-all"
+            [class.bg-green-500]="task.completed"
+            [class.border-green-500]="task.completed"
+            [class.border-slate-300]="!task.completed"
+          >
+            @if (task.completed) {
+              <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            }
+          </button>
+
+          <div class="min-w-0">
+            <h1
+              class="text-2xl font-bold text-slate-900 dark:text-slate-100 md:text-3xl"
+              [class.line-through]="task.completed"
+            >
+              {{ task.title }}
+            </h1>
+            @if (task.description) {
+              <p class="mt-2 whitespace-pre-line text-slate-600 dark:text-slate-300">
+                {{ task.description }}
+              </p>
+            }
+          </div>
+        </div>
+
+        <div class="flex shrink-0 flex-wrap gap-2">
+          <a
+            [routerLink]="['/tasks', task.id, 'edit']"
+            class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+          >
+            Edit
+          </a>
+          <button
+            (click)="showMove.set(!showMove())"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200"
+          >
+            Move
+          </button>
+          <button
+            (click)="pendingDelete.set(true)"
+            class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      @if (showMove()) {
+        <div class="mt-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-700/40">
+          <label for="move-project" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Move this task to
+          </label>
+          <select
+            id="move-project"
+            [ngModel]="task.projectId"
+            (ngModelChange)="moveTo($event)"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          >
+            <option [value]="STANDALONE">No project (standalone)</option>
+            @for (option of projects(); track option.id) {
+              <option [value]="option.id">{{ option.icon }} {{ option.title || 'Untitled project' }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <!-- Status -->
+      <div class="mt-6 flex flex-wrap gap-2" role="group" aria-label="Task status">
+        @for (status of statuses; track status) {
+          <button
+            (click)="setStatus(status)"
+            [attr.aria-pressed]="(task.status ?? (task.completed ? 'done' : 'todo')) === status"
+            [class]="
+              (task.status ?? (task.completed ? 'done' : 'todo')) === status
+                ? statusMeta[status].classes + ' ring-2 ring-offset-1 ring-blue-400'
+                : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300'
+            "
+            class="rounded-full border px-4 py-1.5 text-sm font-medium transition-all"
+          >
+            {{ statusMeta[status].icon }} {{ statusMeta[status].label }}
+          </button>
+        }
+      </div>
+
+      <!-- Progress -->
+      <div class="mt-6">
+        <div class="mb-2 flex items-center justify-between text-sm">
+          <span class="font-medium text-slate-700 dark:text-slate-200">Progress</span>
+          <span class="text-slate-500">{{ progress() }}%</span>
+        </div>
+        <div class="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+          <div
+            class="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+            [style.width.%]="progress()"
+          ></div>
+        </div>
+        @if (checklistItems().length > 0) {
+          <p class="mt-1 text-xs text-slate-500">From the checklist below.</p>
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- Facts -->
+      <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+        <h3 class="mb-4 font-semibold text-slate-800 dark:text-slate-100">Details</h3>
+        <dl class="space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Priority</dt>
+            <dd>
+              <span
+                class="rounded-full px-2 py-1 text-xs font-medium"
+                [style.background-color]="priorityColor(task.priority) + '20'"
+                [style.color]="priorityColor(task.priority)"
+              >
+                {{ task.priority | titlecase }}
+              </span>
+            </dd>
+          </div>
+
+          <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Due</dt>
+            <dd [class.text-red-600]="isOverdue(task)" class="text-slate-700 dark:text-slate-200">
+              {{ task.dueDate ? formatDate(task.dueDate) : 'No date' }}
+            </dd>
+          </div>
+
+          <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Project</dt>
+            <dd class="text-slate-700 dark:text-slate-200">
+              @if (project(); as project) {
+                <a [routerLink]="['/projects', project.id]" class="text-blue-600 hover:underline">
+                  {{ project.title || 'Untitled project' }}
+                </a>
+              } @else {
+                Standalone
+              }
+            </dd>
+          </div>
+
+          <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Created</dt>
+            <dd class="text-slate-700 dark:text-slate-200">{{ formatDate(task.createdAt) }}</dd>
+          </div>
+
+          @if (task.completedAt) {
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-500">Completed</dt>
+              <dd class="text-slate-700 dark:text-slate-200">{{ formatDate(task.completedAt) }}</dd>
+            </div>
+          }
+
+          @if (milestone(); as milestone) {
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-slate-500">Milestone</dt>
+              <dd class="min-w-0 truncate text-slate-700 dark:text-slate-200">
+                @if (project(); as project) {
+                  <a [routerLink]="['/projects', project.id]" class="text-blue-600 hover:underline">
+                    {{ milestone.title }}
+                  </a>
+                } @else {
+                  {{ milestone.title }}
+                }
+              </dd>
+            </div>
+          }
+
+          @if (onMaps().length > 0) {
+            <div>
+              <dt class="mb-1 text-slate-500">On a map</dt>
+              <dd class="flex flex-wrap gap-1">
+                @for (map of onMaps(); track map.id) {
+                  <a
+                    [routerLink]="['/maps', map.id]"
+                    class="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                  >
+                    🧠 {{ map.title }}
+                  </a>
+                }
+              </dd>
+            </div>
+          }
+
+          @if (task.tags?.length) {
+            <div>
+              <dt class="mb-1 text-slate-500">Tags</dt>
+              <dd class="flex flex-wrap gap-1">
+                @for (tag of task.tags; track tag) {
+                  <span class="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                    #{{ tag }}
+                  </span>
+                }
+              </dd>
+            </div>
+          }
+        </dl>
+
+        <!-- Time. Next to progress, never folded into it. -->
+        <div class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <h4 class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Time</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            {{ task.actualHours || 0 }}h spent
+            @if (task.estimatedHours) {
+              of {{ task.estimatedHours }}h estimated
+            }
+          </p>
+          @if (task.estimatedHours && (task.actualHours || 0) > task.estimatedHours) {
+            <p class="mt-1 text-xs text-amber-600">Over the estimate — worth revisiting it.</p>
+          }
+
+          <div class="mt-3 flex gap-2">
+            <label class="sr-only" for="log-hours">Hours to add</label>
+            <input
+              id="log-hours"
+              type="number"
+              min="0"
+              step="0.25"
+              placeholder="0.5"
+              [ngModel]="logHoursValue()"
+              (ngModelChange)="logHoursValue.set($event)"
+              class="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+            />
+            <button
+              (click)="logHours()"
+              class="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+            >
+              Log time
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!--
+        What this task waits for, and what waits on it.
+
+        Blocked is SHOWN, never enforced: people work out of order for good
+        reasons — the blocker turned out not to matter, or it was done and never
+        recorded. Saying so is useful; refusing the tick is not.
+      -->
+      <!--
+        Some tasks turn out to be jobs.
+
+        "Floors" starts as one line and becomes levelling, vinyl, materials and
+        six tasks of its own. Promoting it carries its budget, items, expenses
+        and files across and then removes the task, because it is a project now.
+      -->
+      @if (canPromote()) {
+        <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+          <h3 class="mb-1 font-semibold text-slate-800 dark:text-slate-100">Bigger than a task?</h3>
+          <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+            Make it a sub-project of {{ projectName() }}. Its budget, items,
+            expenses and files come with it, and the task is replaced.
+          </p>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+            (click)="promote(task)"
+          >
+            Make this a sub-project
+          </button>
+        </div>
+      }
+
+      <!--
+        This task's money.
+
+        Its items and expenses belong to the project too, so what is set here
+        shows up in the project's budget as well — the same money, seen from the
+        job it is for. Nothing is counted twice.
+      -->
+      <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800 dark:text-slate-100">Budget</h3>
+
+          @if (editingBudget()) {
+            <form class="flex items-center gap-2" (ngSubmit)="saveBudget()">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                [(ngModel)]="budgetDraft"
+                name="taskBudget"
+                placeholder="0.00"
+                class="w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+              />
+              <button type="submit" class="rounded-lg bg-blue-600 px-3 py-1 text-sm font-medium text-white">
+                Save
+              </button>
+              <button type="button" class="text-sm text-slate-500" (click)="editingBudget.set(false)">
+                Cancel
+              </button>
+            </form>
+          } @else {
+            <button
+              type="button"
+              class="text-sm font-medium text-blue-600"
+              (click)="startEditingBudget(task)"
+            >
+              {{ task.budget === undefined ? 'Set a budget' : money(task.budget) }}
+            </button>
+          }
+        </div>
+
+        <div class="mb-3 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/40">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500">Spent</p>
+            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+              {{ money(budgetSummary().spent) }}
+            </p>
+          </div>
+          <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/40">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500">Committed</p>
+            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+              {{ money(budgetSummary().committed) }}
+            </p>
+          </div>
+          <div class="rounded-lg bg-slate-50 p-2 dark:bg-slate-900/40">
+            <p class="text-[11px] uppercase tracking-wide text-slate-500">Projected</p>
+            <p class="text-sm font-semibold" [class.text-red-600]="budgetSummary().over">
+              {{ money(budgetSummary().projected) }}
+            </p>
+          </div>
+        </div>
+
+        @if (budgetSummary().over) {
+          <p class="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">
+            Over its budget by {{ money(-(budgetSummary().remaining ?? 0)) }}.
+          </p>
+        }
+
+        @if (taskItems().length > 0) {
+          @for (item of taskItems(); track item.id) {
+            <div class="flex items-center gap-2 py-1">
+              <span class="text-xs text-slate-500">
+                @if (item.quantity && item.quantity !== 1) {
+                  {{ item.quantity }}{{ item.unit ? ' ' + item.unit : '' }} ·
+                }
+              </span>
+              <span class="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
+                {{ item.title }}
+              </span>
+              <span class="shrink-0 text-sm tabular-nums text-slate-600 dark:text-slate-300">
+                {{ item.unitCost === undefined ? '—' : money(itemTotal(item)) }}
+              </span>
+              <button
+                type="button"
+                class="shrink-0 text-xs text-slate-400 hover:text-red-600"
+                (click)="removeItem(item.id)"
+                aria-label="Remove item"
+              >
+                ✕
+              </button>
+            </div>
+          }
+        }
+
+        <!-- Tools this task needs. Owned and borrowed ones cost nothing;
+             hired and bought ones show up in the budget above. -->
+        @if (taskTools().length > 0) {
+          <div class="mt-3 border-t border-slate-100 pt-2 dark:border-slate-700">
+            @for (tool of taskTools(); track tool.id) {
+              <div class="flex items-center gap-2 py-1">
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium" [class]="toolClass(tool)">
+                  {{ tool.status }}
+                </span>
+                <span class="min-w-0 flex-1 truncate text-sm text-slate-800 dark:text-slate-100">
+                  {{ tool.title }}
+                </span>
+                <span class="shrink-0 text-sm tabular-nums text-slate-600 dark:text-slate-300">
+                  {{ costOfTool(tool) === 0 ? '—' : money(costOfTool(tool)) }}
+                </span>
+                <button
+                  type="button"
+                  class="shrink-0 text-xs"
+                  [class]="tool.inHand ? 'text-green-600' : 'text-blue-600'"
+                  (click)="toggleToolInHand(tool)"
+                >
+                  {{ tool.inHand ? 'here' : 'got it' }}
+                </button>
+                <button
+                  type="button"
+                  class="shrink-0 text-xs text-slate-400 hover:text-red-600"
+                  (click)="removeTool(tool.id)"
+                  aria-label="Remove tool"
+                >
+                  ✕
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- The same catalogue as the project, scoped to this task. -->
+        @if (showPicker()) {
+          @defer (on immediate) {
+            <div class="mt-3">
+              <app-supply-picker
+                [projectId]="task.projectId"
+                [taskId]="task.id"
+                [milestoneId]="task.milestoneId"
+                (added)="showPicker.set(false)"
+                (closed)="showPicker.set(false)"
+              ></app-supply-picker>
+            </div>
+          } @loading {
+            <p class="mt-3 text-sm text-slate-500">Loading the list…</p>
+          }
+        } @else {
+          <button
+            type="button"
+            class="mt-3 text-sm font-medium text-blue-600"
+            (click)="showPicker.set(true)"
+          >
+            Pick tools &amp; materials from the list
+          </button>
+        }
+
+        <form class="mt-2 flex flex-wrap gap-2" (ngSubmit)="addTool(task)">
+          <input
+            [(ngModel)]="toolTitle"
+            name="toolTitle"
+            placeholder="A tool it needs"
+            class="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+          <select
+            [(ngModel)]="toolStatus"
+            name="toolStatus"
+            class="rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          >
+            <option value="buy">buy</option>
+            <option value="hire">hire</option>
+            <option value="borrow">borrow</option>
+            <option value="own">own</option>
+          </select>
+          <button type="submit" class="rounded-lg border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 dark:border-slate-600 dark:text-slate-200">
+            Add tool
+          </button>
+        </form>
+
+        <form class="mt-2 flex flex-wrap gap-2" (ngSubmit)="addItem(task)">
+          <input
+            [(ngModel)]="itemTitle"
+            name="itemTitle"
+            placeholder="Something this needs"
+            class="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+          <input
+            type="number"
+            step="0.01"
+            [(ngModel)]="itemQuantity"
+            name="itemQuantity"
+            placeholder="Qty"
+            class="w-16 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+          <input
+            type="number"
+            step="0.01"
+            [(ngModel)]="itemCostDraft"
+            name="itemCost"
+            placeholder="Each"
+            class="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+          <button type="submit" class="rounded-lg bg-blue-600 px-3 py-1 text-sm font-medium text-white">
+            Add
+          </button>
+        </form>
+
+        @if (task.projectId && task.projectId !== 'standalone') {
+          <p class="mt-3 text-xs text-slate-400">
+            Counts towards this project's budget as well.
+          </p>
+        }
+      </div>
+
+      <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+        <h3 class="mb-3 font-semibold text-slate-800 dark:text-slate-100">Dependencies</h3>
+
+        @if (blockers().length > 0) {
+          <p class="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            ⛔ Blocked — {{ blockers().length }} of these is still open.
+          </p>
+        }
+
+        <span class="text-xs font-medium text-slate-500">Waits for</span>
+        <ul class="mb-2 mt-1 space-y-1">
+          @for (prerequisite of prerequisites(); track prerequisite.id) {
+            <li class="flex items-center gap-2 text-sm">
+              <span
+                class="h-2 w-2 shrink-0 rounded-full"
+                [class.bg-green-500]="prerequisite.completed"
+                [class.bg-amber-500]="!prerequisite.completed"
+              ></span>
+              <a
+                [routerLink]="['/tasks', prerequisite.id]"
+                class="min-w-0 flex-1 truncate text-slate-700 hover:text-blue-600 dark:text-slate-200"
+                [class.line-through]="prerequisite.completed"
+              >
+                {{ prerequisite.title }}
+              </a>
+              <button
+                type="button"
+                (click)="removeBlocker(prerequisite.id)"
+                [attr.aria-label]="'Stop waiting for ' + prerequisite.title"
+                class="rounded p-0.5 text-xs text-slate-400 hover:text-red-600"
+              >
+                ✕
+              </button>
+            </li>
+          } @empty {
+            <li class="text-sm text-slate-400">Nothing — this can start whenever.</li>
+          }
+        </ul>
+
+        <button
+          type="button"
+          (click)="showBlockerPicker.set(!showBlockerPicker())"
+          class="text-xs font-medium text-blue-600 hover:underline"
+        >
+          {{ showBlockerPicker() ? 'Cancel' : 'Add something it waits for' }}
+        </button>
+
+        @if (showBlockerPicker()) {
+          <ul class="mt-2 max-h-48 space-y-1 overflow-auto rounded-lg border border-slate-200 p-1 dark:border-slate-700">
+            @for (candidate of dependencyChoices(); track candidate.id) {
+              <li>
+                <button
+                  type="button"
+                  (click)="addBlocker(candidate.id)"
+                  class="w-full truncate rounded px-2 py-1 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  {{ candidate.title }}
+                </button>
+              </li>
+            } @empty {
+              <li class="px-2 py-3 text-center text-xs text-slate-500">No other tasks</li>
+            }
+          </ul>
+        }
+
+        @if (blocks().length > 0) {
+          <div class="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+            <span class="text-xs font-medium text-slate-500">Blocks</span>
+            <ul class="mt-1 space-y-1">
+              @for (dependant of blocks(); track dependant.id) {
+                <li class="truncate text-sm">
+                  <a
+                    [routerLink]="['/tasks', dependant.id]"
+                    class="text-slate-700 hover:text-blue-600 dark:text-slate-200"
+                  >
+                    {{ dependant.title }}
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Checklist -->
+      <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+        <app-task-checklist [taskId]="task.id"></app-task-checklist>
+      </div>
+
+      <!-- Files -->
+      <div class="rounded-xl bg-white p-6 shadow-lg dark:bg-slate-800">
+        <app-attachment-panel parentType="task" [parentId]="task.id"></app-attachment-panel>
+      </div>
+    </div>
+  </div>
+
+  <app-confirm-dialog
+    [open]="pendingDelete()"
+    title="Delete this task?"
+    [message]="'“' + task.title + '” will be removed, along with its checklist. This cannot be undone.'"
+    confirmLabel="Delete"
+    (confirmed)="deleteConfirmed()"
+    (cancelled)="pendingDelete.set(false)"
+  ></app-confirm-dialog>
+} @else if (fetchState() === 'loading') {
+  <!-- A deep link with a cold cache. Not "missing" until the fetch says so. -->
+  <div class="py-16 text-center">
+    <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500"></div>
+    <p class="text-slate-500">Loading this task…</p>
+  </div>
+} @else {
+  <div class="py-16 text-center">
+    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+      <span class="text-2xl">🔍</span>
+    </div>
+    <h1 class="mb-2 text-xl font-bold text-slate-800 dark:text-slate-100">This task no longer exists</h1>
+    <p class="mb-6 text-slate-600 dark:text-slate-400">
+      It may have been deleted, or the link may belong to a different account.
+    </p>
+    <a
+      routerLink="/tasks"
+      class="rounded-lg bg-blue-500 px-6 py-3 text-white transition-colors hover:bg-blue-600"
+    >
+      Back to tasks
+    </a>
+  </div>
+}
