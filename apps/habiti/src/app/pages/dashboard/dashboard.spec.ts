@@ -102,7 +102,7 @@ class MockTasksService {
   overdueTasks = signal<any[]>([]);
 
   toggleTask = jasmine.createSpy('toggleTask');
-  createSampleTasks = jasmine.createSpy('createSampleTasks');
+  createTask = jasmine.createSpy('createTask');
 }
 
 class MockSyncService {
@@ -182,11 +182,18 @@ describe('DashboardComponent', () => {
       expect((component as any).currentUser()).toEqual(mockUser);
     }));
 
-    it('should create sample tasks if none exist', fakeAsync(() => {
+    /**
+     * The opposite of what this test used to assert.
+     *
+     * The dashboard used to seed five sample tasks whenever the list was empty
+     * — into a real account, on a first ever visit, and again for anyone who
+     * had just deliberately deleted everything. Empty now means empty.
+     */
+    it('writes nothing into an empty account', fakeAsync(() => {
       tasksService.standaloneTasks = signal([]);
       fixture.detectChanges();
       tick(100);
-      expect(tasksService.createSampleTasks).toHaveBeenCalled();
+      expect(tasksService.createTask).not.toHaveBeenCalled();
     }));
   });
 

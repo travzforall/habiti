@@ -13,18 +13,29 @@ import { FriendsService } from '../../services/friends.service';
  * The markup used to sit inline in a shell component that was never
  * bootstrapped, so none of it rendered. It is a component now so there is one
  * copy and it is obvious where it is mounted.
+ *
+ * It FLOATS at the top-left of the page panel rather than holding a column for
+ * the whole scroll height, so content below its last link gets the full width
+ * (see the note in root.html). Two consequences of that worth knowing:
+ *
+ *   - the host is `display: contents`, so the float's containing block is the
+ *     shell's content box and not an empty wrapper;
+ *   - the nav is no longer `sticky`. A sticky float keeps its reserved area
+ *     where it started while the card slides down the page, which would drop
+ *     it straight on top of the full-width content below.
  */
 @Component({
   selector: 'app-side-nav',
   standalone: true,
   imports: [RouterModule],
+  host: { class: 'contents' },
   template: `
-    <aside class="hidden lg:block w-48 shrink-0 px-2">
+    <aside class="hidden lg:block lg:float-left w-48 pr-3">
       <!-- data-tour: app guide step 9a, the >=1024px variant. Its mobile twin
            is the bottom nav. See src/app/config/app-tour.steps.ts. -->
       <div
         data-tour="side-nav"
-        class="sticky top-24 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-2"
+        class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-2"
       >
         <nav class="space-y-1">
           @for (item of items; track item.route) {
@@ -74,8 +85,11 @@ export class SideNavComponent {
     { route: '/friends', icon: '👥', label: 'Friends' },
     { route: '/tasks', icon: '📝', label: 'Tasks' },
     { route: '/projects', icon: '📋', label: 'Projects' },
+    { route: '/maps', icon: '🧠', label: 'Mind maps' },
+    { route: '/inspiration', icon: '✨', label: 'Inspiration' },
     { route: '/calendar', icon: '📅', label: 'Calendar' },
     { route: '/analytics', icon: '📈', label: 'Analytics' },
-    { route: '/templates', icon: '📋', label: 'Templates' }
+    { route: '/templates', icon: '📋', label: 'Templates' },
+    { route: '/toolkit', icon: '🧰', label: 'Toolkit' }
   ];
 }

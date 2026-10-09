@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * How routed pages meet the floated desktop sidebar.
+ *
+ * The sidebar floats at the top-left of the shell's content box (see the note
+ * in root/root.html), which means a routed page has two possible relationships
+ * with it, and the wrong one is the one you get for free: a plain block box
+ * ignores floats and renders UNDERNEATH the nav.
+ *
+ * So the default here is the safe one. A routed page host becomes a block
+ * formatting context, which cannot overlap a float — it sits beside the nav for
+ * its whole height, exactly the two-column layout every page had before.
+ *
+ * A page that wants the other behaviour — top sections beside the nav, then
+ * full width once past its bottom edge — adds `page-wraps-nav` to its host and
+ * takes on the obligation this rule was covering: EVERY top-level section of
+ * that page must establish a formatting context of its own (`flow-root`,
+ * `flex`, `grid`, or `overflow-hidden`), or it will slide under the nav. The
+ * dashboard is the one page doing this; see its template.
+ *
+ * Only above `lg`, because that is the only breakpoint where the sidebar
+ * renders at all — below it the bottom nav takes over and there is no float.
+ */
+@media (min-width: 1024px) {
+  .shell-content > router-outlet ~ * {
+    display: flow-root;
+  }
+
+  /* Specificity has to beat the rule above, hence the repeated context. */
+  .shell-content > router-outlet ~ .page-wraps-nav {
+    display: block;
+  }
+}

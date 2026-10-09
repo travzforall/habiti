@@ -71,7 +71,15 @@ interface DashboardState {
     SkillStripComponent
   ],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss'
+  styleUrl: './dashboard.scss',
+  /**
+   * Opts out of the default "one column beside the sidebar for the whole page"
+   * layout so the week grid and everything under it can use the full width once
+   * the nav's last link has gone by. The price is that every top-level section
+   * in dashboard.html has to establish its own formatting context — see the
+   * comment on that rule in styles.scss.
+   */
+  host: { class: 'page-wraps-nav' }
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   // Services
@@ -399,7 +407,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.initializeComponent();
     this.setupToggleDebounce();
     this.loadUserData();
-    this.createSampleTasksIfNeeded();
   }
 
   ngOnDestroy(): void {
@@ -468,11 +475,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private createSampleTasksIfNeeded(): void {
-    if (this.tasksService.standaloneTasks().length === 0) {
-      this.tasksService.createSampleTasks();
-    }
-  }
+  /**
+   * There used to be a createSampleTasksIfNeeded() here, and on /tasks and
+   * /projects too. Between them they wrote five tasks and a whole project into
+   * the account of anyone whose list happened to be empty — including a
+   * brand-new user's first ever visit, and anyone who had just deliberately
+   * deleted everything. Nine duplicate project rows on the server came from
+   * exactly that. Empty means empty; the empty states invite the first real one.
+   */
 
   // Keyboard navigation
   @HostListener('document:keydown', ['$event'])

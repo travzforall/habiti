@@ -58,10 +58,8 @@
   <app-top-nav></app-top-nav>
 
   <!-- pt clears the fixed top bar, which is taller below lg (mobile stats row). -->
-  <div class="flex pt-28 lg:pt-20 pb-24 lg:pb-8">
-    <app-side-nav></app-side-nav>
-
-    <main class="flex-1 min-w-0 px-2 lg:px-3">
+  <div class="pt-28 lg:pt-20 pb-24 lg:pb-8">
+    <main class="min-w-0 px-2 lg:px-3">
       <!--
         The glass panel is a SIBLING of the content, not its parent.
 
@@ -81,7 +79,24 @@
           aria-hidden="true"
           class="absolute inset-0 bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50"
         ></div>
-        <div class="relative p-4 lg:p-6">
+        <!--
+          The sidebar is a FLOAT inside the content, not a flex column beside
+          it. As a column it reserved its 12rem for the whole page height, so
+          everything below the last nav link — the week grid especially — was
+          squeezed into the remaining width while the gutter sat empty.
+
+          Floated, the nav only occupies the height it actually has: sections
+          that start alongside it sit beside it, and everything past its bottom
+          edge runs the full width of the panel. `flow-root` here contains the
+          float so it cannot spill out of the glass card on a short page.
+
+          The catch is that a plain block box would slide UNDER the float
+          instead of beside it. Routed pages are given a block formatting
+          context in styles.scss so that cannot happen by accident; the
+          dashboard opts out to get the wrapping, and marks its own sections.
+        -->
+        <div class="shell-content flow-root relative p-4 lg:p-6">
+          <app-side-nav></app-side-nav>
           <router-outlet></router-outlet>
         </div>
       </div>
