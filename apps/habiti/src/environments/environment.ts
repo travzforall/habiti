@@ -76,9 +76,9 @@ export const environment = {
       /** Plan A, Plan B — the planner. Zero until db:setup creates it. */
       projectPlans: 641,
       /** Tools a job needs — owned, borrowed, hired or still to buy. */
-      projectTools: 0,
+      projectTools: 643,
       /** What one person changed about the built-in supplies list. */
-      userSupplies: 0,
+      userSupplies: 644,
       /**
        * The user's standing kit, independent of any job.
        *
