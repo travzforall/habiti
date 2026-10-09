@@ -150,18 +150,197 @@ function toBaserowField(name, spec) {
       }
       return { ...base, type: 'date', date_format: 'ISO' };
 
+    case 'url':
+      return { ...base, type: 'url' };
+
+    case 'email':
+      return { ...base, type: 'email' };
+
+    case 'phone_number':
+      return { ...base, type: 'phone_number' };
+
+    case 'created_on':
+      return { ...base, type: 'created_on', date_format: 'ISO', date_include_time: true };
+
+    case 'last_modified':
+      return { ...base, type: 'last_modified', date_format: 'ISO', date_include_time: true };
+
+    case 'multiple_select':
+      return {
+        ...base,
+        type: 'multiple_select',
+        select_options: (spec.options ?? []).map(value => ({ value, color: 'light-blue' }))
+      };
+
+    case 'json':
+      /**
+       * Baserow has no JSON column.
+       *
+       * The house convention is a long_text holding a stringified blob — see
+       * level_records.detail and the toolkit's linked ids. Mapping it silently
+       * is right: the alternative is a schema author inventing a type Baserow
+       * will never have.
+       */
+      return { ...base, type: 'long_text' };
+
     case 'auto_number':
       // Baserow supplies the row id itself; never create a column for it.
       return null;
 
+    case 'link':
+    case 'link_row':
+      /**
+       * Cannot be created from a schema file alone.
+       *
+       * A Baserow link field needs `link_row_table_id` — the NUMERIC id of the
+       * table it points at. These files name their dependencies ("depends on
+       * 27-user-projects.json") but ids are assigned at import time and live in
+       * environment.ts, so there is nothing here to resolve it from.
+       *
+       * Signalled rather than guessed. Creating it as text would look like it
+       * worked and produce a column that can never hold a relation.
+       */
+      return { unresolvable: `${spec.type} — needs the target table's numeric id` };
+
     default:
-      throw new Error(`unmapped field type "${spec.type}" on "${name}"`);
+      return { unresolvable: `unknown type "${spec.type}"` };
   }
 }
 
-const fields = Object.entries(schema.fields)
-  .map(([name, spec]) => ({ name, spec, payload: toBaserowField(name, spec) }))
-  .filter(f => f.payload !== null);
+const mapped = Object.entries(schema.fields).map(([name, spec]) => ({
+  name,
+  spec,
+  payload: toBaserowField(name, spec)
+}));
+
+/**
+ * Report EVERY field this cannot create, not just the first.
+ *
+ * Throwing on the first unmapped type meant discovering them one run at a
+ * time — fix `url`, rerun, hit `email`, rerun. The whole list up front is the
+ * difference between one decision and five.
+ */
+const unresolvable = mapped.filter(f => f.payload?.unresolvable);
+
+if (unresolvable.length) {
+  const SKIP = flags.includes('--skip-unresolvable');
+
+  console.error(`\n  ${unresolvable.length} field(s) cannot be created from the schema:\n`);
+  for (const f of unresolvable) {
+    console.error(`    ${f.name.padEnd(22)} ${f.payload.unresolvable}`);
+  }
+
+  if (!SKIP) {
+    console.error('\n  Add them by hand in Baserow afterwards, or re-run with');
+    console.error('  --skip-unresolvable to create everything else now.\n');
+    process.exit(1);
+  }
+  console.error('\n  --skip-unresolvable given: creating the rest without them.\n');
+}
+
+const fields = mapped.filter(f => f.payload && !f.payload.unresolvable);
+
+/**
+ * Asks for the password on the terminal, with the echo turned off.
+ *
+ * WHY THIS EXISTS RATHER THAN `read -s BASEROW_PASSWORD`. That shell idiom
+ * reads from stdin, so pasting it as part of a multi-line block either
+ * swallows the NEXT pasted line as the password or hits end-of-input and
+ * fails — and `&&` then skips the export, leaving the variable unset. The
+ * failure looks like the script ignoring a password that was definitely typed.
+ *
+ * Reading from /dev/tty rather than stdin is the point: it works no matter what
+ * stdin is doing.
+ */
+async function promptForPassword() {
+  /**
+   * Raw mode on stdin, NOT a read stream on /dev/tty.
+   *
+   * The /dev/tty approach failed outright in a VS Code integrated terminal —
+   * the open errors and the script reports "no terminal to ask on" while the
+   * user is plainly sitting at one. Putting stdin into raw mode is how every
+   * other password prompt does this, and it works wherever stdin is a TTY.
+   */
+  if (!process.stdin.isTTY) return null;
+
+  return new Promise(resolve => {
+    let password = '';
+    const stdin = process.stdin;
+    const previouslyRaw = stdin.isRaw;
+
+    const finish = value => {
+      stdin.removeListener('data', onData);
+      if (stdin.setRawMode) stdin.setRawMode(previouslyRaw ?? false);
+      stdin.pause();
+      process.stdout.write('\n');
+      resolve(value);
+    };
+
+    const onData = chunk => {
+      const text = chunk.toString('utf8');
+
+      for (const char of text) {
+        switch (char) {
+          case '\r':
+          case '\n':
+            return finish(password.trim() || null);
+
+          case '\u0003': // Ctrl-C: leave the terminal as we found it.
+            finish(null);
+            process.exit(130);
+            return;
+
+          case '\u007f': // Backspace
+          case '\b':
+            password = password.slice(0, -1);
+            break;
+
+          default:
+            // Ignore other control characters rather than storing them.
+            if (char >= ' ') password += char;
+        }
+      }
+    };
+
+    process.stdout.write('  Baserow password (typing is hidden): ');
+    if (stdin.setRawMode) stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+    stdin.on('data', onData);
+  });
+}
+
+/**
+ * Credentials are resolved BEFORE the plan is printed.
+ *
+ * They used to be checked after, so `--apply` with an unset password printed
+ * twenty green "+ field" lines and then failed — which reads exactly like a
+ * table that was half created.
+ */
+let email = process.env.BASEROW_EMAIL;
+let password = process.env.BASEROW_PASSWORD;
+
+if (APPLY) {
+  if (!email) {
+    console.error('\n  Missing BASEROW_EMAIL — the account to sign in as.\n');
+    console.error('    export BASEROW_EMAIL=you@example.com\n');
+    console.error('  Nothing has been created.\n');
+    process.exit(1);
+  }
+
+  if (!password) {
+    // Prompt rather than refuse: the env var is the awkward part, not the
+    // password itself.
+    password = await promptForPassword();
+  }
+
+  if (!password) {
+    console.error('\n  No password given, and no terminal to ask on.\n');
+    console.error('    export BASEROW_PASSWORD=...   (or run this from a terminal)\n');
+    console.error('  Nothing has been created.\n');
+    process.exit(1);
+  }
+}
 
 const primary = Object.entries(schema.fields).find(([, s]) => s.primary && s.type !== 'auto_number');
 // Baserow's primary field cannot be deleted, so the first real column becomes
@@ -190,15 +369,7 @@ if (!LIST_DATABASES) {
   }
 }
 
-const email = process.env.BASEROW_EMAIL;
-const password = process.env.BASEROW_PASSWORD;
-
-if (!email || !password) {
-  console.error('BASEROW_EMAIL and BASEROW_PASSWORD must be set.');
-  console.error('  export BASEROW_EMAIL=you@example.com');
-  console.error('  read -s BASEROW_PASSWORD && export BASEROW_PASSWORD');
-  process.exit(1);
-}
+// email and password were resolved above, before the plan was printed.
 
 /**
  * Writing a table into the wrong database is tedious to undo, and the ids are

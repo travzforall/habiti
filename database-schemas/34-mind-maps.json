@@ -1,0 +1,44 @@
+{
+  "table_name": "mind_maps",
+  "description": "A user's mind maps. The document; its nodes are table 35. Import THIRTY-FOURTH",
+  "import_order": 34,
+  "dependencies": ["user_projects"],
+  "notes": [
+    "board is TEXT holding either the literal 'personal' or a user_projects ROW id - the same shape as project_id on user_tasks and board on inspiration_items. A map is therefore either a standalone idea map or part of a project, and moving it between the two is one column write.",
+    "Users live in Xano, so user_id is TEXT holding String(user.id). EVERY read filters on it.",
+    "node_count is denormalised so /maps can show how big a map is without loading every node. The client writes it; it is a display hint, never a source of truth.",
+    "There is no layout column. Node positions are COMPUTED from the tree every render (config/mind-map-layout.ts) and never stored - that is what keeps a map tidy without the user tidying it.",
+    "theme names a colour set in the client. Unknown values fall back to the default rather than failing."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "The map's name. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "board": {"type": "text", "required": true, "description": "'personal', or a user_projects row id"},
+    "description": {"type": "long_text"},
+    "theme": {"type": "text", "description": "Colour set name. Unknown = default"},
+    "node_count": {"type": "number", "description": "Display hint for the list. Not a source of truth"},
+    "archived": {"type": "boolean", "default": false},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Launch plan",
+      "user_id": "6",
+      "board": "7",
+      "description": "Everything that has to happen before the first public version.",
+      "theme": "default",
+      "node_count": 12,
+      "archived": false
+    },
+    {
+      "title": "Things I keep meaning to learn",
+      "user_id": "6",
+      "board": "personal",
+      "theme": "default",
+      "node_count": 5,
+      "archived": false
+    }
+  ]
+}

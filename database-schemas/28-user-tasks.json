@@ -8,6 +8,9 @@
     "Users live in Xano, so user_id is TEXT holding String(user.id) - never a link field. EVERY read filters on it.",
     "project_id is TEXT holding the user_projects ROW id, or the literal 'standalone'. Deliberately not a link_row: link fields cannot express 'standalone', and filtering a link field needs link_row_has with a row id, which the client does not always have.",
     "completed is a real BOOLEAN. The scheduler table expresses completion through a status select (pending/approved/in_progress/...), which forced a lossy mapping in both directions.",
+    "depends_on was ADDED 2026-08-16 and is PENDING.",
+    "milestone_id was ADDED 2026-08-16 and is also PENDING - same treatment as status below.",
+    "status and progress_pct were ADDED 2026-08-15 and do not exist in the live table yet - run `node scripts/add-baserow-field.mjs` (needs a user JWT). Until then the app writes them and Baserow drops them silently, and toTask() derives status from `completed`. completed stays the source of truth for done/not-done so nothing that reads it breaks.",
     "priority uses 'urgent', the word the app uses, rather than the scheduler's 'critical'.",
     "estimated_hours and actual_hours allow 2 DECIMAL PLACES. With 0 places Baserow REJECTS the whole row - not just the field - so logging 2.5 hours failed the entire write.",
     "tags is free TEXT (comma separated). A multiple_select would reject any tag not planned in advance."
@@ -19,6 +22,8 @@
     "project_id": {"type": "text", "description": "user_projects row id, or 'standalone'"},
     "description": {"type": "long_text"},
     "completed": {"type": "boolean", "default": false},
+    "status": {"type": "single_select", "options": ["todo", "in_progress", "blocked", "done"], "default": "todo", "description": "Where the task is. `completed` stays the truth for done/not-done; this adds the middle. PENDING in the live table"},
+    "progress_pct": {"type": "number", "description": "0-100, hand-set. Only consulted when the task has no checklist. PENDING in the live table"},
     "priority": {"type": "single_select", "options": ["low", "medium", "high", "urgent"], "default": "medium"},
     "due_date": {"type": "date"},
     "completed_at": {"type": "date_time"},
@@ -27,6 +32,9 @@
     "tags": {"type": "text", "description": "Comma separated. Free text on purpose"},
     "assignee": {"type": "text", "description": "Display name, denormalized"},
     "sort_order": {"type": "number", "description": "Manual ordering within a list"},
+    "depends_on": {"type": "text", "description": "Comma separated user_tasks row ids that must be finished first. Stored on the WAITING task so one write changes a dependency; the reverse view is derived. PENDING in the live table"},
+    "budget": {"type": "number", "decimal_places": 2, "description": "What this one task is meant to cost. Its spending is the project_items and project_expenses tagged with it, which also belong to its project - one row, counted once, shown in both places"},
+    "milestone_id": {"type": "text", "description": "user_milestones row id. A task belongs to at most one milestone - membership lives here rather than as a list on the milestone, so one write moves it. PENDING in the live table"},
     "created_at": {"type": "date", "auto_now_add": true},
     "updated_at": {"type": "date", "auto_now": true}
   },

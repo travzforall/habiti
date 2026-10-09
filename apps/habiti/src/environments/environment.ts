@@ -54,8 +54,40 @@ export const environment = {
       userProjects: 630,
       userTasks: 631,
       comments: 510,
-      milestones: 511,
       sessions: 512,
+      /**
+       * The SCHEDULER's `milestones` table (511) used to be listed here as
+       * `milestones`, and nothing ever read it — which was lucky, because it
+       * links to the scheduler's projects (507) and has no start date, owner,
+       * colour or sort order. A user's milestone cannot live in it. It is gone
+       * from this list so nobody wires it up by reaching for the obvious name.
+       *
+       * The real one is created by `npm run db:setup`; while it is 0,
+       * ProjectsService keeps milestones in localStorage.
+       */
+      projectMilestones: 638,
+      /**
+       * A project's money: the item list (37) and the expense list (38).
+       * Zero until `npm run db:setup` creates them; ProjectBudgetService keeps
+       * both in localStorage meanwhile and says so, once.
+       */
+      projectItems: 639,
+      projectExpenses: 640,
+      /** Plan A, Plan B — the planner. Zero until db:setup creates it. */
+      projectPlans: 641,
+      /** Tools a job needs — owned, borrowed, hired or still to buy. */
+      projectTools: 0,
+      /** What one person changed about the built-in supplies list. */
+      userSupplies: 0,
+      /**
+       * The user's standing kit, independent of any job.
+       *
+       * NOT the same thing as projectItems/projectTools above: those are
+       * per-project rows that die with the project. This is the catalogue they
+       * are created FROM. Zero until db:setup creates it; ToolkitService keeps
+       * everything in localStorage meanwhile and flushes once an id appears.
+       */
+      toolkitItems: 0,
       // Friends & Campaigns. Set to 0 until the tables are created in Baserow —
       // FriendsService/CampaignsService no-op with a warning while an id is 0.
       friendships: 620,
@@ -100,7 +132,58 @@ export const environment = {
        * token ships in the bundle — see the notes in the schema file.
        */
       legalAcceptances: 0,
+      /**
+       * Files and links attached to tasks and projects.
+       *
+       * 0 until created — AttachmentsService keeps them in UserStorage and
+       * warns once, so attaching still works on one browser rather than
+       * failing. Create it with:
+       *   node scripts/create-baserow-table.mjs 31-task-attachments.json --apply
+       * then paste the returned id here.
+       *
+       * The UPLOAD does not depend on this id: files go to Baserow's storage
+       * either way (see baserow.filesUrl). Without the table, the app just has
+       * nowhere shared to record that the file belongs to this task.
+       */
+      taskAttachments: 633,
+      /**
+       * The steps inside a task — what its progress bar is made of.
+       *
+       * 0 until created; ChecklistService stays local-only meanwhile. Create with:
+       *   node scripts/create-baserow-table.mjs 32-task-checklist-items.json --apply
+       */
+      taskChecklistItems: 634,
+      /**
+       * Inspiration boards — videos, pictures, links and notes a user keeps.
+       *
+       * 0 until created; InspirationService stays local-only meanwhile. Create with:
+       *   node scripts/create-baserow-table.mjs 33-inspiration-items.json --apply
+       */
+      inspirationItems: 635,
+      /**
+       * Mind maps: the document, and one row per node.
+       *
+       * 0 until created; MindMapService stays local-only meanwhile. Create with:
+       *   node scripts/create-baserow-table.mjs 34-mind-maps.json --apply
+       *   node scripts/create-baserow-table.mjs 35-mind-map-nodes.json --apply
+       */
+      mindMaps: 636,
+      mindMapNodes: 637,
     },
+    /**
+     * Baserow's file upload endpoint.
+     *
+     * Separate from `apiUrl` because it is not a rows endpoint — it sits at
+     * /api/user-files/, not /api/database/rows/table/.
+     *
+     * ⚠ WHAT COMES BACK IS A PUBLIC URL. Long and unguessable, but served with
+     * no authentication at all: anyone holding the link can read the file,
+     * from anywhere, indefinitely. Verified against this instance on
+     * 2026-08-15. The app says so before a user's first upload
+     * (attachment-notice.component.ts) and the privacy policy says so too.
+     * Do not describe attachments as private anywhere until that changes.
+     */
+    filesUrl: 'https://db.jollycares.com/api/user-files/upload-file/',
   },
   /**
    * The realtime relay.

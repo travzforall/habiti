@@ -1,0 +1,47 @@
+{
+  "table_name": "task_checklist_items",
+  "description": "The steps inside a task. What the task's progress bar is made of. Import THIRTY-SECOND (after user_tasks)",
+  "import_order": 32,
+  "dependencies": ["user_tasks"],
+  "notes": [
+    "A TABLE rather than a JSON blob on the task, for one reason: items get ticked one at a time, often from a second device, and a blob makes that last-write-wins. Two phones ticking two different items would lose one of them, and the sync model (refetch by scope) cannot paper over that. Rows can be written independently.",
+    "task_id is TEXT holding a user_tasks ROW id - not a link_row, for the same reasons given in 28-user-tasks.json.",
+    "Users live in Xano, so user_id is TEXT holding String(user.id). EVERY read filters on it.",
+    "sort_order is a plain number the client renumbers on reorder. Fractional ordering was not worth it for lists this short.",
+    "A task's progress is DERIVED from these rows (done/total) and is not stored on the task - see config/task-progress.ts. progress_pct on user_tasks is only consulted when a task has no checklist at all."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "The step. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "task_id": {"type": "text", "required": true, "description": "user_tasks row id"},
+    "completed": {"type": "boolean", "default": false},
+    "completed_at": {"type": "date_time"},
+    "sort_order": {"type": "number", "description": "Position within the task's list"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "title": "Draft the outline",
+      "user_id": "6",
+      "task_id": "4",
+      "completed": true,
+      "completed_at": "2026-08-14T09:12:00Z",
+      "sort_order": 1
+    },
+    {
+      "title": "Write the first pass",
+      "user_id": "6",
+      "task_id": "4",
+      "completed": false,
+      "sort_order": 2
+    },
+    {
+      "title": "Edit and publish",
+      "user_id": "6",
+      "task_id": "4",
+      "completed": false,
+      "sort_order": 3
+    }
+  ]
+}

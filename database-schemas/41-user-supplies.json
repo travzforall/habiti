@@ -1,0 +1,43 @@
+{
+  "table_name": "user_supplies",
+  "description": "What ONE person has changed about the built-in tools and materials list: what they hid, what a thing costs round here, and anything of their own that was never in the list. Import FORTY-FIRST (no dependencies)",
+  "import_order": 41,
+  "dependencies": [],
+  "notes": [
+    "This holds OVERRIDES, not copies. Copying the 140-entry catalogue into every account on sign-up would mean a table full of rows nobody has touched, and a catalogue that can never be improved because everyone holds a snapshot of the day they joined. A row appears here only when someone hides, edits or adds something.",
+    "catalogue_id points at an entry in config/supply-catalogue.ts. Blank means this is the user's own, which nothing in the shipped list matches.",
+    "hidden is the whole point of the feature: most of the list is things a given person will never touch. Hidden, never deleted - a catalogue entry cannot be removed by a user, because the next version might need it and 'I will never need that' is wrong about twice a year.",
+    "default_cost is what it costs round here. Prices are local and personal and the app has no business guessing them, but it can remember what you told it last time.",
+    "sizes is comma separated, like tags everywhere else in this app.",
+    "Users live in Xano, so user_id is TEXT. Every read filters on it."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "primary": true, "description": "The name, when it has been changed or is the user's own. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "catalogue_id": {"type": "text", "description": "The built-in entry this changes. Blank for the user's own"},
+    "kind": {"type": "single_select", "options": ["tool", "material"], "default": "material"},
+    "category": {"type": "text"},
+    "unit": {"type": "text", "description": "bags, sheets, m2, each"},
+    "sizes": {"type": "text", "description": "Comma separated"},
+    "default_status": {"type": "single_select", "options": ["own", "borrow", "hire", "buy"], "description": "How this person usually gets it"},
+    "default_cost": {"type": "number", "decimal_places": 2, "description": "What it costs round here"},
+    "hidden": {"type": "boolean", "default": false},
+    "favourite": {"type": "boolean", "default": false, "description": "Pinned to the top of the picker"},
+    "url": {"type": "url"},
+    "sku": {"type": "text"},
+    "note": {"type": "long_text"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "10 bags Quikrete",
+      "user_id": "1",
+      "catalogue_id": "concrete-mix",
+      "default_cost": 6.5,
+      "hidden": false,
+      "favourite": true
+    }
+  ]
+}

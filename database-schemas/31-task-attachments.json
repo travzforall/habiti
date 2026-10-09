@@ -1,0 +1,62 @@
+{
+  "table_name": "task_attachments",
+  "description": "Files and links attached to a user's tasks and projects. Import THIRTY-FIRST (after user_tasks)",
+  "import_order": 31,
+  "dependencies": ["user_tasks", "user_projects"],
+  "notes": [
+    "ONE table serves both tasks and projects, keyed by parent_type + parent_id. A second near-identical table would double every query and every service for no gain.",
+    "parent_id is TEXT holding a user_tasks or user_projects ROW id. Deliberately not a link_row: a link field can only point at one table, and filtering one needs link_row_has with a row id the client does not always have. Same reasoning as project_id in 28-user-tasks.json.",
+    "Users live in Xano, so user_id is TEXT holding String(user.id) - never a link field. EVERY read filters on it.",
+    "url holds a Baserow media URL (from POST /api/database/../user-files/upload-file/) or, for kind='link', an external address. THE MEDIA URL IS PUBLIC: unguessable, but readable by anyone who has it, with no authentication. Verified 2026-08-15. The app discloses this before the first upload; see AttachmentUploadService.",
+    "baserow_name is the opaque file name the upload returned. It is the ONLY handle by which the stored file could ever be deleted, and a database token cannot delete it - deleting a row here detaches the file, it does not erase it. Keep the column so a future server-side proxy can do the real thing.",
+    "size_bytes exists so a per-user quota is one SUM over this column rather than a walk over storage.",
+    "width and height come back from the upload response and are stored so a gallery can reserve space before the image loads.",
+    "kind is decided ONCE, at upload, from the MIME type - so every view agrees about what a file is without re-sniffing it."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "Original filename, or the link title. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "parent_type": {"type": "single_select", "options": ["task", "project"], "required": true},
+    "parent_id": {"type": "text", "required": true, "description": "user_tasks or user_projects row id"},
+    "kind": {"type": "single_select", "options": ["image", "video", "document", "link"], "required": true},
+    "url": {"type": "url", "required": true, "description": "Baserow media URL, or an external link. PUBLIC - see notes"},
+    "thumbnail_url": {"type": "url", "description": "Baserow's own small thumbnail. Images only"},
+    "mime_type": {"type": "text"},
+    "size_bytes": {"type": "number", "description": "Quota is a SUM of this column"},
+    "width": {"type": "number"},
+    "height": {"type": "number"},
+    "caption": {"type": "long_text"},
+    "baserow_name": {"type": "text", "description": "The stored file's opaque name. The only handle for a real delete"},
+    "uploaded_at": {"type": "date_time", "auto_now_add": true},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "title": "receipt-2026-08.pdf",
+      "user_id": "6",
+      "parent_type": "task",
+      "parent_id": "3",
+      "kind": "document",
+      "url": "https://db.jollycares.com/media/user_files/example_hash.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 184320,
+      "caption": "Proof of purchase",
+      "baserow_name": "example_hash.pdf"
+    },
+    {
+      "title": "kitchen-before.jpg",
+      "user_id": "6",
+      "parent_type": "project",
+      "parent_id": "7",
+      "kind": "image",
+      "url": "https://db.jollycares.com/media/user_files/example_hash.jpg",
+      "thumbnail_url": "https://db.jollycares.com/media/thumbnails/small/example_hash.jpg",
+      "mime_type": "image/jpeg",
+      "size_bytes": 962048,
+      "width": 2048,
+      "height": 1536,
+      "baserow_name": "example_hash.jpg"
+    }
+  ]
+}

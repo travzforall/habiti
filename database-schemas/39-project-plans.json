@@ -1,0 +1,52 @@
+{
+  "table_name": "project_plans",
+  "description": "Different ways of doing a project - Plan A, Plan B - with what each would cost, take and risk. The planner. Import THIRTY-NINTH (needs user_projects)",
+  "import_order": 39,
+  "dependencies": ["27-user-projects.json"],
+  "notes": [
+    "A project can hold several of these at once. That is the point: the alternatives are written down side by side rather than argued about from memory, and the one that was picked is recorded next to the ones that were not.",
+    "status carries 'rejected' deliberately. A rejected plan is KEPT, not deleted - 'we looked at this and said no' is exactly what you want in front of you when someone proposes it again three weeks later.",
+    "rating is 1-5 and is the person's own judgement. It carries the most weight in the ordering because it is the only field that knows things the others cannot - see config/plan-score.ts.",
+    "cost, duration_days, effort, risk and confidence are the trackable fields. Every one is optional: a half-filled plan still sorts, and an empty field counts as unknown rather than as bad.",
+    "The SCORE is not stored. It is computed from the fields and only ever compares a plan with its siblings, so storing it would be a number that goes stale the moment another plan is added.",
+    "project_id is TEXT holding the user_projects row id, as everywhere else in this app."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "e.g. 'Plan A - do the floors first'. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "required": true, "description": "user_projects row id"},
+    "summary": {"type": "long_text", "description": "What this plan actually is, in a sentence or two"},
+    "status": {"type": "single_select", "options": ["draft", "considering", "chosen", "rejected"], "default": "draft"},
+    "rating": {"type": "number", "description": "1-5, the person's own judgement"},
+    "cost": {"type": "number", "decimal_places": 2, "description": "What it is expected to cost"},
+    "currency": {"type": "text", "description": "ISO code. Blank means the project's own"},
+    "duration_days": {"type": "number", "description": "How long it takes end to end"},
+    "effort": {"type": "single_select", "options": ["low", "medium", "high"]},
+    "risk": {"type": "single_select", "options": ["low", "medium", "high"]},
+    "confidence": {"type": "number", "description": "0-100: how sure the estimates are"},
+    "pros": {"type": "long_text", "description": "One per line"},
+    "cons": {"type": "long_text", "description": "One per line"},
+    "decided_at": {"type": "date", "description": "When it was chosen or rejected"},
+    "sort_order": {"type": "number"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Plan A — floors before the walls",
+      "user_id": "1",
+      "project_id": "20",
+      "summary": "Level and lay the vinyl first, then plaster. Dust falls on a finished floor, but the floor sets the heights.",
+      "status": "considering",
+      "rating": 4,
+      "cost": 1800,
+      "duration_days": 21,
+      "effort": "medium",
+      "risk": "low",
+      "confidence": 70,
+      "pros": "Heights are right first time\nOne trade at a time",
+      "cons": "Finished floor gets covered in plaster dust"
+    }
+  ]
+}

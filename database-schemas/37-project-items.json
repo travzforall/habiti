@@ -1,0 +1,46 @@
+{
+  "table_name": "project_items",
+  "description": "Things a project needs: materials, fittings, tools. The 'item list' — what has to be bought before work can happen. Import THIRTY-SEVENTH (needs user_projects)",
+  "import_order": 37,
+  "dependencies": ["27-user-projects.json"],
+  "notes": [
+    "An item is a PLAN to spend, not a spend. What actually left the bank is an expense (38); keeping them apart is what lets a project show 'committed' and 'spent' as different numbers, which is the whole point of a budget.",
+    "project_id, task_id and milestone_id are TEXT holding row ids, not link_rows - same reasoning as everywhere else in this app: a link field cannot hold a client-generated id, and it makes every read fan out.",
+    "quantity and unit_cost are separate so '10 bags at 6.50' can be shown as it was decided. Total is derived, never stored: a stored total is a number that can disagree with its own parts.",
+    "unit is free text ('bags', 'm2', 'each'). A select would reject whatever the next job needs.",
+    "status is needed/ordered/have. 'ordered' matters because money is committed but nothing has arrived, and that is exactly when a plan looks finished and is not.",
+    "planned_for is when it should be bought, which is how the item plan sorts itself into stages without inventing another table."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "What it is, e.g. '10 bags Quikrete'. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "required": true, "description": "user_projects row id"},
+    "task_id": {"type": "text", "description": "Optional: the task that needs it"},
+    "milestone_id": {"type": "text", "description": "Optional: the stage it belongs to"},
+    "quantity": {"type": "number", "decimal_places": 2, "description": "How many. 1 when it does not matter"},
+    "unit": {"type": "text", "description": "bags, m2, each, litres"},
+    "unit_cost": {"type": "number", "decimal_places": 2, "description": "Cost of ONE. Total is quantity x this, derived"},
+    "currency": {"type": "text", "description": "ISO code. Blank means the project's own"},
+    "status": {"type": "single_select", "options": ["needed", "ordered", "have"], "default": "needed"},
+    "supplier": {"type": "text"},
+    "url": {"type": "url", "description": "Where to buy it"},
+    "note": {"type": "long_text"},
+    "planned_for": {"type": "date", "description": "When it should be bought"},
+    "sort_order": {"type": "number"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "10 bags Quikrete",
+      "user_id": "1",
+      "project_id": "20",
+      "quantity": 10,
+      "unit": "bags",
+      "unit_cost": 6.5,
+      "status": "needed",
+      "note": "For self-levelling the downstairs floor."
+    }
+  ]
+}

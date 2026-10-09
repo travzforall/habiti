@@ -1,0 +1,50 @@
+{
+  "table_name": "project_tools",
+  "description": "Tools a job needs: owned, borrowed, hired or still to buy. Separate from project_items (37) because a tool is USED, not consumed. Import FORTIETH (needs user_projects)",
+  "import_order": 40,
+  "dependencies": ["27-user-projects.json"],
+  "notes": [
+    "Why not just an item: an item is consumed and costs what it costs. A tool is used and handed back. The four states below have four different money consequences, and a list that cannot tell them apart cannot answer 'what do I still need to get, and what will it cost me'.",
+    "status: own = it is in the shed, costs nothing. borrow = someone is lending it, costs nothing but has to go back. hire = costs rate x days. buy = a one-off cost. Only hire and buy add anything to a budget.",
+    "hire_rate is PER DAY and hire_days multiplies it. Storing a single total instead would lose the two numbers people actually negotiate and check.",
+    "source is who or where: 'Dad', 'HSS Hire', a shop. Free text, because the next job's answer is never in a list you wrote in advance.",
+    "return_by matters for a borrowed tool and nothing else. A borrowed tool with no return date is how friendships end.",
+    "needed_by is when the job needs it in hand, which is what an 'order this now' list sorts by.",
+    "project_id and task_id are TEXT holding row ids, as everywhere else."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "e.g. 'SDS drill'. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "required": true, "description": "user_projects row id"},
+    "task_id": {"type": "text", "description": "Optional: the task that needs it"},
+    "milestone_id": {"type": "text", "description": "Optional: the stage it is needed for"},
+    "status": {"type": "single_select", "options": ["own", "borrow", "hire", "buy"], "default": "buy", "description": "own and borrow cost nothing; hire and buy are money"},
+    "source": {"type": "text", "description": "Who from, or where from"},
+    "purchase_cost": {"type": "number", "decimal_places": 2, "description": "One-off cost when it is being bought"},
+    "hire_rate": {"type": "number", "decimal_places": 2, "description": "Cost per day when it is being hired"},
+    "hire_days": {"type": "number", "description": "How many days it is hired for"},
+    "currency": {"type": "text", "description": "ISO code. Blank means the project's own"},
+    "needed_by": {"type": "date", "description": "When the job needs it in hand"},
+    "return_by": {"type": "date", "description": "When a borrowed or hired tool goes back"},
+    "in_hand": {"type": "boolean", "default": false, "description": "It is here now. A hired tool can be in hand and still cost money"},
+    "note": {"type": "long_text"},
+    "sort_order": {"type": "number"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Floor sander",
+      "user_id": "1",
+      "project_id": "24",
+      "status": "hire",
+      "source": "HSS Hire",
+      "hire_rate": 45,
+      "hire_days": 2,
+      "needed_by": "2026-09-04",
+      "return_by": "2026-09-06",
+      "in_hand": false
+    }
+  ]
+}

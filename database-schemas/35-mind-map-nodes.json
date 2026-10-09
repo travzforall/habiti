@@ -1,0 +1,63 @@
+{
+  "table_name": "mind_map_nodes",
+  "description": "The nodes of a mind map. One row per node. Import THIRTY-FIFTH (after mind_maps)",
+  "import_order": 35,
+  "dependencies": ["mind_maps", "user_tasks"],
+  "notes": [
+    "ONE ROW PER NODE, not one JSON document per map. A map is edited from more than one device and a blob makes that last-write-wins - the same argument the checklist table makes, with more nodes to lose. Structural edits go through the batch endpoints so a 40-node map is still one request.",
+    "map_id and parent_id are TEXT holding row ids, not link_rows - consistent with project_id and board elsewhere, and a link field cannot express 'this is the root' (empty parent_id).",
+    "EXACTLY ONE node per map has an empty parent_id: the root. The client enforces it; nothing in Baserow can.",
+    "There are NO x/y columns, deliberately. Position is computed from the tree on every render. Storing positions would mean the layout can no longer tidy the map, which is most of what a mind map is for.",
+    "side only means anything for the root's children - it decides which way a top-level branch grows. Deeper nodes inherit their branch's side.",
+    "task_id points at a user_tasks row when this node IS a task. Deleting the node never deletes the task, and the confirm dialog says so.",
+    "sort_order positions a node among its siblings. The client renumbers on reorder; gaps are harmless."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "The node's text. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "map_id": {"type": "text", "required": true, "description": "mind_maps row id"},
+    "parent_id": {"type": "text", "description": "mind_map_nodes row id. EMPTY means this is the root"},
+    "side": {"type": "single_select", "options": ["left", "right", "auto"], "default": "auto", "description": "Which way a top-level branch grows"},
+    "sort_order": {"type": "number", "description": "Position among siblings"},
+    "collapsed": {"type": "boolean", "default": false},
+    "kind": {"type": "single_select", "options": ["idea", "task", "note", "link"], "default": "idea"},
+    "task_id": {"type": "text", "description": "user_tasks row id, when this node IS a task"},
+    "url": {"type": "url", "description": "For link nodes"},
+    "note": {"type": "long_text", "description": "The longer thought behind the short label"},
+    "colour": {"type": "text", "description": "Hex override, e.g. #3b82f6"},
+    "icon": {"type": "text", "description": "Emoji"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "title": "Launch plan",
+      "user_id": "6",
+      "map_id": "1",
+      "parent_id": "",
+      "side": "auto",
+      "sort_order": 0,
+      "kind": "idea"
+    },
+    {
+      "title": "Before launch",
+      "user_id": "6",
+      "map_id": "1",
+      "parent_id": "1",
+      "side": "right",
+      "sort_order": 1,
+      "kind": "idea"
+    },
+    {
+      "title": "Write the launch post",
+      "user_id": "6",
+      "map_id": "1",
+      "parent_id": "2",
+      "side": "right",
+      "sort_order": 1,
+      "kind": "task",
+      "task_id": "4",
+      "note": "Draft, edit, publish. Two hours, not two weeks."
+    }
+  ]
+}

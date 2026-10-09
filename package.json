@@ -16,7 +16,9 @@
     "verify:bundle": "node scripts/check-bundle.mjs",
     "verify:assets": "node scripts/check-assets.mjs",
     "verify:legal": "node scripts/check-legal.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build && npm run verify:bundle && npm run verify:assets && npm run verify:legal"
+    "verify:fields": "node scripts/check-baserow-fields.mjs",
+    "db:setup": "node scripts/setup-baserow.mjs",
+    "verify": "npm run lint && npm run typecheck && npm run test:ci && npm run build && npm run verify:bundle && npm run verify:assets && npm run verify:legal && npm run verify:fields"
   },
   "prettier": {
     "printWidth": 100,

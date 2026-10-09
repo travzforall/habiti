@@ -10,13 +10,16 @@
     "priority uses 'urgent' - the word the app actually uses. The scheduler table says 'critical', which needed translating in both directions.",
     "tags is free TEXT (comma separated), not a multiple_select. The scheduler's tags column is limited to bug/feature/improvement/docs, so arbitrary user tags could not be saved at all.",
     "progress is 0-100 and derived by the client from task completion; stored so a list view can show it without loading every task.",
-    "Sub-collections (tasks, milestones, goals) are separate tables, not link fields, so a project loads without fanning out."
+    "type was ADDED 2026-08-16 and does not exist in the live table yet - run add-baserow-field.mjs. Baserow drops it silently meanwhile and toProject() falls back to personal, so nothing breaks.",
+    "Sub-collections (tasks, milestones, goals, items, expenses) are separate tables, not link fields, so a project loads without fanning out.",
+    "budget is the PLAN. What was actually spent is the sum of project_expenses (38), and what is still promised is the unbought project_items (37) - three different numbers that a single 'cost' column could not tell apart."
   ],
   "fields": {
     "id": {"type": "auto_number", "primary": true},
     "title": {"type": "text", "required": true, "primary": true, "description": "Project name. Primary field"},
     "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
     "description": {"type": "long_text"},
+    "type": {"type": "single_select", "options": ["personal", "work", "business", "study", "home", "creative", "health"], "default": "personal", "description": "What kind of project. Carries a default colour and icon and groups the list - see config/project-types.ts. PENDING in the live table"},
     "status": {"type": "single_select", "options": ["planning", "active", "on_hold", "completed", "cancelled"], "default": "planning"},
     "priority": {"type": "single_select", "options": ["low", "medium", "high", "urgent"], "default": "medium"},
     "start_date": {"type": "date"},
@@ -27,6 +30,10 @@
     "icon": {"type": "text", "description": "Emoji"},
     "tags": {"type": "text", "description": "Comma separated. Free text on purpose - a select would reject anything unplanned"},
     "owner": {"type": "text", "description": "Display name, denormalized"},
+    "parent_id": {"type": "text", "description": "The user_projects row this one sits inside. Blank for a top-level project. Three levels deep at most - see config/project-tree.ts"},
+    "sort_order": {"type": "number", "description": "Hand-sorted position among its siblings, 1-based. Empty means never dragged - those sort after everything that was, so a new project cannot appear in the middle of an order someone arranged"},
+    "budget": {"type": "number", "decimal_places": 2, "description": "What this project is meant to cost. Spending against it lives in project_expenses (38)"},
+    "currency": {"type": "text", "description": "ISO code for budget and expenses, e.g. GBP"},
     "archived": {"type": "boolean", "default": false},
     "created_at": {"type": "date", "auto_now_add": true},
     "updated_at": {"type": "date", "auto_now": true}

@@ -1,0 +1,54 @@
+{
+  "table_name": "project_milestones",
+  "description": "Milestones inside a user's project: the rows of the project timeline. NOT the scheduler's `milestones` table (511) - that one links to the scheduler's projects (507), has no start date, owner, colour or order, and cannot hold these. Import THIRTY-SIXTH (needs user_projects)",
+  "import_order": 36,
+  "dependencies": ["27-user-projects.json"],
+  "notes": [
+    "This is the LAST thing in the app that lives only in localStorage. Milestones were kept inside the cached project row, which means they exist on exactly one browser and vanish with the cache - and a project timeline that forgets itself is worse than no timeline.",
+    "project_id is TEXT holding the user_projects row id, not a link_row. Same reasoning as user_tasks: a link field cannot hold a client-generated id during the moment between creating a milestone and the row coming back, and it makes every read fan out.",
+    "Users live in Xano, so user_id is TEXT. Every read filters on it.",
+    "depends_on is comma separated milestone ids - the prerequisites, stored on the milestone that WAITS. One direction, one write, and the reverse view is derived. See config/dependencies.ts for why.",
+    "status is separate from completed on purpose. 'at_risk' is the whole point: a milestone nobody has touched and one that is in trouble look identical on a timeline until someone says which it is.",
+    "definition_of_done is long_text: the condition that makes it finishable, written down where the argument about whether it is done can be settled.",
+    "sort_order is the order of the timeline's rows, set by moveMilestone, and is not derivable from dates - a milestone with no target date still has a place in the list.",
+    "colour is hex, and the timeline bar uses it. Free text rather than a select so a project can pick anything."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "Milestone name. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "required": true, "description": "user_projects row id, as text"},
+    "description": {"type": "long_text"},
+    "start_date": {"type": "date", "description": "When work on it begins. Optional - a milestone can be a single date"},
+    "target_date": {"type": "date", "description": "The date it is aimed at. Drives the timeline marker"},
+    "completed": {"type": "boolean", "default": false},
+    "completed_at": {"type": "date_time"},
+    "status": {"type": "single_select", "options": ["planned", "active", "at_risk", "done"], "default": "planned", "description": "Reported state, independent of the completed flag"},
+    "owner": {"type": "text", "description": "Who is carrying it. Display name, denormalized"},
+    "definition_of_done": {"type": "long_text", "description": "What has to be true before this counts as finished"},
+    "colour": {"type": "text", "description": "Hex, e.g. #8b5cf6. Colours the timeline bar"},
+    "sort_order": {"type": "number", "description": "Order of the timeline rows. 1-based"},
+    "progress": {"type": "number", "description": "0-100, derived from the tasks assigned to it"},
+    "depends_on": {"type": "text", "description": "Comma separated milestone ids this one waits for"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "MVP Release",
+      "user_id": "1",
+      "project_id": "15",
+      "description": "Everything a first user needs.",
+      "start_date": "2026-08-12",
+      "target_date": "2026-09-15",
+      "completed": false,
+      "status": "active",
+      "owner": "Travon",
+      "definition_of_done": "A stranger can pay and get the features.",
+      "colour": "#8b5cf6",
+      "sort_order": 2,
+      "progress": 40,
+      "depends_on": ""
+    }
+  ]
+}

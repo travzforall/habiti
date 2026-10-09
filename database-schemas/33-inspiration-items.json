@@ -1,0 +1,63 @@
+{
+  "table_name": "inspiration_items",
+  "description": "A user's inspiration boards: videos they want to rewatch, pictures of what they are aiming at, links, notes. Import THIRTY-THIRD",
+  "import_order": 33,
+  "dependencies": ["user_projects"],
+  "notes": [
+    "NOT the same thing as daily_content (23). That table is the rotating quote Habiti shows on the dashboard - content the app gives the user. This is content the user keeps.",
+    "board is TEXT holding either the literal 'personal' or a user_projects ROW id, exactly like project_id on user_tasks. Not a link_row, for the same reason: a link field cannot express 'personal'.",
+    "Users live in Xano, so user_id is TEXT holding String(user.id). EVERY read filters on it.",
+    "url holds the ORIGINAL address - a YouTube watch link, an image address, an article. Nothing is downloaded or re-hosted, so an item is a pointer, not a copy. If the far end disappears, so does the picture; that is the trade for not storing other people's media.",
+    "thumbnail_url for a YouTube item is https://i.ytimg.com/vi/<id>/hqdefault.jpg, built from source_id rather than fetched. Loading it means the user's browser talks to Google, which the app discloses on the board and in the privacy policy.",
+    "provider and source_id are stored so a thumbnail can be rebuilt if the format changes, without re-parsing every url.",
+    "An UPLOADED picture is an attachment (table 31), not an inspiration item - use kind 'image' with the returned media URL if it should also appear on a board."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "What the user calls it. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "board": {"type": "text", "required": true, "description": "'personal', or a user_projects row id"},
+    "kind": {"type": "single_select", "options": ["video", "image", "link", "note"], "default": "link"},
+    "url": {"type": "url", "description": "The original address. http(s) only - checked in recogniseMedia()"},
+    "thumbnail_url": {"type": "url"},
+    "provider": {"type": "text", "description": "youtube | vimeo | image | web"},
+    "source_id": {"type": "text", "description": "The video id, where there is one"},
+    "note": {"type": "long_text", "description": "Why this is here. The whole point of a note-kind item"},
+    "tags": {"type": "text", "description": "Comma separated. Free text on purpose"},
+    "sort_order": {"type": "number", "description": "Position on the board"},
+    "created_at": {"type": "date", "auto_now_add": true}
+  },
+  "sample_data": [
+    {
+      "title": "The one about compounding",
+      "user_id": "6",
+      "board": "personal",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      "provider": "youtube",
+      "source_id": "dQw4w9WgXcQ",
+      "note": "Watch when the streak breaks.",
+      "tags": "focus",
+      "sort_order": 1
+    },
+    {
+      "title": "kitchen-after.jpg",
+      "user_id": "6",
+      "board": "7",
+      "kind": "image",
+      "url": "https://example.com/photos/kitchen-after.jpg",
+      "thumbnail_url": "https://example.com/photos/kitchen-after.jpg",
+      "provider": "image",
+      "sort_order": 2
+    },
+    {
+      "title": "Two weekends. No more.",
+      "user_id": "6",
+      "board": "7",
+      "kind": "note",
+      "note": "Two weekends. No more.",
+      "sort_order": 3
+    }
+  ]
+}

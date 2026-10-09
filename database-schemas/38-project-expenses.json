@@ -1,0 +1,40 @@
+{
+  "table_name": "project_expenses",
+  "description": "Money actually spent on a project. The expense list behind the budget. Import THIRTY-EIGHTH (needs user_projects)",
+  "import_order": 38,
+  "dependencies": ["27-user-projects.json"],
+  "notes": [
+    "This is the record of what LEFT the account. An item (37) is what is planned; this is what happened. A budget that cannot tell those apart cannot answer 'have I spent it, or only promised it'.",
+    "item_id is optional and links a spend back to the thing it bought, so an item can show as paid for without duplicating the amount into two tables.",
+    "amount is positive. A refund is a negative amount, deliberately, so a single sum is always the truth and no reader has to know about a 'kind' column.",
+    "spent_at is a date, not a timestamp: nobody budgets to the minute, and a date sorts and groups without timezone argument.",
+    "category is free text. Every fixed list of building categories is wrong by the second job."
+  ],
+  "fields": {
+    "id": {"type": "auto_number", "primary": true},
+    "title": {"type": "text", "required": true, "primary": true, "description": "What it was for. Primary field"},
+    "user_id": {"type": "text", "required": true, "description": "Xano user id as a string. EVERY read filters on this"},
+    "project_id": {"type": "text", "required": true, "description": "user_projects row id"},
+    "task_id": {"type": "text", "description": "Optional: the task it was spent on"},
+    "item_id": {"type": "text", "description": "Optional: the item it paid for"},
+    "amount": {"type": "number", "decimal_places": 2, "required": true, "description": "Positive. A refund is negative"},
+    "currency": {"type": "text", "description": "ISO code. Blank means the project's own"},
+    "spent_at": {"type": "date", "required": true},
+    "category": {"type": "text", "description": "materials, labour, tools, permits - free text on purpose"},
+    "payee": {"type": "text"},
+    "note": {"type": "long_text"},
+    "created_at": {"type": "date", "auto_now_add": true},
+    "updated_at": {"type": "date", "auto_now": true}
+  },
+  "sample_data": [
+    {
+      "title": "Quikrete x10",
+      "user_id": "1",
+      "project_id": "20",
+      "amount": 65.0,
+      "spent_at": "2026-08-16",
+      "category": "materials",
+      "payee": "Builders merchant"
+    }
+  ]
+}
