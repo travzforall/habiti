@@ -261,11 +261,23 @@ describe('NotificationsService re-invites', () => {
   const invite = (at: Date) =>
     friend({ friendshipId: '10', name: 'Testing User', invitedAt: at });
 
+  /**
+   * Invite timestamps are RELATIVE to now, and have to be.
+   *
+   * They used to be pinned at 2026-08-09T01:00:00Z. NotificationsService
+   * ignores anything older than seven days — deliberately, so a stale seen-set
+   * cannot produce a wall of toasts about ancient history — so on
+   * 2026-08-16T01:00Z these fixtures aged out of the window and both tests
+   * began failing on unmodified code. A test that starts failing because time
+   * passed teaches everyone to ignore a red suite.
+   */
+  const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000);
+
   it('toasts again when the same row is re-invited', () => {
     const { service, friends, toast } = build();
     TestBed.tick();
 
-    friends.incomingRequests.set([invite(new Date('2026-08-09T01:00:00Z'))]);
+    friends.incomingRequests.set([invite(hoursAgo(3))]);
     TestBed.tick();
     expect(toast.info).toHaveBeenCalledTimes(1);
 
@@ -276,7 +288,7 @@ describe('NotificationsService re-invites', () => {
     // Withdrawn, then sent again — same row id, new timestamp.
     friends.incomingRequests.set([]);
     TestBed.tick();
-    friends.incomingRequests.set([invite(new Date('2026-08-09T03:00:00Z'))]);
+    friends.incomingRequests.set([invite(hoursAgo(1))]);
     TestBed.tick();
 
     expect(toast.info).toHaveBeenCalledTimes(2);
@@ -286,7 +298,7 @@ describe('NotificationsService re-invites', () => {
     const { friends, toast } = build();
     TestBed.tick();
 
-    const at = new Date('2026-08-09T01:00:00Z');
+    const at = hoursAgo(3);
     friends.incomingRequests.set([invite(at)]);
     TestBed.tick();
     // A poll and a push both landing must not double up.
