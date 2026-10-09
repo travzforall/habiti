@@ -5,9 +5,7 @@
 <div class="space-y-6">
   <div class="text-center">
     <h1 class="text-3xl font-bold text-slate-800 mb-2">📋 Habit Library</h1>
-    <p class="text-slate-500">
-      Start from a proven set, or browse everything by category.
-    </p>
+    <p class="text-slate-500">Start from a proven set, or browse everything by category.</p>
   </div>
 
   <!-- Tabs -->
@@ -49,50 +47,79 @@
       </div>
     }
 
-    <!-- data-tour: app guide step 6. See src/app/config/app-tour.steps.ts. -->
-    <div data-tour="template-packs" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-      @for (pack of visiblePacks(); track pack.id) {
-        <div
-          class="bg-white rounded-2xl shadow-md hover:shadow-xl border border-slate-100 overflow-hidden flex flex-col transition-shadow"
-        >
-          <div class="bg-gradient-to-r {{ pack.accent }} px-5 py-4 text-white">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">{{ pack.icon }}</span>
-              <h3 class="text-lg font-bold">{{ pack.name }}</h3>
-            </div>
+    <!--
+      Shelved by group rather than one flat grid of twenty.
+
+      data-tour="template-packs" stays on the outer wrapper so app guide step 6
+      still finds it — it used to sit on the grid itself, which is now one per
+      group. See src/app/config/app-tour.steps.ts.
+    -->
+    <div data-tour="template-packs" class="space-y-10">
+      @for (shelf of groupedPacks(); track shelf.group.id) {
+        <section>
+          <div class="flex items-baseline gap-3 mb-1">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <span class="text-2xl">{{ shelf.group.icon }}</span>
+              {{ shelf.group.name }}
+            </h2>
+            <span class="text-xs text-slate-400">
+              {{ shelf.packs.length }} {{ shelf.packs.length === 1 ? 'pack' : 'packs' }}
+            </span>
           </div>
+          <p class="text-sm text-slate-500 mb-4">{{ shelf.group.description }}</p>
 
-          <div class="p-5 flex-1 flex flex-col">
-            <p class="text-sm text-slate-600 mb-4">{{ pack.description }}</p>
-
-            <ul class="space-y-1.5 mb-4 flex-1">
-              @for (habit of pack.habits.slice(0, 4); track habit.id) {
-                <li class="flex items-center gap-2 text-sm text-slate-600">
-                  <span>{{ habit.icon }}</span>
-                  <span class="truncate">{{ habit.name }}</span>
-                  @if (alreadyHas(habit.name)) {
-                    <span class="ml-auto text-[10px] font-bold uppercase text-slate-400">Added</span>
-                  }
-                </li>
-              }
-              @if (pack.habits.length > 4) {
-                <li class="text-xs text-slate-400 pl-6">+{{ pack.habits.length - 4 }} more</li>
-              }
-            </ul>
-
-            <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
-              <span class="text-xs text-slate-500">
-                {{ remainingCount(pack) }} of {{ pack.habits.length }} new
-              </span>
-              <button
-                (click)="open(pack)"
-                class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            @for (pack of shelf.packs; track pack.id) {
+              <div
+                class="bg-white rounded-2xl shadow-md hover:shadow-xl border border-slate-100 overflow-hidden flex flex-col transition-shadow"
               >
-                Use Template
-              </button>
-            </div>
+                <div class="bg-gradient-to-r {{ pack.accent }} px-5 py-4 text-white">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">{{ pack.icon }}</span>
+                    <h3 class="text-lg font-bold">{{ pack.name }}</h3>
+                  </div>
+                </div>
+
+                <div class="p-5 flex-1 flex flex-col">
+                  <p class="text-sm text-slate-600 mb-4">{{ pack.description }}</p>
+
+                  <ul class="space-y-1.5 mb-4 flex-1">
+                    @for (habit of pack.habits.slice(0, 4); track habit.id) {
+                      <li class="flex items-center gap-2 text-sm text-slate-600">
+                        <span>{{ habit.icon }}</span>
+                        <span class="truncate">{{ habit.name }}</span>
+                        @if (alreadyHas(habit.name)) {
+                          <span class="ml-auto text-[10px] font-bold uppercase text-slate-400"
+                            >Added</span
+                          >
+                        }
+                      </li>
+                    }
+                    @if (pack.habits.length > 4) {
+                      <li class="text-xs text-slate-400 pl-6">
+                        +{{ pack.habits.length - 4 }} more
+                      </li>
+                    }
+                  </ul>
+
+                  <div
+                    class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100"
+                  >
+                    <span class="text-xs text-slate-500">
+                      {{ remainingCount(pack) }} of {{ pack.habits.length }} new
+                    </span>
+                    <button
+                      (click)="open(pack)"
+                      class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                    >
+                      Use Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
-        </div>
+        </section>
       }
     </div>
   }
@@ -183,8 +210,9 @@
 
     @if (query().trim()) {
       <p class="text-sm text-slate-500 text-center">
-        {{ visibleHabits().length }} habit{{ visibleHabits().length === 1 ? '' : 's' }} matching
-        "{{ query() }}"
+        {{ visibleHabits().length }} habit{{ visibleHabits().length === 1 ? '' : 's' }} matching "{{
+          query()
+        }}"
       </p>
     }
 
@@ -251,12 +279,6 @@
   }
 </div>
 
-<app-template-picker
-  [pack]="selectedPack()"
-  (close)="selectedPack.set(null)"
-></app-template-picker>
+<app-template-picker [pack]="selectedPack()" (close)="selectedPack.set(null)"></app-template-picker>
 
-<app-habit-guidance
-  [habit]="guidanceFor()"
-  (close)="guidanceFor.set(null)"
-></app-habit-guidance>
+<app-habit-guidance [habit]="guidanceFor()" (close)="guidanceFor.set(null)"></app-habit-guidance>

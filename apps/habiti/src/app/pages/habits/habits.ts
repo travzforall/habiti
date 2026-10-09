@@ -12,6 +12,10 @@ import {
   HabitTemplatePack,
   isAlreadyAdded
 } from '../../config/habit-template-packs';
+import { OnboardingService } from '../../services/onboarding.service';
+
+/** Two rows of five on a wide screen. */
+const FEATURED_PACK_COUNT = 10;
 
 @Component({
   selector: 'app-habits',
@@ -23,6 +27,7 @@ import {
 export class HabitsComponent {
   private habitsService = inject(HabitsService);
   private router = inject(Router);
+  private onboarding = inject(OnboardingService);
 
   protected readonly habits = this.habitsService.habits;
   protected readonly gameState = this.habitsService.gameState;
@@ -30,6 +35,39 @@ export class HabitsComponent {
 
   protected readonly templatePacks = HABIT_TEMPLATE_PACKS;
   protected readonly selectedPack = signal<HabitTemplatePack | null>(null);
+
+  /**
+   * The packs shown on this page, ordered by what the user said they cared
+   * about during setup.
+   *
+   * All seventeen used to sit in one horizontal scroller, which buried
+   * everything past the fourth card. Ten in a grid fits without scrolling, and
+   * "Browse all →" still reaches the rest.
+   *
+   * Ranking is a stable partition, not a sort: packs touching a chosen focus
+   * area come first, everything else follows, and CURATED ORDER IS PRESERVED
+   * WITHIN each group. `filter` guarantees that; a comparator returning 0 for
+   * ties would not, and the order in habit-template-packs.ts is deliberate —
+   * broadly-useful packs first.
+   *
+   * No focus areas (skipped setup, or picked nothing) means the curated order
+   * stands on its own, which is the sensible default rather than a special case.
+   */
+  protected readonly featuredPacks = computed<HabitTemplatePack[]>(() => {
+    const focus = new Set(this.onboarding.preferences().focusAreas);
+    if (focus.size === 0) return HABIT_TEMPLATE_PACKS.slice(0, FEATURED_PACK_COUNT);
+
+    const matchesFocus = (pack: HabitTemplatePack) =>
+      pack.habits.some(habit => focus.has(habit.categoryId));
+
+    return [
+      ...HABIT_TEMPLATE_PACKS.filter(matchesFocus),
+      ...HABIT_TEMPLATE_PACKS.filter(pack => !matchesFocus(pack))
+    ].slice(0, FEATURED_PACK_COUNT);
+  });
+
+  /** True when there are packs the grid is not showing. */
+  protected readonly hasMorePacks = HABIT_TEMPLATE_PACKS.length > FEATURED_PACK_COUNT;
 
   /**
    * The five standard steps, PLUS whatever this habit is actually worth.

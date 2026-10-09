@@ -302,20 +302,6 @@ const selfCare = group(CAT, 'self-care', [
     unit: 'minutes',
     tags: ['wellbeing', 'digital']
   }),
-  habit('skincare', 'Skincare routine', '🧴', 'Morning or evening.', {
-    difficulty: 'easy',
-    points: 5,
-    goal: 1,
-    unit: 'day',
-    tags: ['hygiene']
-  }),
-  habit('floss', 'Floss', '🦷', 'The one everybody lies about.', {
-    difficulty: 'easy',
-    points: 5,
-    goal: 1,
-    unit: 'day',
-    tags: ['hygiene']
-  }),
   habit('take-medication', 'Take medication', '💊', 'On time, as prescribed.', {
     difficulty: 'easy',
     points: 10,
@@ -364,6 +350,45 @@ const selfCare = group(CAT, 'self-care', [
     goal: 1,
     unit: 'appointment',
     tags: ['medical', 'admin']
+  })
+]);
+
+/**
+ * Hygiene, split out of the old self-care catch-all.
+ *
+ * `self-care` was carrying hygiene, screen time, posture, medication and
+ * medical appointments at once, so none of it was findable and there was no
+ * pack to build from it. Skincare, floss and sunscreen moved here unchanged —
+ * the ids are the same, so no pack or existing user habit breaks.
+ */
+const hygiene = group(CAT, 'hygiene', [
+  habit('brush-teeth', 'Brush teeth twice', '🪥', 'Morning and night, two minutes each.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 2,
+    unit: 'times',
+    tags: ['hygiene', 'dental']
+  }),
+  habit('floss', 'Floss', '🦷', 'The one everybody lies about.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 1,
+    unit: 'day',
+    tags: ['hygiene', 'dental']
+  }),
+  habit('shower', 'Shower', '🚿', 'Start or end the day clean.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 1,
+    unit: 'day',
+    tags: ['hygiene']
+  }),
+  habit('skincare', 'Skincare routine', '🧴', 'Morning or evening.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 1,
+    unit: 'day',
+    tags: ['hygiene']
   }),
   habit('sunscreen', 'Wear sunscreen', '🧴', 'Every day, not just sunny ones.', {
     difficulty: 'easy',
@@ -371,6 +396,20 @@ const selfCare = group(CAT, 'self-care', [
     goal: 1,
     unit: 'day',
     tags: ['hygiene', 'prevention']
+  }),
+  habit('wash-hands', 'Wash hands properly', '🧼', 'Twenty seconds, not a rinse.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 1,
+    unit: 'day',
+    tags: ['hygiene']
+  }),
+  habit('tidy-bathroom', 'Wipe down after yourself', '🧽', 'Sink and counter, thirty seconds.', {
+    difficulty: 'easy',
+    points: 5,
+    goal: 1,
+    unit: 'day',
+    tags: ['hygiene', 'home']
   })
 ]);
 
@@ -386,8 +425,9 @@ export const HEALTH: LibrarySection = {
       sub('eating', 'Eating habits', '🍽️', 'What and how you eat.'),
       sub('cooking', 'Cooking & prep', '🍳', 'Planning, shopping and cooking.'),
       sub('sleep', 'Sleep', '😴', 'Schedule, wind-down and environment.'),
-      sub('self-care', 'Self-care', '🛁', 'Hygiene, screens, posture and medical.')
+      sub('hygiene', 'Hygiene', '🧼', 'Teeth, skin and keeping clean.'),
+      sub('self-care', 'Self-care', '🛁', 'Screens, posture, medication and medical.')
     ]
   },
-  habits: [...hydration, ...eating, ...cooking, ...sleepSchedule, ...selfCare]
+  habits: [...hydration, ...eating, ...cooking, ...sleepSchedule, ...hygiene, ...selfCare]
 };

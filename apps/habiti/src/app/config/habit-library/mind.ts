@@ -1,59 +1,22 @@
 import { LibrarySection, group, habit, sub } from './types';
 
-/** Attention, mood and the practices that keep both steady. */
+/**
+ * Attention, mood and the practices that keep both steady.
+ *
+ * The `meditation` subcategory was removed deliberately, along with its five
+ * habits — Meditate 10 minutes, Body scan, Walking meditation, Loving-kindness
+ * (metta) and Noting practice (vipassana). Habiti does not recommend
+ * contemplative or new-age practice.
+ *
+ * Removing a habit id is not free: `pick()` throws on an unknown id, so any
+ * pack that referenced one had to be rewritten in the same change (Calm Mind
+ * was the only one). Users who had already added those habits keep them —
+ * `libraryHabitByName` simply returns undefined and the guidance panel and
+ * tracking spec fall back to defaults, which they already do for hand-written
+ * habits.
+ */
 
 const CAT = 'mind';
-
-const meditation = group(CAT, 'meditation', [
-  habit('meditate-10', 'Meditate 10 minutes', '🧘', 'Guided or silent, both count.', {
-    tracking: { kind: 'duration', unit: 'minutes', target: 10, direction: 'at-least', step: 1, min: 0 },
-    difficulty: 'easy',
-    points: 10,
-    goal: 10,
-    unit: 'minutes',
-    tags: ['meditation'],
-    guidance: {
-      summary: 'The practice is noticing you have wandered and coming back. That IS the exercise.',
-      steps: [
-        'Sit upright somewhere you will not be interrupted.',
-        'Set a timer so you are not clock-watching.',
-        'Rest attention on the breath where you feel it most clearly.',
-        'When you notice you have drifted, return to the breath without judging it.'
-      ],
-      mistakes: [
-        'Believing you are failing because your mind wanders — that is the whole point.',
-        'Starting at 30 minutes and quitting by Thursday.'
-      ],
-      tips: ['Two minutes daily beats twenty minutes once a week.']
-    }
-  }),
-  habit('body-scan', 'Body scan', '🫧', 'Attention through the body, head to toe.', {
-    difficulty: 'easy',
-    points: 10,
-    goal: 15,
-    unit: 'minutes',
-    tags: ['meditation', 'relaxation']
-  }),
-  habit('walking-meditation', 'Walking meditation', '🚶', 'Slow, deliberate, attention on each step.', {
-    difficulty: 'easy',
-    points: 10,
-    goal: 15,
-    unit: 'minutes',
-    tags: ['meditation', 'movement']
-  }),
-  habit('loving-kindness', 'Loving-kindness practice', '💗', 'Goodwill, starting with yourself.', {
-    points: 10,
-    goal: 10,
-    unit: 'minutes',
-    tags: ['meditation', 'compassion']
-  }),
-  habit('noting-practice', 'Noting practice', '🏷️', 'Name what arises: thinking, hearing, feeling.', {
-    points: 10,
-    goal: 10,
-    unit: 'minutes',
-    tags: ['meditation']
-  })
-]);
 
 const breathing = group(CAT, 'breathing', [
   habit('box-breathing', 'Box breathing', '🌬️', 'In 4, hold 4, out 4, hold 4.', {
@@ -236,7 +199,43 @@ const faith = group(CAT, 'faith', [
     points: 10,
     goal: 10,
     unit: 'minutes',
-    tags: ['faith', 'meditation']
+    tags: ['faith', 'stillness']
+  }),
+  habit('daily-devotional', 'Daily devotional', '📖', 'A short reading and a moment to sit with it.', {
+    difficulty: 'easy',
+    points: 10,
+    goal: 1,
+    unit: 'reading',
+    tags: ['faith', 'scripture'],
+    guidance: {
+      summary: 'A fixed, short reading beats an open-ended one you keep postponing.',
+      steps: [
+        'Pick a plan or a book and read the passage for the day.',
+        'Sit with one verse rather than trying to cover ground.',
+        'Write a line on what it asked of you.'
+      ],
+      tips: ['Same time and same chair each day does more for this than willpower.']
+    }
+  }),
+  habit('pray-with-family', 'Pray with family', '🙏', 'Together, out loud, before the day scatters.', {
+    points: 10,
+    goal: 1,
+    unit: 'time',
+    tags: ['faith', 'family']
+  }),
+  habit('memorise-verse', 'Memorise a verse', '🧠', 'One a week, carried rather than looked up.', {
+    difficulty: 'medium',
+    points: 15,
+    goal: 1,
+    unit: 'verse',
+    tags: ['faith', 'scripture']
+  }),
+  habit('examen', 'Evening examen', '🌙', 'Where the day went well, and where it did not.', {
+    difficulty: 'easy',
+    points: 10,
+    goal: 10,
+    unit: 'minutes',
+    tags: ['faith', 'reflection']
   })
 ]);
 
@@ -248,12 +247,15 @@ export const MIND: LibrarySection = {
     description: 'Attention, mood, and the practices that steady both.',
     accent: 'from-violet-400 to-purple-600',
     subcategories: [
-      sub('meditation', 'Meditation', '🧘', 'Sitting, walking and compassion practice.'),
+      // The 'meditation' subcategory was removed along with its five habits —
+      // see the note at the top of this file. Breathing survives it: box
+      // breathing and the physiological sigh are physiological techniques with
+      // no spiritual framing, and they are what the Calm Mind pack now leans on.
       sub('breathing', 'Breathing', '🌬️', 'Fast tools for stress in the moment.'),
       sub('journaling', 'Journaling', '📓', 'Writing, gratitude and reflection.'),
       sub('emotional', 'Emotional health', '💗', 'Support, triggers and digital hygiene.'),
-      sub('faith', 'Faith & reflection', '🕯️', 'Prayer, scripture and stillness.')
+      sub('faith', 'Faith & prayer', '🙏', 'Prayer, scripture and stillness.')
     ]
   },
-  habits: [...meditation, ...breathing, ...journaling, ...emotional, ...faith]
+  habits: [...breathing, ...journaling, ...emotional, ...faith]
 };

@@ -215,15 +215,26 @@
       </div>
       <p class="text-sm text-slate-500 mb-4">Pick a pack, then choose which habits you want.</p>
 
-      <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-        @for (pack of templatePacks; track pack.id) {
+      <!--
+        Two rows of five, not a horizontal scroller.
+
+        All seventeen packs in one scrolling strip meant everything past the
+        fourth card was invisible unless you thought to drag it. Ten fit on
+        screen; the rest are one click away under "Browse all".
+
+        The column counts step down on narrow screens rather than forcing two
+        rows everywhere — five 176px cards cannot fit on a phone, and a grid
+        that wraps beats one that scrolls sideways.
+      -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        @for (pack of featuredPacks(); track pack.id) {
           <button
             type="button"
             (click)="openTemplate(pack)"
-            class="shrink-0 w-44 text-left rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden bg-white"
+            class="text-left rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden bg-white"
           >
             <div class="bg-gradient-to-r {{ pack.accent }} px-3 py-2 text-white flex items-center gap-2">
-              <span class="text-xl">{{ pack.icon }}</span>
+              <span class="text-xl shrink-0">{{ pack.icon }}</span>
               <span class="text-sm font-semibold truncate">{{ pack.name }}</span>
             </div>
             <div class="px-3 py-2">
@@ -234,6 +245,13 @@
           </button>
         }
       </div>
+
+      @if (hasMorePacks) {
+        <p class="text-xs text-slate-400 mt-3">
+          Showing {{ featuredPacks().length }} of {{ templatePacks.length }} packs.
+          <a routerLink="/templates" class="text-blue-600 hover:text-blue-700 font-medium">See them all</a>.
+        </p>
+      }
     </div>
   </div>
 

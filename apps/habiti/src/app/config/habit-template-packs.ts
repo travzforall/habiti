@@ -92,11 +92,20 @@ export const HABIT_TEMPLATE_PACKS: HabitTemplatePack[] = [
   },
   {
     id: 'calm-mind',
-    name: 'Calm Mind',
-    icon: '🧘',
-    description: 'Practised, rather than hoped for.',
+    name: 'Steadier Mind',
+    icon: '🌬️',
+    description: 'Practical ways to take the edge off a day.',
     accent: 'from-violet-400 to-purple-600',
-    habits: pick('meditate-10', 'box-breathing', 'gratitude', 'walking-meditation', 'offline-time')
+    // Was 'meditate-10' and 'walking-meditation'; both were removed with the
+    // meditation subcategory. What replaces them is physiological or written
+    // rather than contemplative.
+    habits: pick(
+      'box-breathing',
+      'physiological-sigh',
+      'gratitude',
+      'evening-reflection',
+      'offline-time'
+    )
   },
   {
     id: 'deep-focus',
@@ -179,6 +188,30 @@ export const HABIT_TEMPLATE_PACKS: HabitTemplatePack[] = [
     habits: pick('no-alcohol', 'no-smoking', 'support-group', 'note-the-trigger', 'message-someone')
   },
   {
+    id: 'hygiene-basics',
+    name: 'Hygiene Basics',
+    icon: '🧼',
+    description: 'The small daily upkeep that is easy to let slide.',
+    accent: 'from-sky-400 to-blue-600',
+    habits: pick('brush-teeth', 'floss', 'shower', 'skincare', 'sunscreen')
+  },
+  {
+    id: 'daily-prayer',
+    name: 'Daily Prayer',
+    icon: '🙏',
+    description: 'A rhythm of prayer, scripture and reflection.',
+    accent: 'from-amber-300 to-yellow-600',
+    habits: pick('pray', 'read-scripture', 'daily-devotional', 'examen', 'attend-service')
+  },
+  {
+    id: 'family-faith',
+    name: 'Faith at Home',
+    icon: '✝️',
+    description: 'Practised together rather than alone.',
+    accent: 'from-orange-300 to-amber-600',
+    habits: pick('pray-with-family', 'daily-devotional', 'memorise-verse', 'reflection-silence', 'attend-service')
+  },
+  {
     id: 'desk-job',
     name: 'Desk Job Survival',
     icon: '🪑',
@@ -204,6 +237,79 @@ export const HABIT_TEMPLATE_PACKS: HabitTemplatePack[] = [
 
 export function findPack(id: string): HabitTemplatePack | undefined {
   return HABIT_TEMPLATE_PACKS.find(pack => pack.id === id);
+}
+
+/**
+ * How the packs are shelved on the templates page.
+ *
+ * Twenty packs in one undifferentiated grid gave the eye nothing to hold on to
+ * — Strength Basics sat beside Money in Order with nothing to say they were
+ * different kinds of thing. Grouping is data rather than template logic so the
+ * shelves can be reordered without touching a component.
+ *
+ * Membership is exhaustive and exclusive: every pack appears in exactly one
+ * group, and habit-template-packs.spec.ts fails if a new pack is added without
+ * being shelved. That check is the point — the failure mode otherwise is a pack
+ * that exists but is unreachable, which nothing else would catch.
+ */
+export interface PackGroup {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  packIds: string[];
+}
+
+export const PACK_GROUPS: PackGroup[] = [
+  {
+    id: 'exercise',
+    name: 'Exercise',
+    icon: '🏋️',
+    description: 'Strength, cardio and moving more of the day.',
+    packIds: ['strength-basics', 'push-pull-legs', 'no-gym', 'runner', 'desk-job']
+  },
+  {
+    id: 'food-health',
+    name: 'Food & Health',
+    icon: '🥗',
+    description: 'What you eat, how you sleep, what you cut.',
+    packIds: ['eat-better', 'sleep-reset', 'clean-living', 'morning-routine']
+  },
+  {
+    id: 'hygiene',
+    name: 'Hygiene',
+    icon: '🧼',
+    description: 'The daily upkeep that is easy to let slide.',
+    packIds: ['hygiene-basics']
+  },
+  {
+    id: 'faith',
+    name: 'Faith & Prayer',
+    icon: '🙏',
+    description: 'Prayer, scripture and reflection, alone and together.',
+    packIds: ['daily-prayer', 'family-faith']
+  },
+  {
+    id: 'focus',
+    name: 'Focus & Growth',
+    icon: '⚡',
+    description: 'Deep work, learning and making things.',
+    packIds: ['deep-focus', 'always-learning', 'make-things', 'calm-mind']
+  },
+  {
+    id: 'home-life',
+    name: 'Home & Life',
+    icon: '🏠',
+    description: 'Money, people, the house and the world outside it.',
+    packIds: ['money-order', 'closer-relationships', 'home-order', 'greener']
+  }
+];
+
+/** The packs of a group, resolved and in the group's declared order. */
+export function packsInGroup(group: PackGroup): HabitTemplatePack[] {
+  return group.packIds
+    .map(findPack)
+    .filter((pack): pack is HabitTemplatePack => pack !== undefined);
 }
 
 export function allTemplateHabits(): { pack: HabitTemplatePack; habit: LibraryHabit }[] {

@@ -35,7 +35,10 @@ describe('sensitive habit classification', () => {
     'no-sugary-drinks',
     'sleep-7-hours',
     'walk-10k',
-    'meditate-10',
+    // 'meditate-10' stood here until the meditation habits were removed from
+    // the library. Box breathing takes its place as the ordinary, non-revealing
+    // wellbeing habit.
+    'box-breathing',
     'journal'
   ];
 

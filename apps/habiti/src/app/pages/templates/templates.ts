@@ -7,7 +7,10 @@ import { HabitGuidanceComponent } from '../../components/habit-guidance/habit-gu
 import {
   HABIT_TEMPLATE_PACKS,
   HabitTemplatePack,
-  isAlreadyAdded
+  PACK_GROUPS,
+  PackGroup,
+  isAlreadyAdded,
+  packsInGroup
 } from '../../config/habit-template-packs';
 import {
   HABIT_LIBRARY,
@@ -55,6 +58,24 @@ export class TemplatesComponent {
       return pack.habits.some(habit => habit.name.toLowerCase().includes(term));
     });
   });
+
+  /**
+   * The packs, shelved by group.
+   *
+   * Groups are dropped rather than rendered empty while searching, so a query
+   * matching two packs shows two cards under one heading instead of six
+   * headings and four blank shelves.
+   */
+  protected readonly groupedPacks = computed<{ group: PackGroup; packs: HabitTemplatePack[] }[]>(
+    () => {
+      const visible = new Set(this.visiblePacks().map(p => p.id));
+
+      return PACK_GROUPS.map(group => ({
+        group,
+        packs: packsInGroup(group).filter(pack => visible.has(pack.id))
+      })).filter(shelf => shelf.packs.length > 0);
+    }
+  );
 
   // --- Browse ------------------------------------------------------------
 

@@ -10,7 +10,7 @@ import {
   searchLibrary,
   toHabitDraft
 } from './index';
-import { HABIT_TEMPLATE_PACKS } from '../habit-template-packs';
+import { HABIT_TEMPLATE_PACKS, PACK_GROUPS, packsInGroup } from '../habit-template-packs';
 import { CHALLENGE_CATALOGUE } from '../challenge-catalogue.seed';
 
 /**
@@ -248,6 +248,73 @@ describe('packs and challenges reference the library', () => {
       const ids = pack.habits.map(h => h.id);
       expect(new Set(ids).size).withContext(pack.name).toBe(ids.length);
     }
+  });
+
+  /**
+   * The templates page renders packs BY GROUP, so an unshelved pack is not a
+   * cosmetic problem — it exists and is unreachable. Nothing else catches that.
+   */
+  describe('pack groups', () => {
+    const shelved = PACK_GROUPS.flatMap(g => g.packIds);
+
+    it('shelves every pack', () => {
+      const missing = HABIT_TEMPLATE_PACKS.map(p => p.id).filter(id => !shelved.includes(id));
+      expect(missing).withContext(`unshelved packs: ${missing.join(', ')}`).toEqual([]);
+    });
+
+    it('shelves each pack exactly once', () => {
+      expect(new Set(shelved).size).toBe(shelved.length);
+    });
+
+    it('references no pack that does not exist', () => {
+      const real = new Set(HABIT_TEMPLATE_PACKS.map(p => p.id));
+      const ghosts = shelved.filter(id => !real.has(id));
+      expect(ghosts).withContext(`unknown pack ids: ${ghosts.join(', ')}`).toEqual([]);
+    });
+
+    it('has no empty group', () => {
+      for (const group of PACK_GROUPS) {
+        expect(packsInGroup(group).length).withContext(group.name).toBeGreaterThan(0);
+      }
+    });
+
+    it('resolves groups in their declared order', () => {
+      for (const group of PACK_GROUPS) {
+        expect(packsInGroup(group).map(p => p.id)).toEqual(group.packIds);
+      }
+    });
+  });
+
+  /**
+   * The product decision recorded as a test: Habiti does not recommend
+   * meditation or new-age practice. Without this, someone reinstates it in a
+   * seed file and nothing objects.
+   */
+  describe('content policy', () => {
+    const REMOVED = [
+      'meditate-10',
+      'body-scan',
+      'walking-meditation',
+      'loving-kindness',
+      'noting-practice'
+    ];
+
+    it('no longer carries the meditation habits', () => {
+      const present = REMOVED.filter(id => ALL_LIBRARY_HABITS.some(h => h.id === id));
+      expect(present).withContext(`reinstated: ${present.join(', ')}`).toEqual([]);
+    });
+
+    it('has no meditation subcategory', () => {
+      const subs = LIBRARY_CATEGORIES.flatMap(c => c.subcategories.map(s => s.id));
+      expect(subs).not.toContain('meditation');
+    });
+
+    it('no pack recommends a removed habit', () => {
+      for (const pack of HABIT_TEMPLATE_PACKS) {
+        const bad = pack.habits.filter(h => REMOVED.includes(h.id));
+        expect(bad.map(h => h.id)).withContext(pack.name).toEqual([]);
+      }
+    });
   });
 
   it('every challenge suggests habits that exist', () => {

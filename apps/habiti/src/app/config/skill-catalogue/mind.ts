@@ -5,12 +5,27 @@ import { SkillSection, inCategory, project, req, skill, task, tier } from './typ
 const CAT = 'mind';
 
 const skills = inCategory(CAT, [
+  /**
+   * RETIRED, not deleted.
+   *
+   * Habiti no longer recommends meditation, but `SkillTrack.skillId` is stored
+   * per user: deleting this entry would orphan anyone already on the track, and
+   * `skillDefinition()` throws on an unknown id by design. `active: false`
+   * removes it from every listing (`skillsInCategory` filters on it) while
+   * existing tracks still resolve.
+   *
+   * habitIds had to be pruned to ids that still exist. `practiceHabits()`
+   * resolves them through the library's THROWING `pick()`, so a retired skill
+   * still holding a dead id crashes the skills page — inactive does not mean
+   * unevaluated.
+   */
   skill({
     id: 'meditation',
+    active: false,
     name: 'Meditation',
     icon: '🧘',
     description: 'Noticing you have wandered and coming back. That is the whole exercise.',
-    habitIds: ['meditate-10', 'box-breathing', 'body-scan', 'walking-meditation', 'noting-practice', 'loving-kindness'],
+    habitIds: ['box-breathing'],
     starterTasks: [
       task('same-time', 'Fix a time and place', 'Deciding daily is what kills the habit.', 'high'),
       task('short-first', 'Start at five minutes, not thirty', 'Thirty is how people quit by Thursday.')
@@ -23,13 +38,14 @@ const skills = inCategory(CAT, [
       ])
     ],
     campaignTemplateIds: ['quiet-mind-21'],
-    sortIndex: 1,
+    // Sorted last; it shared slot 1 with Prayer, which now owns it.
+    sortIndex: 99,
     tiers: [
       tier(1, 'Sitting most days, however briefly.', [req.days(7)]),
       tier(2, 'A fixed time and place, and it happens without deciding.', [req.days(30), req.tasks('same-time')]),
       tier(3, 'A full month unbroken, and you notice the difference off the cushion.', [
         req.days(90),
-        req.volume(600, 'minutes', ['meditate-10']),
+        req.volume(600, 'minutes', ['box-breathing']),
         req.project('thirty-days-sitting')
       ]),
       tier(4, 'Attention is a thing you can direct under stress.', [
@@ -39,8 +55,48 @@ const skills = inCategory(CAT, [
       ]),
       tier(5, 'Practice, not project. It is simply part of the day.', [
         req.days(365),
-        req.volume(4000, 'minutes', ['meditate-10'])
+        req.volume(4000, 'minutes', ['box-breathing'])
       ])
+    ]
+  }),
+
+  skill({
+    id: 'prayer',
+    name: 'Prayer',
+    icon: '🙏',
+    description: 'A rhythm you keep on the days you do not feel like it.',
+    habitIds: [
+      'pray',
+      'read-scripture',
+      'daily-devotional',
+      'pray-with-family',
+      'examen',
+      'memorise-verse',
+      'attend-service',
+      'reflection-silence'
+    ],
+    starterTasks: [
+      task('fixed-hour', 'Fix an hour, not an intention', 'A time you keep beats a resolve you renew.', 'high'),
+      task('plan-chosen', 'Choose a reading plan', 'So the decision is made once, not daily.')
+    ],
+    starterProjects: [
+      project('through-a-gospel', 'Read a gospel end to end', 'A chapter at a time, in order.', [
+        'Pick one gospel',
+        'Read a chapter a day',
+        'Write a line on what each chapter asked of you'
+      ])
+    ],
+    campaignTemplateIds: ['quiet-mind-21'],
+    sortIndex: 1,
+    tiers: [
+      tier(1, 'Praying most days, however briefly.', [req.days(7)]),
+      tier(2, 'A fixed time, and it happens without deciding.', [req.days(30), req.tasks('fixed-hour')]),
+      tier(3, 'Scripture alongside prayer, and a gospel read through.', [
+        req.days(90),
+        req.project('through-a-gospel')
+      ]),
+      tier(4, 'It holds on the hard weeks, not just the easy ones.', [req.days(180), req.streak(21)]),
+      tier(5, 'Not a practice you keep. Simply part of the day.', [req.days(365)])
     ]
   }),
 

@@ -48,16 +48,21 @@ export const CHALLENGE_CATALOGUE: ChallengeTemplate[] = [
     sortIndex: 3,
     habits: ['no-zero-day', 'review-day', 'top-three']
   }),
+  /**
+   * The id stays `quiet-mind-21` even though the title changed: `ChallengeRun`
+   * stores `templateId`, so renaming the id would orphan every run in progress.
+   * Only the content moved off meditation.
+   */
   template({
     id: 'quiet-mind-21',
-    title: 'Quiet Mind',
-    description: 'Twenty-one days of stillness. Long enough to notice the difference.',
-    icon: '🧘',
+    title: 'Steadier Days',
+    description: 'Twenty-one days of winding down properly. Long enough to notice the difference.',
+    icon: '🌙',
     category: 'mind',
     durationDays: 21,
     levels: [14, 20, 28],
     sortIndex: 4,
-    habits: ['meditate-10', 'box-breathing', 'no-screens-before-bed', 'journal']
+    habits: ['box-breathing', 'no-screens-before-bed', 'journal', 'digital-sunset']
   }),
   template({
     id: 'deep-work-4w',
