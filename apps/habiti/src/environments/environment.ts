@@ -87,7 +87,7 @@ export const environment = {
        * are created FROM. Zero until db:setup creates it; ToolkitService keeps
        * everything in localStorage meanwhile and flushes once an id appears.
        */
-      toolkitItems: 0,
+      toolkitItems: 642,
       // Friends & Campaigns. Set to 0 until the tables are created in Baserow —
       // FriendsService/CampaignsService no-op with a warning while an id is 0.
       friendships: 620,
@@ -131,7 +131,7 @@ export const environment = {
        * Note that a row here is CORROBORATION, not evidence, while the Baserow
        * token ships in the bundle — see the notes in the schema file.
        */
-      legalAcceptances: 0,
+      legalAcceptances: 645,
       /**
        * Files and links attached to tasks and projects.
        *
