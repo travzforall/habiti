@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { LegalLinksComponent } from '../../components/legal-links/legal-links.component';
 import { HabitsService } from '../../services/habits';
@@ -18,15 +19,56 @@ import {
   CHALLENGE_DIFFICULTY_META,
   ChallengeDifficulty
 } from '../../models/challenge.models';
+import { CurrencyService } from '../../services/currency.service';
+import { COMMON_CURRENCIES } from '../../config/currency';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, RouterModule, LegalLinksComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LegalLinksComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss'
 })
 export class SettingsComponent {
+  // --- money ---------------------------------------------------------------
+
+  private currency = inject(CurrencyService);
+
+  protected readonly commonCurrencies = COMMON_CURRENCIES;
+  protected readonly homeCurrency = this.currency.home;
+  protected readonly rateAge = this.currency.ageDays;
+
+  protected rateCode = '';
+  protected rateValue: number | null = null;
+
+  /** The rates as lines to read, sorted so the list does not jump about. */
+  protected readonly rateList = computed(() =>
+    Object.entries(this.currency.table().rates)
+      .map(([code, value]) => ({ code, value }))
+      .sort((a, b) => a.code.localeCompare(b.code))
+  );
+
+  protected isCommon(code: string): boolean {
+    return (COMMON_CURRENCIES as readonly string[]).includes(code);
+  }
+
+  protected setHome(code: string): void {
+    this.currency.setHome(code);
+  }
+
+  protected addRate(): void {
+    const code = this.rateCode.trim();
+    if (!code || this.rateValue === null) return;
+
+    this.currency.setRate(code, this.rateValue);
+    this.rateCode = '';
+    this.rateValue = null;
+  }
+
+  protected removeRate(code: string): void {
+    this.currency.removeRate(code);
+  }
+
   private habitsService = inject(HabitsService);
   private importerService = inject(HabitImporterService);
   private challengeService = inject(ChallengeService);

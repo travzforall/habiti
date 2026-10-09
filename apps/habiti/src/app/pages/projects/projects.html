@@ -1,9 +1,13 @@
-<!-- Project Planner -->
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+<!--
+  Project Planner.
+
+  No `min-h-screen` gradient wrapper: this page renders INSIDE the shell's glass
+  panel, and a second full-page background was being painted over the first.
+-->
+<div>
   
-  <!-- Projects List View -->
-  @if (!selectedProject()) {
-    <div class="max-w-7xl mx-auto space-y-6">
+  <!-- Projects List View. Not conditional any more — the detail view is a route. -->
+  <div class="space-y-6">
       
       <!-- Header Section -->
       <div class="bg-white rounded-xl p-6 shadow-lg">
@@ -22,21 +26,31 @@
               New Project
             </button>
             
-            <!-- View Toggle -->
-            <div class="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button (click)="currentView = 'list'"
-                      [class.bg-blue-500]="currentView === 'list'"
-                      [class.text-white]="currentView === 'list'"
-                      [class.text-gray-600]="currentView !== 'list'"
-                      class="px-3 py-2 text-sm transition-colors">
-                List
+            <!--
+              A List/Board toggle used to sit here. There was no board: only the
+              list branch was ever written, so choosing Board emptied the page.
+              Removed rather than left as a control that breaks the screen.
+
+              This one has both branches, and the tests cover both.
+            -->
+            <div class="flex rounded-lg border border-gray-300 p-0.5" role="group" aria-label="How to show projects">
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                [class]="view() === 'cards' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                [attr.aria-pressed]="view() === 'cards'"
+                (click)="setView('cards')"
+              >
+                All
               </button>
-              <button (click)="currentView = 'board'"
-                      [class.bg-blue-500]="currentView === 'board'"
-                      [class.text-white]="currentView === 'board'"
-                      [class.text-gray-600]="currentView !== 'board'"
-                      class="px-3 py-2 text-sm transition-colors">
-                Board
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                [class]="view() === 'roots' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                [attr.aria-pressed]="view() === 'roots'"
+                (click)="setView('roots')"
+              >
+                By project
               </button>
             </div>
           </div>
@@ -55,6 +69,16 @@
             </select>
           </div>
           
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-700">Type:</label>
+            <select [(ngModel)]="filterType" class="border border-gray-300 rounded-lg px-3 py-1 text-sm">
+              <option value="all">All</option>
+              @for (option of typeOptions; track option.type) {
+                <option [value]="option.type">{{ option.meta.icon }} {{ option.meta.label }}</option>
+              }
+            </select>
+          </div>
+
           <div class="flex items-center gap-2">
             <label class="text-sm font-medium text-gray-700">Priority:</label>
             <select [(ngModel)]="filterPriority" class="border border-gray-300 rounded-lg px-3 py-1 text-sm">
@@ -87,25 +111,284 @@
         </div>
       </div>
       
-      <!-- Projects Grid/List -->
-      @if (currentView === 'list') {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (project of getFilteredProjects(); track project.id) {
-            <div (click)="selectProject(project.id)"
-                 class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group border-l-4"
-                 [style.border-left-color]="project.color">
-              
-              <!-- Project Header -->
-              <div class="flex items-start justify-between mb-4">
-                <div class="flex items-center gap-3 flex-1">
-                  <span class="text-2xl">{{ project.icon }}</span>
-                  <div class="min-w-0 flex-1">
-                    <h3 class="font-bold text-gray-800 truncate">{{ project.title }}</h3>
-                    <p class="text-sm text-gray-600 line-clamp-2">{{ project.description || 'No description' }}</p>
+      <!--
+        Grouped by root project: one card per top-level project, summarising
+        everything underneath it.
+
+        The filters above deliberately do NOT apply here. A family total that
+        silently excluded the projects you filtered out would be a number that
+        looks complete and is not — the same rule the budget follows for a
+        currency it cannot convert.
+      -->
+      @if (view() === 'roots') {
+        @if (roots().length === 0) {
+          <div class="rounded-xl bg-white p-10 text-center shadow-lg">
+            <p class="text-gray-500">No projects yet.</p>
+          </div>
+        } @else {
+          <div class="space-y-4">
+            @for (family of roots(); track family.root.id) {
+              <div class="rounded-xl bg-white p-6 shadow-lg border-l-4" [style.border-left-color]="family.root.color">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span class="text-2xl" aria-hidden="true">{{ family.root.icon || '📋' }}</span>
+                    <div class="min-w-0">
+                      <a
+                        [routerLink]="['/projects', family.root.id]"
+                        class="block truncate text-lg font-bold text-gray-800 hover:text-blue-600"
+                      >
+                        {{ family.root.title || 'Untitled project' }}
+                      </a>
+                      <p class="text-sm text-gray-500">
+                        {{ family.projectCount - 1 }} sub-project{{ family.projectCount === 2 ? '' : 's' }}
+                        @if (family.depth > 2) {
+                          · {{ family.depth }} levels
+                        }
+                        · {{ family.taskCount }} task{{ family.taskCount === 1 ? '' : 's' }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- The summary: the whole family, not the root's own empty list. -->
+                  <div class="flex flex-wrap items-center gap-6">
+                    <div class="text-right">
+                      <p class="text-xs uppercase tracking-wide text-gray-400">Done</p>
+                      <p class="font-semibold text-gray-800">
+                        {{ family.doneCount }}/{{ family.taskCount }}
+                      </p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-xs uppercase tracking-wide text-gray-400">Spent</p>
+                      <p class="font-semibold text-gray-800">{{ money(family.spent) }}</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-xs uppercase tracking-wide text-gray-400">Projected</p>
+                      <p class="font-semibold" [class.text-red-600]="family.over">
+                        {{ money(family.projected) }}
+                        @if (family.budget !== undefined) {
+                          <span class="text-xs font-normal text-gray-400">/ {{ money(family.budget) }}</span>
+                        }
+                      </p>
+                    </div>
                   </div>
                 </div>
-                
-                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                <div class="mt-4">
+                  <div class="mb-1 flex items-center justify-between text-xs text-gray-500">
+                    <span>Progress</span>
+                    <span>{{ family.progress }}%</span>
+                  </div>
+                  <div class="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div class="h-full rounded-full bg-blue-500" [style.width.%]="family.progress"></div>
+                  </div>
+                </div>
+
+                @if (family.children.length > 0) {
+                  <ul class="mt-4 space-y-1 border-t border-gray-100 pt-3">
+                    @for (child of family.children; track child.id; let index = $index; let first = $first; let last = $last) {
+                      <li
+                        draggable="true"
+                        (dragstart)="onDragStart(family.root.id, index)"
+                        (dragover)="onDragOver($event, family.root.id, child.id)"
+                        (drop)="onDrop($event, family.root.id, index)"
+                        (dragend)="onDragEnd()"
+                        class="rounded-lg transition-colors"
+                        [class.bg-blue-50]="dragOver() === child.id"
+                      >
+                        <div class="flex items-center gap-2">
+                          <!-- The handle. `cursor-grab` is the only thing that
+                               says a row can be dragged before you try it. -->
+                          <span
+                            class="shrink-0 cursor-grab px-1 text-gray-300 hover:text-gray-500"
+                            aria-hidden="true"
+                            title="Drag to reorder"
+                          >
+                            ⠿
+                          </span>
+
+                          <!--
+                            A row says what the sub-project IS and how it is
+                            going. Every figure covers the sub-project and
+                            anything under it, so a line never reports empty
+                            while its own children hold the work.
+
+                            Only what has something to say is drawn: a project
+                            with no budget, no items and no date shows its name
+                            and its tasks, not four dashes.
+                          -->
+                          <a
+                            [routerLink]="['/projects', child.id]"
+                            class="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-gray-50"
+                          >
+                            <span aria-hidden="true">{{ child.icon || '📁' }}</span>
+
+                            <span class="min-w-0 flex-1">
+                              <span class="block truncate text-sm font-medium text-gray-700">
+                                {{ child.title }}
+                              </span>
+
+                              @if (familyOf(child.id); as line) {
+                                <span class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                                  <span>
+                                    {{ line.doneCount }}/{{ line.taskCount }} task{{ line.taskCount === 1 ? '' : 's' }}
+                                  </span>
+
+                                  @if (line.projectCount > 1) {
+                                    <span>{{ line.projectCount - 1 }} sub</span>
+                                  }
+
+                                  @if (itemsNeeded(child.id); as needed) {
+                                    <span class="text-amber-600">{{ needed }} to buy</span>
+                                  }
+
+                                  @if (child.dueDate) {
+                                    <span [class.text-red-600]="isOverdue(child.dueDate)">
+                                      due {{ child.dueDate | date: 'd MMM' }}
+                                    </span>
+                                  }
+
+                                  @if (child.status !== 'active') {
+                                    <span [style.color]="getStatusColor(child.status)">
+                                      {{ child.status | titlecase }}
+                                    </span>
+                                  }
+                                </span>
+                              }
+                            </span>
+
+                            <!-- Money on the right, where the eye can run down
+                                 a column of it rather than hunting per row. -->
+                            @if (familyOf(child.id); as line) {
+                              @if (line.budget !== undefined || line.projected > 0) {
+                                <span class="shrink-0 text-right">
+                                  <span class="block text-sm tabular-nums" [class.text-red-600]="line.over">
+                                    {{ money(line.projected) }}
+                                  </span>
+                                  @if (line.budget !== undefined) {
+                                    <span class="block text-[11px] text-gray-400">
+                                      of {{ money(line.budget) }}
+                                    </span>
+                                  }
+                                </span>
+                              }
+
+                              <span class="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-gray-200">
+                                <span
+                                  class="block h-full rounded-full"
+                                  [class]="line.progress === 100 ? 'bg-green-500' : 'bg-blue-400'"
+                                  [style.width.%]="line.progress"
+                                ></span>
+                              </span>
+                            }
+                          </a>
+
+                          <!-- Buttons as well as dragging: a list that can only
+                               be reordered by mouse is one some people cannot
+                               reorder at all. -->
+                          <span class="flex shrink-0 flex-col leading-none">
+                            <button
+                              type="button"
+                              class="px-1 text-xs text-gray-400 hover:text-blue-600 disabled:opacity-30"
+                              [disabled]="first"
+                              [attr.aria-label]="'Move ' + child.title + ' up'"
+                              (click)="nudge(family.root.id, index, -1)"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              class="px-1 text-xs text-gray-400 hover:text-blue-600 disabled:opacity-30"
+                              [disabled]="last"
+                              [attr.aria-label]="'Move ' + child.title + ' down'"
+                              (click)="nudge(family.root.id, index, 1)"
+                            >
+                              ▼
+                            </button>
+                          </span>
+                        </div>
+
+                        <!-- The third level, indented under its parent. -->
+                        @for (grandChild of grandChildrenOf(child.id); track grandChild.id) {
+                          <a
+                            [routerLink]="['/projects', grandChild.id]"
+                            class="ml-12 flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-gray-50"
+                          >
+                            <span class="text-xs text-gray-400" aria-hidden="true">└</span>
+                            <span class="min-w-0 flex-1 truncate text-sm text-gray-600">{{ grandChild.title }}</span>
+                            <span class="shrink-0 text-xs text-gray-400">
+                              {{ grandChild.tasks.length }} task{{ grandChild.tasks.length === 1 ? '' : 's' }}
+                            </span>
+                          </a>
+                        }
+                      </li>
+                    }
+                  </ul>
+                } @else if (family.ownTaskCount === 0) {
+                  <p class="mt-3 border-t border-gray-100 pt-3 text-sm text-gray-400">
+                    Nothing in it yet.
+                  </p>
+                }
+              </div>
+            }
+          </div>
+        }
+      } @else {
+
+      <!-- Projects Grid/List -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (project of getFilteredProjects(); track project.id) {
+            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group border-l-4"
+                 [style.border-left-color]="project.color">
+
+              <!-- Project Header -->
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                  <span class="text-2xl">{{ project.icon }}</span>
+                  <div class="min-w-0 flex-1">
+                    <!--
+                      A real link to the project page, not a (click) on the card:
+                      cmd-click and "open in new tab" have to work, and a card
+                      that swallows clicks also swallows the buttons inside it.
+
+                      `Untitled project` is not decoration either — nine rows in
+                      this table genuinely have no title, because the mapper
+                      wrote the column under the wrong name and Baserow dropped
+                      it silently. The edit page is where they get their name back.
+                    -->
+                    <!-- A sub-project says what it is part of, and a parent says
+                         how many it holds. The grid cannot indent, so the
+                         hierarchy is written down instead. -->
+                    @if (parentOf(project); as parent) {
+                      <a
+                        [routerLink]="['/projects', parent.id]"
+                        class="block truncate text-xs text-gray-500 hover:text-blue-600"
+                      >
+                        part of {{ parent.title || 'Untitled project' }}
+                      </a>
+                    }
+                    <a [routerLink]="['/projects', project.id]"
+                       class="font-bold text-gray-800 truncate hover:text-blue-600 block">
+                      {{ project.title || 'Untitled project' }}
+                    </a>
+                    <p class="text-sm text-gray-600 line-clamp-2">{{ project.description || 'No description' }}</p>
+                    @if (subProjectCount(project.id) > 0) {
+                      <p class="mt-1 text-xs font-medium text-blue-600">
+                        {{ subProjectCount(project.id) }} sub-project{{ subProjectCount(project.id) === 1 ? '' : 's' }}
+                      </p>
+                    }
+                  </div>
+                </div>
+
+                <!-- focus-within, not hover alone: hidden-until-hover controls
+                     are unreachable by keyboard without it. -->
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  <a [routerLink]="['/projects', project.id, 'edit']"
+                     [attr.aria-label]="'Edit ' + (project.title || 'untitled project')"
+                     class="p-1 hover:bg-blue-100 text-blue-600 rounded">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </a>
                   <button (click)="duplicateProject(project, $event)"
                           class="p-1 hover:bg-gray-100 rounded">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,8 +404,12 @@
                 </div>
               </div>
               
-              <!-- Status and Priority -->
-              <div class="flex items-center gap-2 mb-4">
+              <!-- Type, status and priority -->
+              <div class="flex items-center gap-2 mb-4 flex-wrap">
+                <span class="px-2 py-1 rounded-full text-xs font-medium text-white"
+                      [style.background-color]="typeMeta(project).colour">
+                  {{ typeMeta(project).icon }} {{ typeMeta(project).label }}
+                </span>
                 <span class="px-2 py-1 rounded-full text-xs font-medium"
                       [style.background-color]="getStatusColor(project.status) + '20'"
                       [style.color]="getStatusColor(project.status)">
@@ -184,8 +471,7 @@
             </div>
           }
         </div>
-      }
-      
+
       <!-- No Projects State -->
       @if (getFilteredProjects().length === 0) {
         <div class="bg-white rounded-xl p-12 shadow-lg text-center">
@@ -200,313 +486,18 @@
           </button>
         </div>
       }
-    </div>
-  }
-  
-  <!-- Project Detail View -->
-  @if (selectedProject(); as project) {
-    <div class="max-w-7xl mx-auto space-y-6">
-      
-      <!-- Project Header -->
-      <div class="bg-white rounded-xl p-6 shadow-lg">
-        <div class="flex items-center justify-between mb-4">
-          <button (click)="goBack()" class="flex items-center gap-2 text-gray-600 hover:text-gray-800">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-            Back to Projects
-          </button>
-          
-          <div class="flex gap-2">
-            <button (click)="showCreateTask = true"
-                    class="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Add Task
-            </button>
-            <button (click)="showCreateMilestone = true"
-                    class="flex items-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Add Milestone
-            </button>
-            <button (click)="showCreateGoal = true"
-                    class="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Add Goal
-            </button>
-          </div>
-        </div>
-        
-        <div class="flex items-start gap-4">
-          <span class="text-4xl">{{ project.icon }}</span>
-          <div class="flex-1">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ project.title }}</h1>
-            <p class="text-gray-600 mb-4">{{ project.description || 'No description' }}</p>
-            
-            <div class="flex items-center gap-4">
-              <span class="px-3 py-1 rounded-full text-sm font-medium"
-                    [style.background-color]="getStatusColor(project.status) + '20'"
-                    [style.color]="getStatusColor(project.status)">
-                {{ project.status | titlecase }}
-              </span>
-              <span class="px-3 py-1 rounded-full text-sm font-medium"
-                    [style.background-color]="getPriorityColor(project.priority) + '20'"
-                    [style.color]="getPriorityColor(project.priority)">
-                {{ project.priority | titlecase }} Priority
-              </span>
-              @if (project.dueDate) {
-                <span class="text-sm text-gray-600">
-                  Due {{ formatDate(project.dueDate) }}
-                </span>
-              }
-            </div>
-          </div>
-          
-          <!-- Progress Circle -->
-          <div class="relative w-20 h-20">
-            <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
-              <path class="text-gray-200" stroke="currentColor" stroke-width="3" fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-              <path class="text-blue-500" stroke="currentColor" stroke-width="3" fill="none"
-                    [attr.stroke-dasharray]="project.progress + ', 100'"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span class="text-sm font-bold text-gray-700">{{ project.progress }}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Project Content Tabs -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Tasks Column -->
-        <div class="bg-white rounded-xl p-6 shadow-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Tasks</h2>
-            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-              {{ getCompletedTasksCount(project) }}/{{ project.tasks.length }}
-            </span>
-          </div>
-          
-          @if (project.tasks.length > 0) {
-            <div class="space-y-3 max-h-96 overflow-y-auto">
-              @for (task of project.tasks; track task.id) {
-                <div class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <button (click)="toggleTask(task.id)"
-                          class="w-5 h-5 rounded border-2 flex items-center justify-center transition-all mt-0.5"
-                          [class.bg-green-500]="task.completed"
-                          [class.border-green-500]="task.completed"
-                          [class.border-gray-300]="!task.completed"
-                          [class.hover:border-green-400]="!task.completed">
-                    @if (task.completed) {
-                      <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    }
-                  </button>
-                  
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium text-gray-800"
-                         [class.line-through]="task.completed"
-                         [class.text-gray-500]="task.completed">
-                      {{ task.title }}
-                    </div>
-                    @if (task.description) {
-                      <div class="text-sm text-gray-600 mt-1">{{ task.description }}</div>
-                    }
-                    
-                    <div class="flex items-center gap-2 mt-2">
-                      <span class="px-2 py-1 rounded-full text-xs font-medium"
-                            [style.background-color]="getPriorityColor(task.priority) + '20'"
-                            [style.color]="getPriorityColor(task.priority)">
-                        {{ task.priority }}
-                      </span>
-                      @if (task.dueDate) {
-                        <span class="text-xs text-gray-500">
-                          Due {{ formatDate(task.dueDate) }}
-                        </span>
-                      }
-                    </div>
-                  </div>
-                  
-                  <button (click)="deleteTask(task.id)"
-                          class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 text-red-600 rounded transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
-              <p>No tasks yet</p>
-              <button (click)="showCreateTask = true" class="text-blue-500 hover:text-blue-600 text-sm mt-1">
-                Add your first task
-              </button>
-            </div>
-          }
-        </div>
-        
-        <!-- Milestones Column -->
-        <div class="bg-white rounded-xl p-6 shadow-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Milestones</h2>
-            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium">
-              {{ getCompletedMilestonesCount(project) }}/{{ project.milestones.length }}
-            </span>
-          </div>
-          
-          @if (project.milestones.length > 0) {
-            <div class="space-y-3 max-h-96 overflow-y-auto">
-              @for (milestone of project.milestones; track milestone.id) {
-                <div class="p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-2">
-                        <button (click)="toggleMilestone(milestone.id)"
-                                class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                                [class.bg-purple-500]="milestone.completed"
-                                [class.border-purple-500]="milestone.completed"
-                                [class.border-gray-300]="!milestone.completed">
-                          @if (milestone.completed) {
-                            <svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 8 8">
-                              <circle cx="4" cy="4" r="4"/>
-                            </svg>
-                          }
-                        </button>
-                        
-                        <h3 class="font-medium text-gray-800"
-                            [class.line-through]="milestone.completed"
-                            [class.text-gray-500]="milestone.completed">
-                          {{ milestone.title }}
-                        </h3>
-                      </div>
-                      
-                      @if (milestone.description) {
-                        <p class="text-sm text-gray-600 mb-2">{{ milestone.description }}</p>
-                      }
-                      
-                      <div class="text-xs text-gray-500">
-                        Target: {{ formatDate(milestone.targetDate) }}
-                      </div>
-                    </div>
-                    
-                    <button (click)="deleteMilestone(milestone.id)"
-                            class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 text-red-600 rounded transition-all">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <p>No milestones yet</p>
-              <button (click)="showCreateMilestone = true" class="text-purple-500 hover:text-purple-600 text-sm mt-1">
-                Add your first milestone
-              </button>
-            </div>
-          }
-        </div>
-        
-        <!-- Goals Column -->
-        <div class="bg-white rounded-xl p-6 shadow-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Goals</h2>
-            <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
-              {{ getAchievedGoalsCount(project) }}/{{ project.goals.length }}
-            </span>
-          </div>
-          
-          @if (project.goals.length > 0) {
-            <div class="space-y-3 max-h-96 overflow-y-auto">
-              @for (goal of project.goals; track goal.id) {
-                <div class="p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-2">
-                        <button (click)="toggleGoal(goal.id)"
-                                class="w-4 h-4 rounded border-2 flex items-center justify-center"
-                                [class.bg-green-500]="goal.achieved"
-                                [class.border-green-500]="goal.achieved"
-                                [class.border-gray-300]="!goal.achieved">
-                          @if (goal.achieved) {
-                            <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                          }
-                        </button>
-                        
-                        <h3 class="font-medium text-gray-800"
-                            [class.line-through]="goal.achieved"
-                            [class.text-gray-500]="goal.achieved">
-                          {{ goal.title }}
-                        </h3>
-                      </div>
-                      
-                      @if (goal.description) {
-                        <p class="text-sm text-gray-600 mb-2">{{ goal.description }}</p>
-                      }
-                      
-                      @if (goal.targetValue && goal.unit) {
-                        <div class="text-sm text-gray-600 mb-2">
-                          {{ goal.currentValue || 0 }}/{{ goal.targetValue }} {{ goal.unit }}
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div class="bg-green-500 h-2 rounded-full"
-                               [style.width.%]="getGoalProgressPercentage(goal)"></div>
-                        </div>
-                      }
-                      
-                      @if (goal.deadline) {
-                        <div class="text-xs text-gray-500 mt-2">
-                          Deadline: {{ formatDate(goal.deadline) }}
-                        </div>
-                      }
-                    </div>
-                    
-                    <button (click)="deleteGoal(goal.id)"
-                            class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 text-red-600 rounded transition-all">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="text-center py-8 text-gray-500">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <p>No goals yet</p>
-              <button (click)="showCreateGoal = true" class="text-green-500 hover:text-green-600 text-sm mt-1">
-                Add your first goal
-              </button>
-            </div>
-          }
-        </div>
-      </div>
-    </div>
-  }
-  
+      }
+  </div>
+
+  <!--
+    The project detail view used to live here, inline, reached by clicking a
+    card. It is now its own route — /projects/:id — which is linkable,
+    refreshable, and reachable with the back button, and which reads its tasks
+    from the tasks table rather than from a copy in this page's cache.
+
+    Two copies of the same screen is the state this deletion avoids.
+  -->
+
   <!-- Create Project Modal -->
   @if (showCreateProject) {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -578,170 +569,10 @@
     </div>
   }
   
-  <!-- Create Task Modal -->
-  @if (showCreateTask) {
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-xl p-6 w-full max-w-md">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Create New Task</h3>
-        
-        <form (ngSubmit)="createTask()" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input [(ngModel)]="newTask.title" name="taskTitle" required
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea [(ngModel)]="newTask.description" name="taskDescription" rows="3"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select [(ngModel)]="newTask.priority" name="taskPriority"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
-              <input type="number" [(ngModel)]="newTask.estimatedHours" name="taskHours" min="0" step="0.5"
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-            <input type="date" [(ngModel)]="newTask.dueDate" name="taskDueDate"
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2">
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="submit" 
-                    class="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
-              Create Task
-            </button>
-            <button type="button" (click)="resetCreateTaskForm()"
-                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-  
-  <!-- Create Milestone Modal -->
-  @if (showCreateMilestone) {
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-xl p-6 w-full max-w-md">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Create New Milestone</h3>
-        
-        <form (ngSubmit)="createMilestone()" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input [(ngModel)]="newMilestone.title" name="milestoneTitle" required
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea [(ngModel)]="newMilestone.description" name="milestoneDescription" rows="3"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Target Date *</label>
-            <input type="date" [(ngModel)]="newMilestone.targetDate" name="milestoneTargetDate" required
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2">
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="submit" 
-                    class="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors">
-              Create Milestone
-            </button>
-            <button type="button" (click)="resetCreateMilestoneForm()"
-                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-  
-  <!-- Create Goal Modal -->
-  @if (showCreateGoal) {
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-xl p-6 w-full max-w-md">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Create New Goal</h3>
-        
-        <form (ngSubmit)="createGoal()" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-            <input [(ngModel)]="newGoal.title" name="goalTitle" required
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea [(ngModel)]="newGoal.description" name="goalDescription" rows="3"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Target Value</label>
-              <input type="number" [(ngModel)]="newGoal.targetValue" name="goalTarget" min="0"
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2">
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-              <input [(ngModel)]="newGoal.unit" name="goalUnit" placeholder="e.g., tasks, hours, %"
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2">
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select [(ngModel)]="newGoal.category" name="goalCategory"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <option value="quality">Quality</option>
-                <option value="productivity">Productivity</option>
-                <option value="learning">Learning</option>
-                <option value="deadline">Deadline</option>
-                <option value="other" selected>Other</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-              <input type="date" [(ngModel)]="newGoal.deadline" name="goalDeadline"
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2">
-            </div>
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="submit" 
-                    class="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
-              Create Goal
-            </button>
-            <button type="button" (click)="resetCreateGoalForm()"
-                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
+  <!--
+    The Add Task / Add Milestone / Add Goal modals used to live here too. They
+    only ever made sense against a selected project, and that selection is now
+    a route — so they live on /projects/:id, where the project is unambiguous.
+  -->
+
 </div>
