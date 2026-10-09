@@ -38,7 +38,7 @@ export const LEGAL_INDEX: Record<LegalDocumentId, LegalDocumentSummary> = {
     summary: 'What Habiti collects, why, who else sees it, and what you can ask us to do.',
     currentVersion: 1,
     effectiveFrom: '2026-08-14',
-    contentHash: 'bbf9aa8ad02d1985a4edeca1d24eaca69623d726a5abc32699ea30d648ac32fa',
+    contentHash: '40443c76c49ddb8934c0789d58a3d311915ea3f14e4f0dd419bd4812747e8457',
     status: 'draft',
     requiresAcceptanceFrom: 1
   },

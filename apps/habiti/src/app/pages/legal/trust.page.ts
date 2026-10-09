@@ -68,9 +68,19 @@ import { LEGAL_INDEX, legalRoute } from '../../config/legal/registry';
         lands we are not claiming stronger protection than we have, we are not launching a growth
         push, and this paragraph stays here.
       </p>
+      <p class="mt-3 text-amber-900">
+        Files you attach to a task sit on the same footing, and one detail is worth stating on its
+        own: an attachment is stored at a long, random web address that is
+        <strong>not password-protected</strong>. Nobody will find it by guessing or by searching,
+        but anyone you send the link to can open it without signing in. Removing an attachment
+        takes it off the task and deletes our record of it; we cannot yet erase the stored copy,
+        so its address keeps working. Both are fixed by the same move to a server that checks who
+        is asking.
+      </p>
       <p class="mt-3 text-sm text-amber-800">
-        If that matters to you — and for recovery, therapy or medication habits it reasonably
-        might — it is a good reason to wait before tracking those here.
+        If that matters to you — and for recovery, therapy or medication habits, or a photograph
+        of a letter about any of them, it reasonably might — it is a good reason to wait before
+        putting those here.
       </p>
     </section>
 

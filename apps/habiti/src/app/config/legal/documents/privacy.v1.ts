@@ -18,7 +18,7 @@ export const PRIVACY_V1: LegalDocument = {
   status: 'draft',
   material: true,
   changeSummary: '',
-  contentHash: 'bbf9aa8ad02d1985a4edeca1d24eaca69623d726a5abc32699ea30d648ac32fa',
+  contentHash: '40443c76c49ddb8934c0789d58a3d311915ea3f14e4f0dd419bd4812747e8457',
   blocks: [
     {
       kind: 'review',
@@ -72,6 +72,11 @@ export const PRIVACY_V1: LegalDocument = {
           term: 'Things you do in the app',
           description:
             'Tasks, projects, skills, challenges you start, friendships you form, and pledges you record.'
+        },
+        {
+          term: 'Files you attach',
+          description:
+            'Documents, photos and video you attach to a task or project, along with their name, size and type. See "Files you attach" below for where they are stored and what we can and cannot do about deleting them.'
         }
       ]
     },
@@ -97,6 +102,48 @@ export const PRIVACY_V1: LegalDocument = {
       kind: 'paragraph',
       id: 'p-sensitive-share',
       text: 'If you take part in a shared challenge, the other participants can see which days you checked in. For a recovery challenge that means another person can see which days you did and did not stay clean. We ask you separately before that happens, and we name who will see it. If you leave the challenge they stop seeing new check-ins, but they keep what they have already seen — we cannot take that back.'
+    },
+
+    { kind: 'heading', id: 'h-attachments', text: 'Files you attach' },
+    {
+      kind: 'paragraph',
+      id: 'p-attachments-what',
+      text: 'You can attach documents, photos and video to your tasks and projects. We store the file itself with our database provider, and we keep a record of its name, size, type and which task it belongs to. Whatever is inside the file — a photo of a letter, a scan, a receipt — is held by us as well, so please only attach what you are comfortable storing here.'
+    },
+    {
+      kind: 'callout',
+      id: 'c-attachments-public',
+      tone: 'warning',
+      text: 'Each attached file is stored at a long, random web address. It is not listed anywhere and will not appear in search results, but that address is not password-protected: anyone who has the link can open the file without signing in. We tell you this in the app before your first upload, and we are working on serving files only to the person they belong to.'
+    },
+    {
+      kind: 'paragraph',
+      id: 'p-attachments-delete',
+      text: 'Removing an attachment takes it off your task and deletes our record of it. At present we cannot delete the stored copy of the file itself, so its web address keeps working. We would rather say that plainly than describe it as deleted. Ask us to remove a file and we will do it by hand until this is automatic.'
+    },
+    {
+      kind: 'paragraph',
+      id: 'p-attachments-exif',
+      text: 'Photos are resized in your browser before they are sent, which has the side effect of removing the information cameras store inside them — including where the photo was taken. Video is sent as it is and keeps whatever your camera recorded.'
+    },
+    {
+      kind: 'review',
+      id: 'review-attachments',
+      question: 'Is the public-URL disclosure sufficient, or should attachments be private before launch?',
+      context:
+        'Files are uploaded straight to Baserow, which serves them from an unauthenticated but unguessable URL, and a database token cannot delete them afterwards. Attachments on a task can plainly contain special-category data (a photo of a prescription, a therapy letter), which raises the stakes on both points. Making them private needs uploads and reads to move behind an API that checks the session — the same change the security section is waiting on.'
+    },
+
+    { kind: 'heading', id: 'h-inspiration', text: 'Inspiration boards' },
+    {
+      kind: 'paragraph',
+      id: 'p-inspiration-what',
+      text: 'You can keep videos, pictures, links and notes on a board. We store the web address you saved and whatever you typed alongside it. We do not download or copy the video or picture itself — a card on your board points at the original, wherever it lives.'
+    },
+    {
+      kind: 'paragraph',
+      id: 'p-inspiration-thumbnails',
+      text: 'Because of that, showing a YouTube video as a card means your browser asks YouTube for the thumbnail image. That request tells Google your IP address, as any request to any website does. We do not send them your name, your email or which page you were on, videos do not play inside Habiti, and we embed nothing from them — but if you would rather Google saw nothing at all, do not save YouTube links.'
     },
 
     { kind: 'heading', id: 'h-why', text: 'Why we are allowed to hold it' },
