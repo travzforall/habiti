@@ -1,0 +1,407 @@
+@if (map(); as map) {
+  <div class="flex h-[calc(100vh-12rem)] min-h-[32rem] flex-col gap-4">
+    <!-- Header -->
+    <div class="rounded-xl bg-white p-4 shadow-lg dark:bg-slate-800">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <button
+            (click)="leave()"
+            aria-label="Back to maps"
+            class="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+          >
+            ←
+          </button>
+          <div class="min-w-0">
+            <input
+              [ngModel]="map.title"
+              (ngModelChange)="rename($event)"
+              aria-label="Map title"
+              class="w-full min-w-0 truncate border-none bg-transparent text-xl font-bold text-slate-900 focus:outline-none focus:ring-0 dark:text-slate-100"
+            />
+            <p class="text-xs text-slate-500">
+              @if (project(); as project) {
+                <a [routerLink]="['/projects', project.id]" class="hover:text-blue-600">
+                  {{ project.icon }} {{ project.title || 'Untitled project' }}
+                </a>
+              } @else {
+                Personal map
+              }
+              · {{ nodes().length }} topics
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600">
+            <button
+              (click)="view.set('map')"
+              [class.bg-blue-500]="view() === 'map'"
+              [class.text-white]="view() === 'map'"
+              class="px-3 py-1.5 text-sm font-medium"
+            >
+              Map
+            </button>
+            <button
+              (click)="view.set('outline')"
+              [class.bg-blue-500]="view() === 'outline'"
+              [class.text-white]="view() === 'outline'"
+              class="px-3 py-1.5 text-sm font-medium"
+            >
+              Outline
+            </button>
+          </div>
+
+          <button
+            (click)="undo()"
+            [disabled]="!canUndo()"
+            aria-label="Undo"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600"
+          >
+            ↺
+          </button>
+          <button
+            (click)="redo()"
+            [disabled]="!canRedo()"
+            aria-label="Redo"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-slate-600"
+          >
+            ↻
+          </button>
+
+          <button
+            (click)="downloadSvg()"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-600"
+          >
+            SVG
+          </button>
+          <button
+            (click)="downloadMarkdown()"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-600"
+          >
+            Markdown
+          </button>
+
+          <button
+            (click)="showInspector.set(!showInspector())"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm dark:border-slate-600"
+          >
+            {{ showInspector() ? 'Hide panel' : 'Details' }}
+          </button>
+        </div>
+      </div>
+
+      <p class="mt-2 text-xs text-slate-400">
+        <kbd class="font-semibold">Tab</kbd> new child ·
+        <kbd class="font-semibold">Enter</kbd> new sibling ·
+        <kbd class="font-semibold">F2</kbd> rename ·
+        <kbd class="font-semibold">Space</kbd> collapse ·
+        <kbd class="font-semibold">⌘Z</kbd> undo
+      </p>
+    </div>
+
+    <div class="flex min-h-0 flex-1 gap-4">
+      <!-- The map, or the outline -->
+      <div class="relative min-w-0 flex-1">
+        @if (view() === 'map') {
+          <app-mind-map-canvas
+            [nodes]="nodes()"
+            [selectedId]="selectedId()"
+            [editingId]="editingId()"
+            [tasks]="linkedTasks()"
+            (selected)="select($event)"
+            (editRequested)="startEdit($event)"
+            (toggleRequested)="select($event)"
+            (reparentRequested)="onReparent($event)"
+            (contextMenuRequested)="openMenu($event)"
+          ></app-mind-map-canvas>
+
+          <!--
+            The rename box: a real input floated over the node, positioned from
+            the canvas's own transform. <foreignObject> would put HTML inside
+            the SVG that gets exported, and Safari has never rendered it well.
+          -->
+          @if (editorBox(); as box) {
+            <!--
+              Sized, rounded and set in the node's own type, so it reads as the
+              node being edited rather than a box on top of one. The radius and
+              font size come from the canvas because both scale with zoom; a
+              fixed `rounded-lg` against the node's scaled corners is what made
+              the outline look doubled.
+            -->
+            <input
+              id="node-editor"
+              [ngModel]="editingText()"
+              (ngModelChange)="editingText.set($event)"
+              (blur)="commitEdit()"
+              class="absolute z-10 border-2 border-blue-500 bg-white px-3 text-slate-800 shadow-lg outline-none dark:bg-slate-700 dark:text-slate-100"
+              [style.left.px]="box.left"
+              [style.top.px]="box.top"
+              [style.width.px]="box.width"
+              [style.height.px]="box.height"
+              [style.border-radius.px]="box.radius"
+              [style.font-size.px]="box.fontSize"
+            />
+          }
+        } @else {
+          <!--
+            The outline is not a lesser view: it is the accessible one (a real
+            list, keyboard-navigable, readable by a screen reader — none of
+            which an SVG canvas honestly provides) and the one that works on a
+            phone.
+          -->
+          <div class="h-full overflow-auto rounded-xl bg-white p-4 shadow-lg dark:bg-slate-800">
+            <ul>
+              @for (row of outline(); track row.node.id) {
+                <li
+                  [style.padding-left.px]="row.depth * 20"
+                  class="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                  [class.bg-blue-50]="row.node.id === selectedId()"
+                >
+                  <button
+                    (click)="select(row.node.id)"
+                    class="min-w-0 flex-1 truncate text-left text-sm text-slate-800 dark:text-slate-100"
+                    [class.font-bold]="row.depth === 0"
+                  >
+                    @if (row.node.kind === 'task') {
+                      <span class="mr-1 text-xs">☑</span>
+                    }
+                    {{ row.node.text || 'Untitled' }}
+                  </button>
+
+                  <button
+                    (click)="select(row.node.id); startEdit(row.node.id)"
+                    [attr.aria-label]="'Rename ' + row.node.text"
+                    class="rounded p-1 text-xs text-slate-400 opacity-0 focus:opacity-100 group-hover:opacity-100"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    (click)="select(row.node.id); addChild()"
+                    [attr.aria-label]="'Add a child under ' + row.node.text"
+                    class="rounded p-1 text-xs text-slate-400 opacity-0 focus:opacity-100 group-hover:opacity-100"
+                  >
+                    ＋
+                  </button>
+                </li>
+              }
+            </ul>
+
+            @if (editingId()) {
+              <div class="mt-3 flex gap-2">
+                <input
+                  id="node-editor"
+                  [ngModel]="editingText()"
+                  (ngModelChange)="editingText.set($event)"
+                  class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                />
+                <button
+                  (click)="commitEdit()"
+                  class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white"
+                >
+                  Save
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Inspector: everything a bubble can be, beyond its label -->
+      @if (showInspector() && selected(); as node) {
+        <aside class="hidden w-80 shrink-0 overflow-auto rounded-xl bg-white p-4 shadow-lg dark:bg-slate-800 lg:block">
+          <h2 class="mb-3 font-semibold text-slate-800 dark:text-slate-100">Topic</h2>
+
+          <label class="mb-1 block text-xs font-medium text-slate-500" for="node-text">Text</label>
+          <!--
+            Takes its value straight off the element on blur. Sharing the
+            canvas editor's draft signal meant this box could commit whatever
+            was last typed into a different node.
+          -->
+          <input
+            #nodeText
+            id="node-text"
+            [value]="node.text"
+            (blur)="renameSelected(nodeText.value)"
+            (keydown.enter)="nodeText.blur()"
+            class="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          />
+
+          <label class="mb-1 block text-xs font-medium text-slate-500" for="node-note">Note</label>
+          <textarea
+            id="node-note"
+            rows="3"
+            #nodeNote
+            [value]="node.note ?? ''"
+            (blur)="setNote(nodeNote.value)"
+            placeholder="The longer thought behind the short label"
+            class="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          ></textarea>
+
+          <div class="mb-4">
+            <span class="mb-1 block text-xs font-medium text-slate-500">Colour</span>
+            <div class="flex flex-wrap gap-2">
+              @for (colour of ['', '#3b82f6', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6']; track colour) {
+                <button
+                  (click)="setColour(colour)"
+                  [attr.aria-label]="colour ? 'Colour ' + colour : 'No colour'"
+                  class="h-7 w-7 rounded-full border-2"
+                  [class.border-blue-500]="(node.colour ?? '') === colour"
+                  [class.border-slate-200]="(node.colour ?? '') !== colour"
+                  [style.background-color]="colour || '#ffffff'"
+                ></button>
+              }
+            </div>
+          </div>
+
+          <!-- Tasks: the part that makes a bubble more than a bubble -->
+          <div class="border-t border-slate-200 pt-4 dark:border-slate-700">
+            <h3 class="mb-2 font-semibold text-slate-800 dark:text-slate-100">Task</h3>
+
+            @if (selectedTask(); as task) {
+              <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                <div class="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    [checked]="task.completed"
+                    (change)="toggleTask()"
+                    [attr.aria-label]="'Mark ' + task.title + ' done'"
+                    class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <a
+                      [routerLink]="['/tasks', task.id]"
+                      class="block truncate text-sm font-medium text-slate-800 hover:text-blue-600 dark:text-slate-100"
+                    >
+                      {{ task.title }}
+                    </a>
+                    <span
+                      class="mt-1 inline-block rounded-full border px-2 py-0.5 text-xs"
+                      [class]="statusMeta[task.status ?? (task.completed ? 'done' : 'todo')].classes"
+                    >
+                      {{ statusMeta[task.status ?? (task.completed ? 'done' : 'todo')].label }}
+                    </span>
+                  </div>
+                </div>
+                <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div class="h-full rounded-full bg-blue-500" [style.width.%]="progressOf(node.id)"></div>
+                </div>
+                <button
+                  (click)="unlinkTask()"
+                  class="mt-2 text-xs font-medium text-slate-500 hover:text-red-600"
+                >
+                  Unlink (the task stays)
+                </button>
+              </div>
+            } @else {
+              <p class="mb-2 text-xs text-slate-500">
+                This topic is just an idea. Make it something you can finish.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  (click)="convertToTask()"
+                  class="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600"
+                >
+                  Make it a task
+                </button>
+                <button
+                  (click)="showTaskPicker.set(!showTaskPicker())"
+                  class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600"
+                >
+                  Link existing
+                </button>
+              </div>
+
+              @if (showTaskPicker()) {
+                <ul class="mt-2 max-h-48 space-y-1 overflow-auto rounded-lg border border-slate-200 p-1 dark:border-slate-700">
+                  @for (task of openTasks(); track task.id) {
+                    <li>
+                      <button
+                        (click)="linkTask(task.id)"
+                        class="w-full truncate rounded px-2 py-1 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        {{ task.title }}
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="px-2 py-3 text-center text-xs text-slate-500">No open tasks</li>
+                  }
+                </ul>
+              }
+            }
+
+            <button
+              (click)="promoteBranch()"
+              class="mt-3 w-full rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300"
+            >
+              Turn this branch into tasks
+            </button>
+            <p class="mt-1 text-xs text-slate-400">
+              Every topic under this one becomes a task, in order.
+            </p>
+          </div>
+
+          <div class="mt-4 flex gap-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <button
+              (click)="addChild()"
+              class="flex-1 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+            >
+              Add child
+            </button>
+            @if (node.parentId) {
+              <button
+                (click)="requestDelete()"
+                class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            }
+          </div>
+        </aside>
+      }
+    </div>
+  </div>
+
+  <!--
+    The right-click menu. Mounted here rather than inside the canvas so it can
+    call the same actions the toolbar and keyboard do, and so it is not clipped
+    by the canvas's own overflow.
+  -->
+  <app-context-menu
+    [open]="menu().open"
+    [x]="menu().x"
+    [y]="menu().y"
+    [items]="menuItems()"
+    label="Topic actions"
+    (chose)="onMenuChoice($event)"
+    (closed)="closeMenu()"
+  ></app-context-menu>
+
+  <app-confirm-dialog
+    [open]="!!pendingDeleteNode()"
+    title="Delete this branch?"
+    [message]="
+      '“' + (pendingDeleteNode()?.text ?? '') + '” and everything under it will be removed from the map. Any tasks they point at are kept.'
+    "
+    confirmLabel="Delete"
+    (confirmed)="deleteConfirmed()"
+    (cancelled)="pendingDeleteNode.set(null)"
+  ></app-confirm-dialog>
+} @else if (fetchState() === 'loading') {
+  <div class="py-16 text-center">
+    <div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500"></div>
+    <p class="text-slate-500">Loading this map…</p>
+  </div>
+} @else {
+  <div class="py-16 text-center">
+    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+      <span class="text-2xl">🧠</span>
+    </div>
+    <h1 class="mb-2 text-xl font-bold text-slate-800 dark:text-slate-100">This map no longer exists</h1>
+    <p class="mb-6 text-slate-600 dark:text-slate-400">
+      It may have been deleted, or the link may belong to a different account.
+    </p>
+    <a routerLink="/maps" class="rounded-lg bg-blue-500 px-6 py-3 text-white hover:bg-blue-600">
+      Back to maps
+    </a>
+  </div>
+}
