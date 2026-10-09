@@ -143,6 +143,29 @@ const PAIRINGS = [
     constant: 'CHECKLIST_COLUMNS',
     envKey: 'taskChecklistItems',
     pending: []
+  },
+  {
+    schema: 'database-schemas/42-toolkit-items.json',
+    source: 'apps/habiti/src/app/models/toolkit.models.ts',
+    constant: 'TOOLKIT_COLUMNS',
+    envKey: 'toolkitItems',
+    pending: []
+  },
+  {
+    /**
+     * The acceptance record, and the reason this script covers it at all.
+     *
+     * A dropped column here does not lose a setting — it loses part of the
+     * record of what somebody agreed to, while the write returns 200 and the
+     * app goes on showing the consent as captured. Of everything in this list
+     * it is the one where a silent partial write is worst, and it was the last
+     * to get a pairing.
+     */
+    schema: 'database-schemas/30-legal-acceptances.json',
+    source: 'apps/habiti/src/app/models/consent.models.ts',
+    constant: 'CONSENT_COLUMNS',
+    envKey: 'legalAcceptances',
+    pending: []
   }
 ];
 

@@ -345,10 +345,36 @@ export class ConsentService {
       .subscribe({
         next: rows => {
           const server = rows.map(fromConsentRow);
-          // Local records not yet pushed must survive a load, or a consent given
-          // seconds ago disappears from the UI when the fetch lands.
-          const unsynced = this._records().filter(r => !r.rowId);
-          this._records.set([...server, ...unsynced]);
+
+          /**
+           * A LOCAL RECORD IS NEVER DROPPED BECAUSE THE SERVER DID NOT MENTION IT.
+           *
+           * This used to keep only records with no `rowId`, on the reasoning
+           * that anything already pushed would come back in `rows`. It does not
+           * always: `createRow` assigns the rowId the moment the write
+           * responds, and a read issued around the same time can return without
+           * that row in it. The record was then dropped from local state AND
+           * persisted as dropped — so a consent the user really gave vanished
+           * from the UI, `needsAcceptance()` went true again, and they were
+           * re-prompted for something they had already agreed to.
+           *
+           * It never fired while legalAcceptances was 0, because loadFromServer
+           * returned before reaching here. Creating the table turned it on.
+           *
+           * So the server's copy WINS where both have the row, and a local
+           * record the server did not return is KEPT. The cost of keeping one
+           * row too long is that it disappears on the next load; the cost of
+           * dropping one is a consent record that no longer exists anywhere.
+           * Those are not equivalent.
+           */
+          const fromServer = new Set(
+            server.map(r => r.rowId).filter((id): id is number => id !== undefined)
+          );
+          const localOnly = this._records().filter(
+            r => r.rowId === undefined || !fromServer.has(r.rowId)
+          );
+
+          this._records.set([...server, ...localOnly]);
           this._loaded.set(true);
           this.persist();
         },

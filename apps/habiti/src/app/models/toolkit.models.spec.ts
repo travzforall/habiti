@@ -1,4 +1,5 @@
 import {
+  TOOLKIT_COLUMNS,
   TOOLKIT_KINDS,
   TOOLKIT_KIND_META,
   TOOLKIT_STATUSES,
@@ -218,6 +219,21 @@ describe('toolkit.models', () => {
       // How many you own says nothing about how many this job needs.
       const draft = toProjectItemDraft(item({ quantity: 12 })) as Record<string, unknown>;
       expect(draft['quantity']).toBeUndefined();
+    });
+  });
+
+  describe('row columns', () => {
+    it('writes only columns the table has', () => {
+      const keys = Object.keys(fromToolkitItem(item(), '1'));
+      expect(keys.filter(key => !(TOOLKIT_COLUMNS as readonly string[]).includes(key))).toEqual([]);
+    });
+
+    it('writes every column it declares', () => {
+      // The other direction matters too: a column dropped from the mapper but
+      // left in TOOLKIT_COLUMNS makes verify:fields guard something nothing
+      // writes, which reads as coverage it does not have.
+      const keys = Object.keys(fromToolkitItem(item(), '1'));
+      expect((TOOLKIT_COLUMNS as readonly string[]).filter(c => !keys.includes(c))).toEqual([]);
     });
   });
 });

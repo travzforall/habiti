@@ -224,6 +224,35 @@ export function toToolkitItem(row: ToolkitItemRow): ToolkitItem {
  * `id` is deliberately absent — Baserow assigns it, and sending one is how a
  * create silently becomes a no-op.
  */
+/**
+ * Every column fromToolkitItem writes. Checked against the schema file by
+ * `npm run verify:fields`, and against the mapper by the spec beside this file.
+ *
+ * It exists because Baserow IGNORES an unrecognised field name with
+ * user_field_names=true: no error, the row is written without that column, the
+ * request returns 200. A typo here is invisible at runtime.
+ */
+export const TOOLKIT_COLUMNS = [
+  'title',
+  'user_id',
+  'kind',
+  'status',
+  'icon',
+  'quantity',
+  'unit',
+  'unit_cost',
+  'currency',
+  'supplier',
+  'url',
+  'location',
+  'purchased_on',
+  'renews_on',
+  'linked_habit_ids',
+  'note',
+  'archived',
+  'sort_order'
+] as const;
+
 export function fromToolkitItem(item: ToolkitItem, userId: string): Record<string, unknown> {
   return {
     title: item.title,

@@ -18,6 +18,17 @@ describe('HabitsService', () => {
     getHabitEntries: jasmine.Spy;
     getGameState: jasmine.Spy;
     getHabitCategories: jasmine.Spy;
+    /**
+     * Not for HabitsService — for ConsentService, which it injects and which
+     * reads from the server in its CONSTRUCTOR.
+     *
+     * Without this the suite passed only because legalAcceptances was 0, so
+     * that constructor returned before touching Baserow. Creating the table
+     * turned the call on and six specs here started failing on a service they
+     * do not test. A stub that covers the whole injected graph does not depend
+     * on which tables happen to exist.
+     */
+    listAllRows: jasmine.Spy;
   };
 
   function emptyList() {
@@ -33,7 +44,8 @@ describe('HabitsService', () => {
         .and.returnValue(
           of({ count: 0, next: null, previous: null, results: gameStateRow ? [gameStateRow] : [] })
         ),
-      getHabitCategories: jasmine.createSpy('getHabitCategories').and.returnValue(emptyList())
+      getHabitCategories: jasmine.createSpy('getHabitCategories').and.returnValue(emptyList()),
+      listAllRows: jasmine.createSpy('listAllRows').and.returnValue(of([]))
     };
 
     TestBed.configureTestingModule({

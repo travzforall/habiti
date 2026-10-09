@@ -94,6 +94,30 @@ export interface ConsentRow {
  * fromSkillTrack: an interface is not assignable to Record<string, unknown>
  * (it could be augmented later), and that is what the generic row helpers take.
  */
+/**
+ * Every column toConsentRow writes.
+ *
+ * This one matters more than most. A dropped column here does not lose a
+ * preference — it loses part of the record of what somebody agreed to, while
+ * the write still returns 200 and the app still shows the consent as captured.
+ * `npm run verify:fields` compares this list with the schema file; the spec
+ * beside this file compares it with the mapper.
+ */
+export const CONSENT_COLUMNS = [
+  'user_id',
+  'consent_kind',
+  'document_id',
+  'document_version',
+  'content_hash',
+  'scope',
+  'accepted',
+  'accepted_at',
+  'withdrawn_at',
+  'ui_surface',
+  'written_by',
+  'app_version'
+] as const;
+
 export function toConsentRow(record: ConsentRecord, appVersion: string): Record<string, unknown> {
   return {
     user_id: record.userId,

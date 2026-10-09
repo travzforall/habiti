@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { BaserowService } from './baserow.service';
 import { ConsentService } from './consent.service';
 import { LEGAL_INDEX } from '../config/legal/registry';
+import { environment } from '../../environments/environment';
 
 /**
  * What this suite is really about is the FLOOR.
@@ -26,6 +27,21 @@ class MockBaserow {
   listAllRows = jasmine.createSpy('listAllRows').and.returnValue(of([]));
 }
 
+/**
+ * The table id this suite runs against, set explicitly per block.
+ *
+ * It used to be whatever environment.ts happened to ship, and every spec below
+ * silently assumed 0 — "no table, so nothing is pushed". Creating
+ * legal_acceptances made that assumption false and three specs failed without a
+ * line of service code changing. A suite about what gets recorded must decide
+ * for itself whether there is somewhere to record to.
+ */
+function withTableId(id: number): void {
+  environment.baserow.tables.legalAcceptances = id;
+}
+
+const REAL_TABLE_ID = environment.baserow.tables.legalAcceptances;
+
 function build() {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -44,7 +60,14 @@ function build() {
 }
 
 describe('ConsentService', () => {
-  afterEach(() => localStorage.clear());
+  // Local-only is the world the blocks below were written against; the
+  // server-backed cases set their own id and say so.
+  beforeEach(() => withTableId(0));
+
+  afterEach(() => {
+    localStorage.clear();
+    withTableId(REAL_TABLE_ID);
+  });
 
   describe('document acceptance', () => {
     it('starts with everything outstanding', () => {
@@ -196,12 +219,38 @@ describe('ConsentService', () => {
   });
 
   describe('persistence', () => {
-    it('pushes an acceptance to the server when a table id exists', () => {
+    it('pushes nothing when there is no table to push to', () => {
+      // This is what the old 'pushes an acceptance to the server when a table
+      // id exists' actually asserted: it expected createRow NOT to have been
+      // called, because the id was 0. The name claimed the opposite of the
+      // assertion, so the write path went untested and the guard was tested
+      // twice.
       const { service, baserow } = build();
       service.acceptDocument('terms', 'registration');
-      // environment ships legalAcceptances: 0, so nothing is pushed yet. This
-      // asserts the guard, not the write — see the note below.
       expect(baserow.createRow).not.toHaveBeenCalled();
+    });
+
+    it('pushes an acceptance to the server when a table id exists', () => {
+      withTableId(645);
+      const { service, baserow } = build();
+      service.acceptDocument('terms', 'registration');
+      expect(baserow.createRow).toHaveBeenCalled();
+    });
+
+    it('keeps a pushed record the server read did not return', () => {
+      // The regression this guards: createRow assigns a rowId, and a read
+      // landing around the same time can come back without that row. Keeping
+      // only rowId-less records dropped it from state AND persisted the loss,
+      // so a consent the user gave vanished and they were re-prompted.
+      withTableId(645);
+      const { service } = build();
+      service.acceptDocument('terms', 'registration');
+
+      // listAllRows is stubbed to of([]) — the server knows nothing yet.
+      service.reload();
+
+      expect(service.acceptedVersion('terms')).toBe(LEGAL_INDEX['terms'].currentVersion);
+      expect(service.records().length).toBeGreaterThan(0);
     });
 
     it('records locally even with no table configured', () => {
