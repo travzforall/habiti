@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { DashboardComponent } from './pages/dashboard/dashboard';
 import { LoginComponent } from './pages/login/login.component';
 import { AuthGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 // Dashboard and login are eager: they are the two entry points every session hits.
 // Everything else is lazy so it lands in its own chunk instead of the initial bundle.
@@ -98,9 +99,64 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/tasks/tasks').then(m => m.TasksComponent),
     canActivate: [AuthGuard]
   },
+  /**
+   * ORDER MATTERS HERE. 'tasks/new' must be declared before 'tasks/:id', or
+   * the parameterised route matches first and the create page becomes a
+   * detail page for a task whose id is the string "new".
+   */
+  {
+    path: 'tasks/new',
+    loadComponent: () => import('./pages/task-edit/task-edit').then(m => m.TaskEditComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'tasks/:id',
+    loadComponent: () =>
+      import('./pages/task-detail/task-detail').then(m => m.TaskDetailComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'tasks/:id/edit',
+    loadComponent: () => import('./pages/task-edit/task-edit').then(m => m.TaskEditComponent),
+    canActivate: [AuthGuard]
+  },
   {
     path: 'projects',
     loadComponent: () => import('./pages/projects/projects').then(m => m.ProjectsComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    // Before 'projects/:id', for the same reason 'tasks/new' comes first.
+    path: 'projects/new',
+    loadComponent: () =>
+      import('./pages/project-edit/project-edit').then(m => m.ProjectEditComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'projects/:id',
+    loadComponent: () =>
+      import('./pages/project-detail/project-detail').then(m => m.ProjectDetailComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'projects/:id/edit',
+    loadComponent: () =>
+      import('./pages/project-edit/project-edit').then(m => m.ProjectEditComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'maps',
+    loadComponent: () => import('./pages/maps/maps').then(m => m.MapsComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'maps/:id',
+    loadComponent: () => import('./pages/map-editor/map-editor').then(m => m.MapEditorComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'inspiration',
+    loadComponent: () => import('./pages/inspiration/inspiration').then(m => m.InspirationComponent),
     canActivate: [AuthGuard]
   },
   {
@@ -114,12 +170,25 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-    // Unlisted internal tool — see the note in the component. AuthGuard means
-    // "logged in", not "admin"; no admin role exists yet.
+    path: 'supplies',
+    loadComponent: () => import('./pages/supplies/supplies.page').then(m => m.SuppliesPage),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./pages/admin/admin').then(m => m.AdminComponent),
+    canActivate: [AuthGuard, adminGuard]
+  },
+  {
+    /**
+     * Was AuthGuard only, which means "logged in" — so any signed-in user who
+     * guessed the URL could edit the challenge catalogue everyone reads.
+     * adminGuard checks `User.role`, which Xano has been returning all along.
+     */
     path: 'admin/challenges',
     loadComponent: () =>
       import('./pages/admin-challenges/admin-challenges').then(m => m.AdminChallengesComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, adminGuard]
   },
   {
     path: 'friends',
@@ -139,6 +208,11 @@ export const routes: Routes = [
   {
     path: 'templates',
     loadComponent: () => import('./pages/templates/templates').then(m => m.TemplatesComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'toolkit',
+    loadComponent: () => import('./pages/toolkit/toolkit').then(m => m.ToolkitComponent),
     canActivate: [AuthGuard]
   },
   {

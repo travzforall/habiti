@@ -31,6 +31,8 @@ export class BottomNavComponent {
     { route: '/analytics', icon: '\u{1F4C8}', label: 'Stats' },
     { route: '/calendar', icon: '\u{1F4C5}', label: 'Calendar' },
     { route: '/projects', icon: '\u{1F4CB}', label: 'Projects' },
+    { route: '/maps', icon: '\u{1F9E0}', label: 'Mind maps' },
+    { route: '/inspiration', icon: '\u{2728}', label: 'Inspiration' },
     { route: '/templates', icon: '\u{1F4DD}', label: 'Templates' },
     { route: '/settings', icon: '\u{2699}\u{FE0F}', label: 'Settings' }
   ];
