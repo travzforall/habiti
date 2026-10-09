@@ -32,7 +32,18 @@ export type RefreshScope =
   | 'dailyContent'
   | 'tasks'
   | 'projects'
-  | 'skills';
+  | 'skills'
+  /**
+   * Inspiration boards.
+   *
+   * CLIENT-ONLY, and knowingly so: the relay keeps its own copy of this union
+   * (realtime-server/src/protocol.ts) and drops any scope it does not
+   * recognise, so an `inspiration` hint sent over the wire would vanish without
+   * a trace. That is fine because nothing another user does can change your
+   * board — the scope exists so a tab of your own, or a reconnect, refetches
+   * it. If boards ever become shareable, add it to the relay's list FIRST.
+   */
+  | 'inspiration';
 
 export const ALL_SCOPES: readonly RefreshScope[] = [
   'friends',
@@ -43,7 +54,8 @@ export const ALL_SCOPES: readonly RefreshScope[] = [
   'dailyContent',
   'tasks',
   'projects',
-  'skills'
+  'skills',
+  'inspiration'
 ] as const;
 
 export type RelayEventKind =
