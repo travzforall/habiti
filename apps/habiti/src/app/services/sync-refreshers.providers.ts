@@ -7,6 +7,7 @@ import { HabitsService } from './habits';
 import { LevelService } from './level.service';
 import { NotificationsService } from './notifications.service';
 import { ProjectsService } from './projects.service';
+import { ResettableRegistry } from './resettable.registry';
 import { SkillsService } from './skills.service';
 import { SYNC_REFRESHERS, SyncRefresher } from '@habiti/sync';
 import { TasksService } from './tasks.service';
@@ -46,6 +47,26 @@ export function provideSyncRefreshers(): EnvironmentProviders {
     refresher(() => {
       const skills = inject(SkillsService);
       return { scopes: ['skills'], refresh: () => skills.reload(), reset: () => skills.reload() };
+    }),
+    /**
+     * Everything lazy, in one line.
+     *
+     * Checklists, attachments, inspiration boards and mind maps all need
+     * clearing when the account changes, and none of them should be in the
+     * initial bundle to get it. They register themselves with the registry when
+     * their chunk loads; this refresher is the only eager thing that knows they
+     * exist. See resettable.registry.ts.
+     *
+     * The scope list is what those members MAY ask for — the registry only
+     * refreshes the ones that asked for a scope in this pass.
+     */
+    refresher(() => {
+      const registry = inject(ResettableRegistry);
+      return {
+        scopes: ['tasks', 'projects', 'inspiration'],
+        refresh: ({ scopes }) => registry.refresh(scopes),
+        reset: () => registry.resetAll()
+      };
     }),
 
     // --- server-backed
