@@ -1,0 +1,429 @@
+<div class="space-y-6 max-w-6xl mx-auto">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800">🧰 My Toolkit</h1>
+      <p class="text-slate-500 mt-1">
+        What you own and rely on. Projects draw from this list — it outlives them.
+      </p>
+    </div>
+    <button
+      (click)="startAdd()"
+      class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+    >
+      + Add something
+    </button>
+  </div>
+
+  @if (isEmpty() && !showArchived()) {
+    <div class="text-center py-16">
+      <div class="text-6xl mb-4">🧰</div>
+      <h2 class="text-xl font-bold text-slate-800 mb-2">Nothing in your kit yet</h2>
+      <p class="text-slate-500 mb-6 max-w-md mx-auto">
+        Add the tools, materials and software you already have. Once they are here you can pull
+        them into any project without typing them out again.
+      </p>
+      <button
+        (click)="startAdd()"
+        class="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors"
+      >
+        Add the first one
+      </button>
+    </div>
+  } @else {
+    <!-- Totals -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">In your kit</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">{{ summary().total }}</p>
+        <p class="text-xs text-slate-500">{{ summary().available }} available now</p>
+      </div>
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">To sort out</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">{{ summary().wanted }}</p>
+        <p class="text-xs text-slate-500">missing or broken</p>
+      </div>
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Kit value</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">
+          {{ summary().value | currency: 'GBP' : 'symbol' : '1.0-0' }}
+        </p>
+        <p class="text-xs text-slate-500">what it cost you</p>
+      </div>
+      <div class="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-slate-200/50">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">To replace</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">
+          {{ summary().wantedValue | currency: 'GBP' : 'symbol' : '1.0-0' }}
+        </p>
+        <p class="text-xs text-slate-500">cost of the gaps</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="space-y-3">
+      <input
+        type="search"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        placeholder="Search by name, supplier, location or note…"
+        class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 outline-none transition-colors"
+      />
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          (click)="setKind('all')"
+          class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+          [class.bg-slate-800]="kindFilter() === 'all'"
+          [class.text-white]="kindFilter() === 'all'"
+          [class.bg-slate-100]="kindFilter() !== 'all'"
+        >
+          Everything
+        </button>
+        @for (kind of kinds; track kind) {
+          @if (countOfKind(kind) > 0) {
+            <button
+              (click)="setKind(kind)"
+              class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+              [class.bg-slate-800]="kindFilter() === kind"
+              [class.text-white]="kindFilter() === kind"
+              [class.bg-slate-100]="kindFilter() !== kind"
+            >
+              {{ kindMeta[kind].icon }} {{ kindMeta[kind].label }} {{ countOfKind(kind) }}
+            </button>
+          }
+        }
+
+        <span class="w-px h-6 bg-slate-200 mx-1"></span>
+
+        <button
+          (click)="setStatus(statusFilter() === 'wanted' ? 'all' : 'wanted')"
+          class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+          [class.bg-amber-500]="statusFilter() === 'wanted'"
+          [class.text-white]="statusFilter() === 'wanted'"
+          [class.bg-slate-100]="statusFilter() !== 'wanted'"
+        >
+          🛒 Shopping list {{ summary().wanted }}
+        </button>
+
+        <button
+          (click)="showArchived.set(!showArchived())"
+          class="px-3 py-1.5 text-sm rounded-lg transition-colors ml-auto"
+          [class.bg-slate-800]="showArchived()"
+          [class.text-white]="showArchived()"
+          [class.bg-slate-100]="!showArchived()"
+        >
+          {{ showArchived() ? 'Back to kit' : 'Archive' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- The list -->
+    @if (visible().length === 0) {
+      <p class="text-center text-slate-400 py-12">
+        {{ showArchived() ? 'Nothing archived.' : 'Nothing matches those filters.' }}
+      </p>
+    }
+
+    @for (group of grouped(); track group.kind) {
+      <section>
+        <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">
+          {{ group.meta.icon }} {{ group.meta.label }}
+          <span class="text-slate-400 font-normal normal-case">— {{ group.meta.hint }}</span>
+        </h2>
+
+        <div class="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
+          @for (item of group.items; track item.id) {
+            <div class="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/60 transition-colors">
+              <span class="text-2xl leading-none shrink-0 mt-0.5">{{ icon(item) }}</span>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold text-slate-800">{{ item.title }}</span>
+
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                    [class.bg-emerald-100]="statusMeta[item.status].available"
+                    [class.text-emerald-700]="statusMeta[item.status].available"
+                    [class.bg-amber-100]="statusMeta[item.status].wanted"
+                    [class.text-amber-700]="statusMeta[item.status].wanted"
+                    [class.bg-slate-100]="!statusMeta[item.status].available && !statusMeta[item.status].wanted"
+                    [class.text-slate-600]="!statusMeta[item.status].available && !statusMeta[item.status].wanted"
+                  >
+                    {{ statusMeta[item.status].icon }} {{ statusMeta[item.status].label }}
+                  </span>
+
+                  @if (item.quantity) {
+                    <span class="text-xs text-slate-500">
+                      {{ item.quantity }}{{ item.unit ? ' ' + item.unit : '' }}
+                    </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                  @if (item.location) {
+                    <span>📍 {{ item.location }}</span>
+                  }
+                  @if (item.supplier) {
+                    <span>🏪 {{ item.supplier }}</span>
+                  }
+                  @if (item.renewsOn) {
+                    <span>🔁 renews {{ item.renewsOn | date: 'd MMM y' }}</span>
+                  }
+                  @if (item.linkedHabitIds.length) {
+                    <span>🎯 {{ item.linkedHabitIds.length }} habit{{ item.linkedHabitIds.length === 1 ? '' : 's' }}</span>
+                  }
+                  @if (item.url) {
+                    <a
+                      [href]="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Link ↗
+                    </a>
+                  }
+                </div>
+
+                @if (item.note) {
+                  <p class="text-xs text-slate-400 mt-1">{{ item.note }}</p>
+                }
+              </div>
+
+              <div class="shrink-0 text-right">
+                @if (group.meta.costed && lineValue(item) > 0) {
+                  <p class="text-sm font-semibold text-slate-700 tabular-nums">
+                    {{ lineValue(item) | currency: item.currency || 'GBP' : 'symbol' : '1.0-2' }}
+                  </p>
+                }
+                <div class="flex items-center gap-1 mt-1 justify-end">
+                  @if (showArchived()) {
+                    <button
+                      (click)="restore(item)"
+                      class="px-2 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                    >
+                      Restore
+                    </button>
+                    <button
+                      (click)="remove(item)"
+                      class="px-2 py-1 text-xs rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  } @else {
+                    <button
+                      (click)="cycleStatus(item)"
+                      [title]="item.status === 'have' ? 'Mark as needed' : 'Mark as have it'"
+                      class="px-2 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                    >
+                      {{ item.status === 'have' ? 'Need it' : 'Have it' }}
+                    </button>
+                    <button
+                      (click)="startEdit(item)"
+                      class="px-2 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      (click)="archive(item)"
+                      title="Keep the record, hide it from the list"
+                      class="px-2 py-1 text-xs rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                    >
+                      Archive
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>
+
+<!-- Add / edit -->
+@if (adding()) {
+  <div
+    class="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="toolkit-form-title"
+  >
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" (click)="cancel()"></div>
+
+    <div class="relative w-full sm:max-w-lg max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 shrink-0">
+        <h2 id="toolkit-form-title" class="text-lg font-bold text-slate-800">
+          {{ editingId() ? 'Edit item' : 'Add to your toolkit' }}
+        </h2>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div>
+          <label for="tk-title" class="block text-sm font-medium text-slate-700 mb-1">What is it?</label>
+          <input
+            id="tk-title"
+            type="text"
+            [ngModel]="draft().title"
+            (ngModelChange)="patchDraft({ title: $event })"
+            placeholder="Cordless drill"
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="tk-kind" class="block text-sm font-medium text-slate-700 mb-1">Kind</label>
+            <select
+              id="tk-kind"
+              [ngModel]="draft().kind"
+              (ngModelChange)="patchDraft({ kind: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            >
+              @for (kind of kinds; track kind) {
+                <option [value]="kind">{{ kindMeta[kind].icon }} {{ kindMeta[kind].label }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="tk-status" class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <select
+              id="tk-status"
+              [ngModel]="draft().status"
+              (ngModelChange)="patchDraft({ status: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            >
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ statusMeta[status].icon }} {{ statusMeta[status].label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-400 -mt-1">{{ kindMeta[draft().kind].hint }}</p>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label for="tk-qty" class="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+            <input
+              id="tk-qty"
+              type="number"
+              step="0.01"
+              [ngModel]="draft().quantity"
+              (ngModelChange)="patchDraft({ quantity: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label for="tk-unit" class="block text-sm font-medium text-slate-700 mb-1">Unit</label>
+            <input
+              id="tk-unit"
+              type="text"
+              [ngModel]="draft().unit"
+              (ngModelChange)="patchDraft({ unit: $event })"
+              placeholder="each"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label for="tk-cost" class="block text-sm font-medium text-slate-700 mb-1">Cost each</label>
+            <input
+              id="tk-cost"
+              type="number"
+              step="0.01"
+              [ngModel]="draft().unitCost"
+              (ngModelChange)="patchDraft({ unitCost: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="tk-location" class="block text-sm font-medium text-slate-700 mb-1">Where it lives</label>
+            <input
+              id="tk-location"
+              type="text"
+              [ngModel]="draft().location"
+              (ngModelChange)="patchDraft({ location: $event })"
+              placeholder="Garage shelf"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label for="tk-supplier" class="block text-sm font-medium text-slate-700 mb-1">Supplier</label>
+            <input
+              id="tk-supplier"
+              type="text"
+              [ngModel]="draft().supplier"
+              (ngModelChange)="patchDraft({ supplier: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="tk-bought" class="block text-sm font-medium text-slate-700 mb-1">Bought on</label>
+            <input
+              id="tk-bought"
+              type="date"
+              [ngModel]="draft().purchasedOn"
+              (ngModelChange)="patchDraft({ purchasedOn: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label for="tk-renews" class="block text-sm font-medium text-slate-700 mb-1">Renews on</label>
+            <input
+              id="tk-renews"
+              type="date"
+              [ngModel]="draft().renewsOn"
+              (ngModelChange)="patchDraft({ renewsOn: $event })"
+              class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="tk-url" class="block text-sm font-medium text-slate-700 mb-1">Link</label>
+          <input
+            id="tk-url"
+            type="url"
+            [ngModel]="draft().url"
+            (ngModelChange)="patchDraft({ url: $event })"
+            placeholder="https://…"
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+          />
+        </div>
+
+        <div>
+          <label for="tk-note" class="block text-sm font-medium text-slate-700 mb-1">Note</label>
+          <textarea
+            id="tk-note"
+            rows="2"
+            [ngModel]="draft().note"
+            (ngModelChange)="patchDraft({ note: $event })"
+            placeholder="Model number, which charger, who borrowed it…"
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-blue-400 outline-none"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+        <button
+          (click)="cancel()"
+          class="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          (click)="save()"
+          [disabled]="!draft().title.trim()"
+          class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          {{ editingId() ? 'Save changes' : 'Add it' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
