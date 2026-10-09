@@ -1,0 +1,311 @@
+<div class="space-y-6 max-w-6xl mx-auto">
+  <div>
+    <h1 class="text-3xl font-bold text-slate-800">🛠️ Admin</h1>
+    <p class="text-slate-500 mt-1">Content, data and catalogue health in one place.</p>
+  </div>
+
+  <!--
+    Said plainly rather than buried in a docblock. The role check keeps honest
+    people out of the wrong page; it is not a security boundary, because the
+    Baserow token ships in the client bundle.
+  -->
+  <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+    <p class="text-sm font-semibold text-amber-900">Internal tool</p>
+    <p class="text-sm text-amber-800 mt-1">
+      Access is gated on your account role, but the Baserow API token ships in the browser
+      bundle — anyone determined can still write these rows directly. Treat this as
+      convenience, not protection, until writes move behind the Xano proxy.
+    </p>
+  </div>
+
+  <!-- Catalogue health -->
+  <section
+    class="rounded-2xl border overflow-hidden"
+    [class.border-emerald-200]="healthy()"
+    [class.border-rose-200]="!healthy()"
+  >
+    <div
+      class="px-5 py-4 flex items-center justify-between gap-4"
+      [class.bg-emerald-50]="healthy()"
+      [class.bg-rose-50]="!healthy()"
+    >
+      <div>
+        <h2 class="font-bold text-slate-800 flex items-center gap-2">
+          {{ healthy() ? '✅' : '⚠️' }} Catalogue health
+        </h2>
+        <p class="text-sm mt-0.5" [class.text-emerald-800]="healthy()" [class.text-rose-800]="!healthy()">
+          {{
+            healthy()
+              ? 'Every integrity check passes.'
+              : failing() + ' check' + (failing() === 1 ? '' : 's') + ' failing — see below.'
+          }}
+        </p>
+      </div>
+    </div>
+
+    <div class="divide-y divide-slate-100 bg-white">
+      @for (check of health(); track check.label) {
+        <div class="px-5 py-3 flex items-start gap-3">
+          <span class="shrink-0 mt-0.5">{{ check.ok ? '✅' : '❌' }}</span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-slate-800">{{ check.label }}</p>
+            <p class="text-xs mt-0.5" [class.text-slate-500]="check.ok" [class.text-rose-600]="!check.ok">
+              {{ check.detail }}
+            </p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Live data -->
+  <section>
+    <h2 class="text-xl font-bold text-slate-800 mb-1">Live data</h2>
+    <p class="text-sm text-slate-500 mb-4">Stored in Baserow. Changes take effect immediately.</p>
+
+    @if (unconfigured().length) {
+      <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        Running local-only (no table id set):
+        <span class="font-medium">{{ unconfigured().join(', ') }}</span>.
+        Create the table with <code class="text-xs">scripts/create-baserow-table.mjs</code>, then set
+        its id in <code class="text-xs">environment.ts</code>.
+      </div>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      @for (surface of dataSurfaces; track surface.name) {
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-2xl">{{ surface.icon }}</span>
+            <h3 class="font-bold text-slate-800">{{ surface.name }}</h3>
+          </div>
+          <p class="text-sm text-slate-500 flex-1">{{ surface.description }}</p>
+
+          <div class="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
+            <span class="text-xs text-slate-400">
+              {{ surface.tableId ? 'table ' + surface.tableId : 'not configured' }}
+            </span>
+            @if (surface.route && surface.editable) {
+              <a
+                [routerLink]="surface.route"
+                class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Manage
+              </a>
+            } @else {
+              <span class="text-xs font-medium text-slate-400">No editor yet</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Code-managed content -->
+  <section>
+    <h2 class="text-xl font-bold text-slate-800 mb-1">Content</h2>
+    <p class="text-sm text-slate-500 mb-4">
+      These live in TypeScript and ship with a release — reviewable in a pull request, and working
+      before any database table exists. Read-only here; export to get the current content out.
+    </p>
+
+    <div class="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden">
+      <!-- Library -->
+      <div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <span class="text-2xl">📚</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-slate-800">Habit library</h3>
+            <p class="text-sm text-slate-500">
+              {{ counts.habits }} habits · {{ counts.categories }} categories ·
+              {{ counts.subcategories }} subcategories
+            </p>
+          </div>
+          <button
+            (click)="toggle('library')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ openInspector() === 'library' ? 'Hide' : 'View' }}
+          </button>
+          <button
+            (click)="exportJson('library')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ copied() === 'library' ? 'Copied' : copied() === 'console' ? 'See console' : 'Export' }}
+          </button>
+        </div>
+
+        @if (openInspector() === 'library') {
+          <div class="px-5 pb-5 space-y-4">
+            @for (section of library; track section.category.id) {
+              <div>
+                <p class="text-sm font-semibold text-slate-700 mb-2">
+                  {{ section.category.icon }} {{ section.category.name }}
+                  <span class="text-slate-400 font-normal">({{ section.habits.length }})</span>
+                </p>
+                <div class="flex flex-wrap gap-1.5">
+                  @for (habit of section.habits; track habit.id) {
+                    <span
+                      class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs"
+                      [title]="habit.id + ' · ' + habit.subcategoryId"
+                    >
+                      {{ habit.icon }} {{ habit.name }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Packs -->
+      <div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <span class="text-2xl">📦</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-slate-800">Template packs</h3>
+            <p class="text-sm text-slate-500">{{ counts.packs }} packs</p>
+          </div>
+          <button
+            (click)="toggle('packs')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ openInspector() === 'packs' ? 'Hide' : 'View' }}
+          </button>
+          <button
+            (click)="exportJson('packs')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ copied() === 'packs' ? 'Copied' : 'Export' }}
+          </button>
+        </div>
+
+        @if (openInspector() === 'packs') {
+          <div class="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+            @for (pack of packs; track pack.id) {
+              <div class="rounded-xl border border-slate-200 p-3">
+                <p class="text-sm font-semibold text-slate-800">{{ pack.icon }} {{ pack.name }}</p>
+                <p class="text-xs text-slate-400 font-mono">{{ pack.id }}</p>
+                <p class="text-xs text-slate-500 mt-1">
+                  {{ pack.habits.length }} habits — {{ pack.habits[0].name }}
+                  @if (pack.habits.length > 1) {
+                    <span>+{{ pack.habits.length - 1 }} more</span>
+                  }
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Groups -->
+      <div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <span class="text-2xl">🗂️</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-slate-800">Pack groups</h3>
+            <p class="text-sm text-slate-500">
+              {{ counts.groups }} groups — how /templates is shelved
+            </p>
+          </div>
+          <button
+            (click)="toggle('groups')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ openInspector() === 'groups' ? 'Hide' : 'View' }}
+          </button>
+          <button
+            (click)="exportJson('groups')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ copied() === 'groups' ? 'Copied' : 'Export' }}
+          </button>
+        </div>
+
+        @if (openInspector() === 'groups') {
+          <div class="px-5 pb-5 space-y-3">
+            @for (group of groups; track group.id) {
+              <div class="rounded-xl border border-slate-200 p-3">
+                <p class="text-sm font-semibold text-slate-800">{{ group.icon }} {{ group.name }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ group.description }}</p>
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                  @for (pack of packsFor(group.id); track pack.id) {
+                    <span class="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs">
+                      {{ pack.icon }} {{ pack.name }}
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Skills -->
+      <div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <span class="text-2xl">🎯</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-slate-800">Skills</h3>
+            <p class="text-sm text-slate-500">
+              {{ counts.activeSkills }} active
+              @if (counts.skills > counts.activeSkills) {
+                <span>· {{ counts.skills - counts.activeSkills }} retired</span>
+              }
+            </p>
+          </div>
+          <button
+            (click)="toggle('skills')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ openInspector() === 'skills' ? 'Hide' : 'View' }}
+          </button>
+          <button
+            (click)="exportJson('skills')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ copied() === 'skills' ? 'Copied' : 'Export' }}
+          </button>
+        </div>
+
+        @if (openInspector() === 'skills') {
+          <div class="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+            @for (skill of skills; track skill.id) {
+              <div class="rounded-xl border border-slate-200 p-3" [class.opacity-50]="!skill.active">
+                <p class="text-sm font-semibold text-slate-800">
+                  {{ skill.icon }} {{ skill.name }}
+                  @if (!skill.active) {
+                    <span class="ml-1 text-[10px] font-bold uppercase text-slate-400">Retired</span>
+                  }
+                </p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  {{ skill.habitIds.length }} habits · {{ skill.tiers.length }} tiers
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Challenge seed -->
+      <div>
+        <div class="px-5 py-4 flex items-center gap-4">
+          <span class="text-2xl">🌱</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-slate-800">Challenge seed</h3>
+            <p class="text-sm text-slate-500">
+              {{ counts.challenges }} templates — the bundled fallback, before Baserow
+            </p>
+          </div>
+          <button
+            (click)="exportJson('challenges')"
+            class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold transition-colors"
+          >
+            {{ copied() === 'challenges' ? 'Copied' : 'Export' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
