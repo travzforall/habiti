@@ -67,7 +67,23 @@ const TABLES = [
   { schema: '38-project-expenses.json', envKey: 'projectExpenses', feature: 'expenses and budgets' },
   { schema: '39-project-plans.json', envKey: 'projectPlans', feature: 'the project planner' },
   { schema: '40-project-tools.json', envKey: 'projectTools', feature: 'tools needed for a job' },
-  { schema: '41-user-supplies.json', envKey: 'userSupplies', feature: 'your own tools and materials list' }
+  { schema: '41-user-supplies.json', envKey: 'userSupplies', feature: 'your own tools and materials list' },
+  { schema: '42-toolkit-items.json', envKey: 'toolkitItems', feature: 'the standing kit at /toolkit' },
+  /**
+   * Last, and the one that matters most if the run is interrupted.
+   *
+   * The acceptance gate, the Article 9 consent prompts and the re-acceptance
+   * flow all shipped before this table existed, so ConsentService has been
+   * recording every acceptance to localStorage — which means a cache clear
+   * erases the record that someone agreed to anything.
+   *
+   * Note what a row here is and is not. While the Baserow token ships in the
+   * client bundle, a user can write this table directly, so a row is
+   * CORROBORATION of an acceptance and not evidence of one. The schema file
+   * says the same. It is still worth having: corroboration that survives a
+   * cache clear beats a localStorage key that does not.
+   */
+  { schema: '30-legal-acceptances.json', envKey: 'legalAcceptances', feature: 'a durable record of document acceptances and Article 9 consent' }
 ];
 
 /**

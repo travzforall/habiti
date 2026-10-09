@@ -54,100 +54,94 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 const PAIRINGS = [
   {
-    label: 'user_tasks (631)',
     schema: 'database-schemas/28-user-tasks.json',
     source: 'apps/habiti/src/app/models/task-row.models.ts',
     constant: 'USER_TASK_COLUMNS',
-    table: 631,
+    envKey: 'userTasks',
     pending: []
   },
   {
-    label: 'user_projects (630)',
     schema: 'database-schemas/27-user-projects.json',
     source: 'apps/habiti/src/app/models/task-row.models.ts',
     constant: 'USER_PROJECT_COLUMNS',
-    table: 630,
+    envKey: 'userProjects',
     pending: []
   },
   {
-    label: 'task_attachments (31)',
     schema: 'database-schemas/31-task-attachments.json',
     source: 'apps/habiti/src/app/models/attachment-row.models.ts',
     constant: 'ATTACHMENT_COLUMNS',
+    envKey: 'taskAttachments',
     pending: []
   },
   {
-    label: 'inspiration_items (33)',
     schema: 'database-schemas/33-inspiration-items.json',
     source: 'apps/habiti/src/app/models/inspiration.models.ts',
     constant: 'INSPIRATION_COLUMNS',
+    envKey: 'inspirationItems',
     pending: []
   },
   {
-    label: 'mind_maps (34)',
     schema: 'database-schemas/34-mind-maps.json',
     source: 'apps/habiti/src/app/models/mind-map.models.ts',
     constant: 'MIND_MAP_COLUMNS',
+    envKey: 'mindMaps',
     pending: []
   },
   {
-    label: 'mind_map_nodes (35)',
     schema: 'database-schemas/35-mind-map-nodes.json',
     source: 'apps/habiti/src/app/models/mind-map.models.ts',
     constant: 'MIND_MAP_NODE_COLUMNS',
+    envKey: 'mindMapNodes',
     pending: []
   },
   {
-    label: 'project_milestones (638)',
     schema: 'database-schemas/36-project-milestones.json',
     source: 'apps/habiti/src/app/models/milestone-row.models.ts',
     constant: 'MILESTONE_COLUMNS',
-    table: 638,
+    envKey: 'projectMilestones',
     pending: []
   },
   {
-    label: 'project_items (639)',
     schema: 'database-schemas/37-project-items.json',
     source: 'apps/habiti/src/app/models/budget.models.ts',
     constant: 'PROJECT_ITEM_COLUMNS',
-    table: 639,
+    envKey: 'projectItems',
     pending: []
   },
   {
-    label: 'project_expenses (640)',
     schema: 'database-schemas/38-project-expenses.json',
     source: 'apps/habiti/src/app/models/budget.models.ts',
     constant: 'PROJECT_EXPENSE_COLUMNS',
-    table: 640,
+    envKey: 'projectExpenses',
     pending: []
   },
   {
-    label: 'project_plans (641)',
     schema: 'database-schemas/39-project-plans.json',
     source: 'apps/habiti/src/app/models/plan.models.ts',
     constant: 'PROJECT_PLAN_COLUMNS',
-    table: 641,
+    envKey: 'projectPlans',
     pending: []
   },
   {
-    label: 'project_tools (40)',
     schema: 'database-schemas/40-project-tools.json',
     source: 'apps/habiti/src/app/models/tool.models.ts',
     constant: 'PROJECT_TOOL_COLUMNS',
+    envKey: 'projectTools',
     pending: []
   },
   {
-    label: 'user_supplies (41)',
     schema: 'database-schemas/41-user-supplies.json',
     source: 'apps/habiti/src/app/models/supply.models.ts',
     constant: 'USER_SUPPLY_COLUMNS',
+    envKey: 'userSupplies',
     pending: []
   },
   {
-    label: 'task_checklist_items (32)',
     schema: 'database-schemas/32-task-checklist-items.json',
     source: 'apps/habiti/src/app/models/attachment-row.models.ts',
     constant: 'CHECKLIST_COLUMNS',
+    envKey: 'taskChecklistItems',
     pending: []
   }
 ];
@@ -197,6 +191,26 @@ function fromEnvironment(pattern) {
   }
 }
 
+/**
+ * The live table id for an `envKey`, read from environment.ts.
+ *
+ * NOT hand-written in this file, and that is the point. The ids used to sit in
+ * PAIRINGS as `table: 631`, which meant a pairing could carry the wrong id, or
+ * no id at all, and still print a tick. Six of them had no id: their labels
+ * read `task_attachments (31)` — the SCHEMA FILE number, which looks exactly
+ * like a table id — and the live check silently never ran, so the script only
+ * ever compared the schema file to itself. That is the drift it exists to
+ * catch, in the script doing the catching.
+ *
+ * Reading environment.ts means there is one copy of every id, in the file the
+ * app itself uses. A table that does not exist yet is 0 there, which is the
+ * same signal the services read, and it means "local-only" here too.
+ */
+function tableId(envKey) {
+  const value = fromEnvironment(new RegExp(`^\\s*${envKey}:\\s*(\\d+)`, 'm'));
+  return value === null ? null : Number(value);
+}
+
 let failures = 0;
 let checked = 0;
 
@@ -204,9 +218,24 @@ for (const pairing of PAIRINGS) {
   const schema = JSON.parse(readFileSync(join(ROOT, pairing.schema), 'utf8'));
   const source = readFileSync(join(ROOT, pairing.source), 'utf8');
 
+  // The label names the table and says where it is, so a tick cannot be read as
+  // "verified against the live table" when the table does not exist yet.
+  const id = tableId(pairing.envKey);
+  const where = id === null ? 'NOT IN environment.ts' : id === 0 ? 'local-only' : id;
+  const label = `${schema.table_name} (${where})`;
+
+  if (id === null) {
+    console.error(
+      `✗ ${label}: no \`${pairing.envKey}\` in environment.ts. ` +
+        `Either the key was renamed or this pairing names the wrong one.`
+    );
+    failures++;
+    continue;
+  }
+
   const columns = readColumnConstant(source, pairing.constant);
   if (!columns) {
-    console.error(`✗ ${pairing.label}: ${pairing.constant} not found in ${pairing.source}`);
+    console.error(`✗ ${label}: ${pairing.constant} not found in ${pairing.source}`);
     failures++;
     continue;
   }
@@ -216,7 +245,7 @@ for (const pairing of PAIRINGS) {
 
   if (missing.length > 0) {
     console.error(
-      `✗ ${pairing.label}: the app writes ${missing.map(m => `\`${m}\``).join(', ')}, ` +
+      `✗ ${label}: the app writes ${missing.map(m => `\`${m}\``).join(', ')}, ` +
         `which ${schema.table_name} does not have. Baserow would DROP these silently.`
     );
     failures++;
@@ -224,10 +253,29 @@ for (const pairing of PAIRINGS) {
     const pending = pairing.pending.length
       ? ` (pending in the live table: ${pairing.pending.join(', ')})`
       : '';
-    console.log(`✓ ${pairing.label}: ${columns.length} columns all exist${pending}`);
 
     // Is the `pending` note still true? Only askable when the table is reachable.
-    const live = pairing.table ? await liveColumns(pairing.table) : null;
+    const live = id > 0 ? await liveColumns(id) : null;
+
+    /**
+     * WHAT THE TICK MEANS, stated on the tick.
+     *
+     * `live` is the schema file AND the real table agreeing. `schema only` is
+     * the schema file compared with itself, which cannot fail and therefore
+     * proves nothing — the exact false comfort this script was written to
+     * remove. Printing them identically is how six pairings went a month
+     * without a live check while the output read as thirteen passes.
+     *
+     * An empty table is the common reason: liveColumns() reads a row, so with
+     * no rows there is nothing to read. That is deliberate — inferring "no
+     * columns" from "no rows" would invent failures on every fresh table — but
+     * it does mean a brand-new table is unverified until something writes to
+     * it. The fields endpoint would answer properly; it needs a user JWT the
+     * database token cannot stand in for.
+     */
+    const proof = live ? 'live' : id === 0 ? 'local-only' : 'schema only — nothing in the table to compare';
+    console.log(`✓ ${label}: ${columns.length} columns all exist [${proof}]${pending}`);
+
     if (live) {
       const actuallyMissing = columns.filter(column => !live.includes(column));
       const claimed = [...pairing.pending].sort().join(',');
@@ -235,7 +283,7 @@ for (const pairing of PAIRINGS) {
 
       if (claimed !== actual) {
         console.error(
-          `✗ ${pairing.label}: the pending list is out of date. ` +
+          `✗ ${label}: the pending list is out of date. ` +
             `It says [${claimed || 'nothing'}] but the live table is missing ` +
             `[${actual || 'nothing'}]. Update PAIRINGS in this file.`
         );

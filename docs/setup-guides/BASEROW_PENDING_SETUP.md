@@ -1,7 +1,11 @@
 # Finishing the database
 
-Five features ship switched off because their tables do not exist yet, and four
-columns are missing from tables that do. This is how to finish it — one command.
+Two features ship switched off because their tables do not exist yet. This is
+how to finish it — one command.
+
+> **Most of this is already done.** Eleven of the thirteen tables were created
+> on 2026-10-08, and `npm run verify:fields` reports the ids it found. What is
+> left is `toolkit_items` and `legal_acceptances`, below.
 
 ## Why it needs your password
 
@@ -50,20 +54,27 @@ column is left alone. It never deletes or alters anything already there.
 
 | Schema | Table | Turns on |
 |---|---|---|
-| `31-task-attachments.json` | `task_attachments` | files on tasks and projects |
-| `32-task-checklist-items.json` | `task_checklist_items` | task checklists |
-| `33-inspiration-items.json` | `inspiration_items` | inspiration boards |
-| `34-mind-maps.json` | `mind_maps` | mind maps |
-| `35-mind-map-nodes.json` | `mind_map_nodes` | mind map nodes |
+| `42-toolkit-items.json` | `toolkit_items` | the standing kit at `/toolkit` |
+| `30-legal-acceptances.json` | `legal_acceptances` | a durable record of acceptances and Article 9 consent |
+
+`legal_acceptances` is the one to care about. The acceptance gate, the Article 9
+consent prompts and the re-acceptance flow all shipped before the table
+existed, so every acceptance so far lives in localStorage — and a cache clear
+erases the record that anyone agreed to anything.
+
+Be clear about what a row there is. While the Baserow token ships in the client
+bundle a user can write that table directly, so a row is **corroboration** of
+an acceptance, not evidence of one. Still worth having: corroboration that
+survives a cache clear beats a localStorage key that does not.
+
+The other eleven are already created and re-running is safe — an existing table
+is reported and skipped.
 
 ## What it adds to existing tables
 
-| Table | Column | Type | Turns on |
-|---|---|---|---|
-| `user_tasks` (631) | `status` | single_select | to do / in progress / blocked / done |
-| `user_tasks` (631) | `progress_pct` | number | a hand-set percentage |
-| `user_tasks` (631) | `milestone_id` | text | which milestone a task belongs to |
-| `user_projects` (630) | `type` | single_select | project types |
+Nothing outstanding. `status`, `progress_pct` and `milestone_id` on
+`user_tasks` and `type` on `user_projects` were added on 2026-10-08 and
+`verify:fields` confirms them against the live table.
 
 The column specs come from the schema JSON, not from a copy inside the script,
 so they cannot drift from what `npm run verify:fields` checks.

@@ -268,7 +268,7 @@ export class ToolkitService {
     this.warned = true;
     console.warn(
       'ToolkitService: baserow.tables.toolkitItems is 0 — your kit stays on this browser. ' +
-        'Create it with: node scripts/create-baserow-table.mjs 41-toolkit-items.json --apply'
+        'Create it with: node scripts/create-baserow-table.mjs 42-toolkit-items.json --apply'
     );
   }
 
